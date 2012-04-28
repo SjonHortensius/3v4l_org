@@ -1,0 +1,97 @@
+.CodeMirror
+{
+	border-top: 1px solid black;
+	border-bottom: 1px solid black;
+	background: #fff;
+}
+
+.CodeMirror-scroll
+{
+	height: auto;
+	overflow-y: hidden;
+	overflow-x: auto;
+	width: 100%;
+}
+
+.activeline
+{
+	background: #e8f2ff !important;
+}
+
+body
+{
+	margin: 2em;
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+form
+{
+	padding: 2em;
+	background: #f5f5f5;
+	border-radius: 1em;
+	margin-bottom: 1em;
+	box-shadow: inset 1px 1px 1px rgba(0,0,0, 0.1);
+	border-radius: 0.5em;
+}
+
+h1
+{
+	margin-top: 0;
+}
+
+small
+{
+	color: #999;
+}
+
+dl
+{
+	margin: 0 2em;
+}
+
+dt
+{
+	font-size: 20px;
+}
+
+dd
+{
+	margin: 1em 0 1.5em 0;
+	padding: 1em;
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+dd pre
+{
+	background: transparent;
+	padding: 0; border: none;
+	margin: 0;
+	max-height: 3.75em;
+	overflow: auto;
+}
+
+dd pre:hover
+{
+	max-height: 10em;
+}
+
+input
+{
+    background-color: #0074CC;
+    background-image: -webkit-linear-gradient(top, #08C, #05C);
+    background-image: linear-gradient(top, #08C, #05C);
+    background-repeat: repeat-x;
+    border: 1px solid #CCC;
+    border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: white;
+    padding: 9px 14px;
+    border-radius: 5px;
+    font-size: 15px;
+    margin-left: 0;
+    -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
+	cursor: pointer;
+}
