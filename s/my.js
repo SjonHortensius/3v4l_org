@@ -11,7 +11,6 @@ _gaq.push(['_trackPageview']);
 function init()
 {
 	var isBusy = document.getElementsByTagName('input')[0].className == 'busy';
-
 	CodeMirror.fromTextArea(document.getElementById('code'),{
 		lineNumbers: true,
 		matchBrackets: true,

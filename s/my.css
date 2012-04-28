@@ -74,7 +74,7 @@ dd pre
 
 dd pre:hover
 {
-	max-height: 10em;
+	max-height: 100em;
 }
 
 input
@@ -94,4 +94,21 @@ input
     margin-left: 0;
     -webkit-transition: border linear 0.2s, box-shadow linear 0.2s;
 	cursor: pointer;
+}
+
+input.busy
+{
+	background-image: url(/s/load.gif), linear-gradient(top, #08C, #05C);
+	background-image: url(/s/load.gif), -webkit-linear-gradient(top, #08C, #05C);
+	background-repeat: no-repeat, repeat-x;
+	background-position: 62px center, left top;
+	padding: 9px 25px 9px 14px;
+}
+
+body > span
+{
+	position: fixed;
+	bottom: 0;
+	left: 1px;
+	font-size: 12px;
 }
