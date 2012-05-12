@@ -59,7 +59,6 @@ var isBusy, eval_org = new Class({
 			lineWrapping: true,
 			matchBrackets: true,
 			mode: 'application/x-httpd-php',
-			readOnly: (isBusy ? 'nocursor' : false)
 		});
 	}
 });

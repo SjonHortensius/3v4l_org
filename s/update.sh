@@ -11,3 +11,4 @@ cat ../ext/CodeMirror/lib/codemirror.js ../ext/CodeMirror/mode/*/*.js ./my.js > 
 cat c.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c2.js
 
 curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c2.js" http://closure-compiler.appspot.com/compile > c.js
+rm c2.js

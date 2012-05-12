@@ -35,6 +35,8 @@ class PHPShell_Action
 
 		if (!$exists)
 			file_put_contents(self::IN.$short, $_POST['code']);
+		else
+			touch(self::IN.$short);
 
 		die(header('Location: /'. $short, 302));
 	}
@@ -59,14 +61,13 @@ class PHPShell_Action
 <head>
 	<title>3v4l.org - online PHP codepad for 50+ PHP versions</title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
+	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 	<link rel="stylesheet" href="/s/c.css"/>
 </head>
 <body>
 	<form method="POST" action="/">
 		<h1>3v4l.org<small> - online PHP shell, test over 50 different PHP versions!</small></h1>
-		<textarea name="code">
-<?=htmlspecialchars($this->_code)?>
-		</textarea>
+		<textarea name="code"><?=htmlspecialchars($this->_code)?></textarea>
 		<input type="submit" value="eval();"<?=$busy?>/>
 	</form>
 <?php
