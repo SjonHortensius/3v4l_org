@@ -105,16 +105,15 @@ class PHPShell_Action
 			if (file_exists($r.'-exit'))
 				$output .= '<br/><i>Process exited with code <b>'. file_get_contents($r.'-exit').'</b>.</i>';
 
-			$h = md5($output);
+			$h = crc32($output);
 			$outputs[$h] = $output;
 			$results[$h][] = basename($r);
 		}
 
 		foreach ($outputs as $hash => $output)
 		{
-			echo '<dt>Output for ';
+			echo '<dt id="v'.str_replace('.', '', reset($results[$hash])).'">Output for ';
 			uksort($results[$hash], 'version_compare');
-
 			echo implode(', ', self::groupVersions($results[$hash]));
 			echo '</dt><dd>'. $output.'</dd>';
 		}
