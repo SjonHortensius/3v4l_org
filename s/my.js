@@ -8,25 +8,56 @@ _gaq.push(['_trackPageview']);
 	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
 
-function init()
-{
-	var isBusy = document.getElementsByTagName('input')[0].className == 'busy';
-	CodeMirror.fromTextArea(document.getElementById('code'),{
-		lineNumbers: true,
-		matchBrackets: true,
-		mode: 'application/x-httpd-php',
-		indentUnit: 4,
-		indentWithTabs: true,
-		enterMode: 'keep',
-		tabMode: 'shift',
-		autofocus: true,
-		autoClearEmptyLines: true,
-		lineWrapping: true,
-		readOnly: (isBusy ? 'nocursor' : false),
-	});
+var isBusy, eval_org = new Class({
+	refreshTimer: null,
 
-	if (isBusy)
-		setTimeout('window.location.reload()', 1000);
-}
+	initialize: function()
+	{
+		isBusy = $$('input[type=submit]')[0].hasClass('busy');
 
-window.onload = init;
+		window.addEvent('domready', this.richEditor.bind(this));
+
+		if (!isBusy)
+			return;
+
+		this.refreshTimer = setInterval(this.refresh.bind(this), 1000);
+	},
+
+	refresh: function()
+	{
+		new Request.HTML({
+			url: window.location.pathname,
+			method: 'GET',
+			update: $('preview'),
+			onSuccess: this._refresh.bind(this),
+			filter: 'dl > *',
+			update: $$('dl')[0],
+		}).send();
+	},
+
+	_refresh: function(tree, elements, html)
+	{
+		if (!isBusy)
+		{
+			this.isBusy = false;
+			clearInterval(this.refreshTimer);
+			$$('input[type=submit]')[0].removeClass('busy');
+		}
+	},
+
+	richEditor: function()
+	{
+		CodeMirror.fromTextArea($$('textarea')[0],{
+			autofocus: true,
+			autoClearEmptyLines: true,
+			indentUnit: 4,
+			lineNumbers: true,
+			lineWrapping: true,
+			matchBrackets: true,
+			mode: 'application/x-httpd-php',
+			readOnly: (isBusy ? 'nocursor' : false)
+		});
+	}
+});
+
+new eval_org;

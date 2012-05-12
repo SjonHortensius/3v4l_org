@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
-cd `dirnam $0`
+cd `dirname $0`
 
-cat ../CodeMirror/lib/codemirror.css ./my.css | php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Action.php');require('/srv/http/local/dev/noopz/library/NooPz/Action.php');require('/srv/http/local/dev/noopz/library/NooPz/Action/Static.php');echo NooPz_Action_Static::stripCss(file_get_contents('php://stdin'));" > c.css
+cat ../ext/CodeMirror/lib/codemirror.css ./my.css | php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Static.php');echo Basic_Static::cssStrip(file_get_contents('php://stdin'));" > c.css
+cat ../ext/CodeMirror/lib/codemirror.js ../ext/CodeMirror/mode/*/*.js ./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c.js
