@@ -13,14 +13,11 @@ var isBusy, eval_org = new Class({
 
 	initialize: function()
 	{
+		this.richEditor();
+
 		isBusy = $$('input[type=submit]')[0].hasClass('busy');
 
-		window.addEvent('domready', this.richEditor.bind(this));
-		
-		$$('dd, dt').addEvent('click', function(e){
-			var dt = ('DT' == e.target.tagName) ? e.target : e.target.getPrevious('dt');
-			window.location.hash = '#'+dt.id;
-		});
+		$$('dd, dt').addEvent('click', this._clickDt);
 
 		if (!isBusy)
 			return;
@@ -40,14 +37,24 @@ var isBusy, eval_org = new Class({
 		}).send();
 	},
 
-	_refresh: function(tree, elements, html)
+	_refresh: function()
 	{
+		$$('dd, dt').addEvent('click', this._clickDt);
+
 		if (!isBusy)
 		{
-			this.isBusy = false;
 			clearInterval(this.refreshTimer);
 			$$('input[type=submit]')[0].removeClass('busy');
 		}
+	},
+
+	_clickDt: function(e)
+	{
+		var dt = ('DT' == e.target.tagName) ? e.target : e.target.getPrevious('dt');
+
+		// Fix Firefox, will detect selecting text as click and this hash update removes the selection
+		if (window.location.hash != '#'+dt.id)
+			window.location.hash = '#'+dt.id;
 	},
 
 	richEditor: function()
@@ -63,4 +70,4 @@ var isBusy, eval_org = new Class({
 	}
 });
 
-new eval_org;
+window.addEvent('domready', function(){ new eval_org; });

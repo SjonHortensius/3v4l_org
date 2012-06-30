@@ -36,22 +36,27 @@ class PHPShell_Action
 		if (!$exists)
 			file_put_contents(self::IN.$short, $_POST['code']);
 		else
+		{
+			if (16749 != fileperms(self::OUT.$short))
+				self::_exitError(403, 'The server is already processing your code, please wait for it to finish');
+
 			touch(self::IN.$short);
+		}
 
 		die(header('Location: /'. $short, 302));
 	}
 
 	public function indexGetAction()
 	{
-		$file = substr($_SERVER['REQUEST_URI'], 1);
+		$short = substr($_SERVER['REQUEST_URI'], 1);
 
-		if ($file)
+		if ($short)
 		{
-			if (!preg_match('~^[a-z0-9]+$~i', $file) || !file_exists(self::IN.$file))
+			if (!preg_match('~^[a-z0-9]+$~i', $short) || !file_exists(self::IN.$short))
 				self::_exitError(404, 'The requested script does not exist');
 
-			$this->_code = file_get_contents(self::IN.$file);
-			$this->_isBusy = (16749 != fileperms(self::OUT.$file));
+			$this->_code = file_get_contents(self::IN.$short);
+			$this->_isBusy = (16749 != fileperms(self::OUT.$short));
 		}
 
 		$busy = $this->_isBusy ? ' class="busy"' : '';
@@ -59,10 +64,10 @@ class PHPShell_Action
 ?><!DOCTYPE html>
 <html dir="ltr" lang="en-US">
 <head>
-	<title>3v4l.org - online PHP codepad for 50+ PHP versions</title>
+<title>3v4l.org - online PHP codepad for 50+ PHP versions<?=($short?" :: $short" : '')?></title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-	<link rel="stylesheet" href="/s/c.css"/>
+	<link rel="stylesheet" href="/s/c.css?1"/>
 </head>
 <body>
 	<form method="POST" action="/">
@@ -71,18 +76,18 @@ class PHPShell_Action
 		<input type="submit" value="eval();"<?=$busy?>/>
 	</form>
 <?php
- 		if ('XMLHttpRequest' == $_SERVER['HTTP_X_REQUESTED_WITH'])
- 			echo '<script type="text/javascript">isBusy='.($this->_isBusy?'true':'false').';</script>';
+		if ('XMLHttpRequest' == $_SERVER['HTTP_X_REQUESTED_WITH'])
+			echo '<script type="text/javascript">isBusy='.($this->_isBusy?'true':'false').';</script>';
 
-		if ($file)
-			$this->_getOutput($file);
+		if ($short)
+			$this->_getOutput($short);
 ?>
 	<a href="https://twitter.com/3v4l_org" target="_blank">
 		Follow us on Twitter
 	</a>
 
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
-	<script type="text/javascript" src="/s/c.js"></script>
+	<script type="text/javascript" src="/s/c.js?1"></script>
 </body>
 </html><?php
 	}
@@ -99,7 +104,7 @@ class PHPShell_Action
 			return;
 
 		natsort($files);
-		foreach ($files as $r)
+		foreach (array_reverse($files, true) as $r)
 		{
 			$output = htmlspecialchars(ltrim(file_get_contents($r), "\n"));
 
@@ -113,7 +118,7 @@ class PHPShell_Action
 
 		foreach ($outputs as $hash => $output)
 		{
-			echo '<dt id="v'.str_replace('.', '', reset($results[$hash])).'">Output for ';
+			echo '<dt id="v'.str_replace('.', '', end($results[$hash])).'">Output for ';
 			uksort($results[$hash], 'version_compare');
 			echo implode(', ', self::groupVersions($results[$hash]));
 			echo '</dt><dd>'. $output.'</dd>';
@@ -122,7 +127,7 @@ class PHPShell_Action
 		echo '</dl>';
 	}
 
-	protected static function groupVersions(array $versions)
+	public static function groupVersions(array $versions)
 	{
 		usort($versions, 'version_compare');
 
