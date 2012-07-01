@@ -37,11 +37,11 @@ var isBusy, eval_org = new Class({
 		}).send();
 	},
 
-	_refresh: function()
+	_refresh: function(tree, elements, html)
 	{
 		$$('dd, dt').addEvent('click', this._clickDt);
 
-		if (!isBusy)
+		if (!html.match(/class="busy"/))
 		{
 			clearInterval(this.refreshTimer);
 			$$('input[type=submit]')[0].removeClass('busy');

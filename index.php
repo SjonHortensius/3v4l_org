@@ -78,9 +78,6 @@ class PHPShell_Action
 		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
 <?php
-		if ('XMLHttpRequest' == $_SERVER['HTTP_X_REQUESTED_WITH'])
-			echo '<script type="text/javascript">isBusy='.($this->_isBusy?'true':'false').';</script>';
-
 		if ($short)
 			$this->_getOutput($short);
 ?>
