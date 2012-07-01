@@ -50,7 +50,7 @@ var isBusy, eval_org = new Class({
 
 	_clickDt: function(e)
 	{
-		var dt = ('DT' == e.target.tagName) ? e.target : e.target.getPrevious('dt');
+		var dt = ('DT' == e.target.tagName) ? e.target : ('DD' == e.target.tagName ? e.target.getPrevious('dt') : e.target.getParent('dd').getPrevious('dt'));
 
 		// Fix Firefox, will detect selecting text as click and this hash update removes the selection
 		if (window.location.hash != '#'+dt.id)

@@ -4,13 +4,16 @@ class PHPShell_Action
 {
 	const IN  = '/var/lxc/php_shell/in/';
 	const OUT = '/var/lxc/php_shell/out/';
-	protected $_isBusy = false;
-	protected $_code = "<?php\n";
 
 	public function __construct($action = 'index')
 	{
 		$action = $action . ucfirst(strtolower($_SERVER['REQUEST_METHOD'])) .'Action';
 		return $this->$action();
+	}
+
+	public function __call($method, array $arguments)
+	{
+		self::_exitError(405, 'Method Not Allowed');
 	}
 
 	public function indexPostAction()
@@ -27,9 +30,9 @@ class PHPShell_Action
 		do
 		{
 			$short = substr($hash, -$len);
-			$len++;
-
 			$exists = file_exists(self::IN.$short);
+
+			$len++;
 		}
 		while ($exists && sha1($_POST['code']) !== sha1_file(self::IN.$short));
 
@@ -37,7 +40,7 @@ class PHPShell_Action
 			file_put_contents(self::IN.$short, $_POST['code']);
 		else
 		{
-			if (16749 != fileperms(self::OUT.$short))
+			if (self::_isBusy($short))
 				self::_exitError(403, 'The server is already processing your code, please wait for it to finish');
 
 			touch(self::IN.$short);
@@ -49,17 +52,16 @@ class PHPShell_Action
 	public function indexGetAction()
 	{
 		$short = substr($_SERVER['REQUEST_URI'], 1);
+		$code = "<?php\n";
 
-		if ($short)
+		if (strlen($short) > 3)
 		{
 			if (!preg_match('~^[a-z0-9]+$~i', $short) || !file_exists(self::IN.$short))
 				self::_exitError(404, 'The requested script does not exist');
 
-			$this->_code = file_get_contents(self::IN.$short);
-			$this->_isBusy = (16749 != fileperms(self::OUT.$short));
+			$code = file_get_contents(self::IN.$short);
+			$isBusy = self::_isBusy($short);
 		}
-
-		$busy = $this->_isBusy ? ' class="busy"' : '';
 
 ?><!DOCTYPE html>
 <html dir="ltr" lang="en-US">
@@ -67,13 +69,13 @@ class PHPShell_Action
 <title>3v4l.org - online PHP codepad for 50+ PHP versions<?=($short?" :: $short" : '')?></title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-	<link rel="stylesheet" href="/s/c.css?1"/>
+	<link rel="stylesheet" href="/s/c.css?2"/>
 </head>
 <body>
 	<form method="POST" action="/">
 		<h1>3v4l.org<small> - online PHP shell, test over 50 different PHP versions!</small></h1>
-		<textarea name="code"><?=htmlspecialchars($this->_code)?></textarea>
-		<input type="submit" value="eval();"<?=$busy?>/>
+		<textarea name="code"><?=htmlspecialchars($code)?></textarea>
+		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
 <?php
 		if ('XMLHttpRequest' == $_SERVER['HTTP_X_REQUESTED_WITH'])
@@ -87,15 +89,13 @@ class PHPShell_Action
 	</a>
 
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
-	<script type="text/javascript" src="/s/c.js?1"></script>
+	<script type="text/javascript" src="/s/c.js?2"></script>
 </body>
 </html><?php
 	}
 
 	protected function _getOutput($file)
 	{
-		echo '<dl>';
-
 		$results = array();
 		$outputs = array();
 		$files = glob(self::OUT.$file .'/*[0-9]');
@@ -115,6 +115,8 @@ class PHPShell_Action
 			$outputs[$h] = $output;
 			$results[$h][] = basename($r);
 		}
+
+		echo '<dl>';
 
 		foreach ($outputs as $hash => $output)
 		{
@@ -176,6 +178,11 @@ class PHPShell_Action
 	{
 		http_response_code($code);
 		die("<h1>Error $code</h1><p>$text</p>");
+	}
+
+	protected static function _isBusy($short)
+	{
+		return (16749 != fileperms(self::OUT . $short));
 	}
 }
 
