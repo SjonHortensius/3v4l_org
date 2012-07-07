@@ -5,24 +5,27 @@ class PHPShell_Action
 	const IN  = '/var/lxc/php_shell/in/';
 	const OUT = '/var/lxc/php_shell/out/';
 
-	public function __construct($action = 'index')
+	public function __construct()
 	{
-		$action = $action . ucfirst(strtolower($_SERVER['REQUEST_METHOD'])) .'Action';
-		return $this->$action();
+		$action = substr($_SERVER['REQUEST_URI'], 1);
+		$requestMethod = strtolower($_SERVER['REQUEST_METHOD']);
+		$method = $requestMethod . ucfirst($action);
+
+		if (method_exists($this, $method))
+			return $this->$method();
+
+		return $this->$requestMethod($action);
 	}
 
 	public function __call($method, array $arguments)
 	{
-		self::_exitError(405, 'Method Not Allowed');
+		$this->getError(405);
 	}
 
-	public function indexPostAction()
+	public function postNew()
 	{
 		if (!isset($_POST['code']))
-			return;
-
-		if (strlen($_POST['code']) > 1024)
-			self::_exitError(413, 'The submitted code is too large, please limit your input to 1024 bytes');
+			return $this->getError(400);
 
 		$hash = gmp_strval(gmp_init(sha1($_POST['code']), 16), 58);
 		$len = 5;
@@ -41,7 +44,7 @@ class PHPShell_Action
 		else
 		{
 			if (self::_isBusy($short))
-				self::_exitError(403, 'The server is already processing your code, please wait for it to finish');
+				return $this->getError(403);
 
 			touch(self::IN.$short);
 		}
@@ -49,7 +52,37 @@ class PHPShell_Action
 		die(header('Location: /'. $short, 302));
 	}
 
-	public function indexGetAction()
+	public function getError($code = null)
+	{
+		if (!isset($code) && isset($_GET['code']))
+			$code = (int)$_GET['code'];
+
+		if (isset($code))
+			http_response_code($code);
+
+		switch ($code)
+		{
+			case 400:	$text = 'Bad request, you did not specify any code to process.'; break;
+			case 403:	$text = 'The server is already processing your code, please wait for it to finish.'; break;
+			case 404:	$text = 'The requested script does not exist.'; break;
+			case 405:	$text = 'Method not allowed.'; break;
+			case 503:	$text = 'Please refrain from hammering this service. You are limited to 5 POST requests per minute.'; break;
+			default:	$text = 'An unexpected error has occured.'; break;
+		}
+
+		self::_outputHeader($short);
+
+?>
+	<div>
+		<h1>Error <?=$code?></h1>
+		<p><?=$text?></p>
+	</div>
+<?
+
+		self::_outputFooter();
+	}
+
+	public function get($short = '')
 	{
 		$short = substr($_SERVER['REQUEST_URI'], 1);
 		$code = "<?php\n";
@@ -57,38 +90,49 @@ class PHPShell_Action
 		if (strlen($short) > 3)
 		{
 			if (!preg_match('~^[a-z0-9]+$~i', $short) || !file_exists(self::IN.$short))
-				self::_exitError(404, 'The requested script does not exist');
+				return $this->getError(404);
 
 			$code = file_get_contents(self::IN.$short);
 			$isBusy = self::_isBusy($short);
 		}
 
-?><!DOCTYPE html>
-<html dir="ltr" lang="en-US">
-<head>
-<title>3v4l.org - online PHP codepad for 50+ PHP versions<?=($short?" :: $short" : '')?></title>
-	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
-	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-	<link rel="stylesheet" href="/s/c.css?2"/>
-</head>
-<body>
-	<form method="POST" action="/">
-		<h1>3v4l.org<small> - online PHP shell, test over 50 different PHP versions!</small></h1>
+		self::_outputHeader($short);
+?>
+	<form method="POST" action="/new">
+		<h1>3v4l.org<small> - online PHP shell, test in 70+ different PHP versions!</small></h1>
 		<textarea name="code"><?=htmlspecialchars($code)?></textarea>
 		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
-<?php
+<?
 		if ($short)
 			$this->_getOutput($short);
+
+		self::_outputFooter();
+	}
+
+	protected static function _outputHeader($title = '')
+	{
+?><!DOCTYPE html>
+<html dir="ltr" lang="en-US">
+<head>
+	<title>3v4l.org - online PHP codepad for 70+ PHP versions<?=($title?" :: $title" : '')?></title>
+	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
+	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+	<link rel="stylesheet" href="/s/c.css?3"/>
+</head>
+<body>
+<?
+	}
+
+	protected static function _outputFooter()
+	{
 ?>
-	<a href="https://twitter.com/3v4l_org" target="_blank">
-		Follow us on Twitter
-	</a>
+	<a href="https://twitter.com/3v4l_org" target="_blank">Follow us on Twitter</a>
 
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
-	<script type="text/javascript" src="/s/c.js?2"></script>
+	<script type="text/javascript" src="/s/c.js?3"></script>
 </body>
-</html><?php
+</html><?
 	}
 
 	protected function _getOutput($file)
@@ -169,12 +213,6 @@ class PHPShell_Action
 		}
 
 		return $ranges;
-	}
-
-	protected static function _exitError($code, $text)
-	{
-		http_response_code($code);
-		die("<h1>Error $code</h1><p>$text</p>");
 	}
 
 	protected static function _isBusy($short)
