@@ -4,17 +4,24 @@ class PHPShell_Action
 {
 	const IN  = '/var/lxc/php_shell/in/';
 	const OUT = '/var/lxc/php_shell/out/';
+	protected static $_exitCodes = array(
+		139 => 'Segmentation Fault',
+		255 => 'Generic Error',
+	);
 
 	public function __construct()
 	{
-		$action = substr($_SERVER['REQUEST_URI'], 1);
-		$requestMethod = strtolower($_SERVER['REQUEST_METHOD']);
-		$method = $requestMethod . ucfirst($action);
+		$uri = substr($_SERVER['REQUEST_URI'], 1);
+		$method = strtolower($_SERVER['REQUEST_METHOD']);
+		$params = explode('/', $uri);
 
-		if (method_exists($this, $method))
-			return $this->$method();
+		if (false === $uri)
+			$uri = 'home';
 
-		return $this->$requestMethod($action);
+		if (method_exists($this, $method . ucfirst($uri)))
+			return call_user_func_array(array($this, $method . ucfirst($uri)), $params);
+
+		return call_user_func_array(array($this, $method), $params);
 	}
 
 	public function __call($method, array $arguments)
@@ -22,11 +29,30 @@ class PHPShell_Action
 		$this->getError(405);
 	}
 
+	public function getHome()
+	{
+		self::_outputHeader($short);
+?>
+	<form method="POST" action="/new">
+		<h1>3v4l.org<small> - online PHP shell, test in 70+ different PHP versions!</small></h1>
+		<textarea name="code"><?=htmlspecialchars("<?php\n")?></textarea>
+		<input type="submit" value="eval();" />
+	</form>
+
+	<h2>Examples:</h2>
+	<ul>
+		<li><a href="/XsL22">A resource which is cast to an object will result in a key 'scalar'</a></li>
+		<li><a href="/11Ltt"> __toString evolves when used in comparisons</a></li>
+		<li><a href="/ni9WO">New binary implementation and its problems</a></li>
+		<li><a href="/2eNuB">Overwriting $this when using references</a></li>
+		<li><a href="/1Z4W4">Broken formatting in DateTime</a></li>
+	</ul>
+<?
+		self::_outputFooter();
+	}
+
 	public function postNew()
 	{
-		if (!isset($_POST['code']))
-			return $this->getError(400);
-
 		$hash = gmp_strval(gmp_init(sha1($_POST['code']), 16), 58);
 		$len = 5;
 
@@ -47,6 +73,7 @@ class PHPShell_Action
 				return $this->getError(403);
 
 			touch(self::IN.$short);
+			usleep(200000);
 		}
 
 		die(header('Location: /'. $short, 302));
@@ -54,47 +81,40 @@ class PHPShell_Action
 
 	public function getError($code = null)
 	{
-		if (!isset($code) && isset($_GET['code']))
-			$code = (int)$_GET['code'];
-
-		if (isset($code))
-			http_response_code($code);
-
 		switch ($code)
 		{
 			case 400:	$text = 'Bad request, you did not specify any code to process.'; break;
+			case 402:	$text = 'This service is provided free of charge and we expect you not to abuse it.<br />Please contact us to get your IP unblocked.'; break;
 			case 403:	$text = 'The server is already processing your code, please wait for it to finish.'; break;
 			case 404:	$text = 'The requested script does not exist.'; break;
 			case 405:	$text = 'Method not allowed.'; break;
 			case 503:	$text = 'Please refrain from hammering this service. You are limited to 5 POST requests per minute.'; break;
-			default:	$text = 'An unexpected error has occured.'; break;
+			default:	$code = 500; $text = 'An unexpected error has occured.';
 		}
 
-		self::_outputHeader($short);
+		http_response_code($code);
+
+		self::_outputHeader('Error '. $code);
 
 ?>
-	<div>
-		<h1>Error <?=$code?></h1>
-		<p><?=$text?></p>
-	</div>
+	<h1>3v4l.org<small> - Error <?=$code?></small></h1>
+	<p><?=$text?></p>
 <?
 
 		self::_outputFooter();
 	}
 
-	public function get($short = '')
+	public function get($short = '', $type = 'output')
 	{
-		$short = substr($_SERVER['REQUEST_URI'], 1);
-		$code = "<?php\n";
+		// Bug? A hammering user will GET /new which doesn't exist and results in 404 instead of 503
+		if ('new' == $short)
+			return $this->getError(503);
 
-		if (strlen($short) > 3)
-		{
-			if (!preg_match('~^[a-z0-9]+$~i', $short) || !file_exists(self::IN.$short))
-				return $this->getError(404);
+		if (!preg_match('~^[a-z0-9]{5,}$~i', $short) || !file_exists(self::IN.$short))
+			return $this->getError(404);
 
-			$code = file_get_contents(self::IN.$short);
-			$isBusy = self::_isBusy($short);
-		}
+		$code = file_get_contents(self::IN.$short);
+		$isBusy = self::_isBusy($short);
 
 		self::_outputHeader($short);
 ?>
@@ -104,8 +124,10 @@ class PHPShell_Action
 		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
 <?
-		if ($short)
+		if ('output' == $type)
 			$this->_getOutput($short);
+		elseif ('vld' == $type)
+			$this->_getVld($short);
 
 		self::_outputFooter();
 	}
@@ -139,7 +161,7 @@ class PHPShell_Action
 	{
 		$results = array();
 		$outputs = array();
-		$files = glob(self::OUT.$file .'/*[0-9]');
+		$files = glob(self::OUT. $file .'/*[0-9]');
 
 		if (!$files)
 			return;
@@ -150,7 +172,11 @@ class PHPShell_Action
 			$output = htmlspecialchars(ltrim(file_get_contents($r), "\n"));
 
 			if (file_exists($r.'-exit'))
-				$output .= '<br/><i>Process exited with code <b>'. file_get_contents($r.'-exit').'</b>.</i>';
+			{
+				$code = file_get_contents($r.'-exit');
+				$title = isset(self::$_exitCodes[$code]) ? ' title="'. self::$_exitCodes[$code] .'"' : '';
+				$output .= '<br/><i>Process exited with code <b'. $title .'>'. $code .'</b>.</i>';
+			}
 
 			$h = crc32($output);
 			$outputs[$h] = $output;
@@ -161,13 +187,25 @@ class PHPShell_Action
 
 		foreach ($outputs as $hash => $output)
 		{
-			echo '<dt id="v'.str_replace('.', '', end($results[$hash])).'">Output for ';
 			uksort($results[$hash], 'version_compare');
+
+			echo '<dt id="v'.str_replace('.', '', end($results[$hash])).'">Output for ';
 			echo implode(', ', self::groupVersions($results[$hash]));
 			echo '</dt><dd>'. $output.'</dd>';
 		}
 
 		echo '</dl>';
+	}
+
+	protected function _getVld($short)
+	{
+		return var_dump('test');
+
+		if (!file_exists(self::OUT. $file .'/vld'))
+		{
+			$path = self::IN.$short;
+			echo '<pre>'.`php -dvld.active=1 -dvld.execute=0 $path` .'</pre>';
+		}
 	}
 
 	public static function groupVersions(array $versions)
@@ -222,5 +260,3 @@ class PHPShell_Action
 }
 
 $action = new PHPShell_Action();
-
-// ob_start(function($html){return str_replace("\t", '', preg_replace("~(\s{2,}|\n)~", '', $html)); });

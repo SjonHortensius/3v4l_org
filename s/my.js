@@ -15,11 +15,9 @@ var isBusy, eval_org = new Class({
 	{
 		this.richEditor();
 
-		isBusy = $$('input[type=submit]')[0].hasClass('busy');
-
 		$$('dd, dt').addEvent('click', this._clickDt);
 
-		if (!isBusy)
+		if ($$('input[type=submit]').length == 0 || !$$('input[type=submit]')[0].hasClass('busy'))
 			return;
 
 		this.refreshTimer = setInterval(this.refresh.bind(this), 1000);
@@ -59,6 +57,9 @@ var isBusy, eval_org = new Class({
 
 	richEditor: function()
 	{
+		if ($$('textarea').length == 0)
+			return;
+
 		CodeMirror.fromTextArea($$('textarea')[0],{
 			autoClearEmptyLines: true,
 			indentUnit: 4,
