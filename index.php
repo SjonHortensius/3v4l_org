@@ -204,7 +204,7 @@ class PHPShell_Action
 		if (!file_exists(self::OUT. $file .'/vld'))
 		{
 			$path = self::IN.$short;
-			echo '<pre>'.`php -dvld.active=1 -dvld.execute=0 $path` .'</pre>';
+			echo '<pre>'.`php -dvld.active=1 -dvld.execute=0 $path 2>&1` .'</pre>';
 		}
 	}
 
