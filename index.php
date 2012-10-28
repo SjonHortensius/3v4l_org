@@ -31,16 +31,17 @@ class PHPShell_Action
 
 	public function getHome()
 	{
-		self::_outputHeader($short);
+		self::_outputHeader();
 ?>
 	<form method="POST" action="/new">
-		<h1>3v4l.org<small> - online PHP shell, test in 70+ different PHP versions!</small></h1>
+		<h1>3v4l.org<small> - online PHP shell, test in 80+ different PHP versions!</small></h1>
 		<textarea name="code"><?=htmlspecialchars("<?php\n")?></textarea>
 		<input type="submit" value="eval();" />
 	</form>
 
 	<h2>Examples:</h2>
 	<ul>
+		<li><a href="/TpeZO">Booleans can be changed within a namespace</a>
 		<li><a href="/XsL22">A resource which is cast to an object will result in a key 'scalar'</a></li>
 		<li><a href="/11Ltt"> __toString evolves when used in comparisons</a></li>
 		<li><a href="/ni9WO">New binary implementation and its problems</a></li>
@@ -119,7 +120,7 @@ class PHPShell_Action
 		self::_outputHeader($short);
 ?>
 	<form method="POST" action="/new">
-		<h1>3v4l.org<small> - online PHP shell, test in 70+ different PHP versions!</small></h1>
+		<h1>3v4l.org<small> - online PHP shell, test in 80+ different PHP versions!</small></h1>
 		<textarea name="code"><?=htmlspecialchars($code)?></textarea>
 		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
@@ -137,7 +138,7 @@ class PHPShell_Action
 ?><!DOCTYPE html>
 <html dir="ltr" lang="en-US">
 <head>
-	<title>3v4l.org - online PHP codepad for 70+ PHP versions<?=($title?" :: $title" : '')?></title>
+	<title>3v4l.org - online PHP codepad for 80+ PHP versions<?=($title?" :: $title" : '')?></title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 	<link rel="stylesheet" href="/s/c.css?3"/>
@@ -154,7 +155,7 @@ class PHPShell_Action
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
 	<script type="text/javascript" src="/s/c.js?3"></script>
 </body>
-</html><?
+</html><?php
 	}
 
 	protected function _getOutput($file)
@@ -169,7 +170,7 @@ class PHPShell_Action
 		natsort($files);
 		foreach (array_reverse($files, true) as $r)
 		{
-			$output = htmlspecialchars(ltrim(file_get_contents($r), "\n"));
+			$output = htmlspecialchars(ltrim(file_get_contents($r), "\n"), ENT_SUBSTITUTE);
 
 			if (file_exists($r.'-exit'))
 			{
@@ -199,9 +200,10 @@ class PHPShell_Action
 
 	protected function _getVld($short)
 	{
-		return var_dump('test');
+		if ('194.151.194.226' != $_SERVER['REMOTE_ADDR'])
+				die('experimental');
 
-		if (!file_exists(self::OUT. $file .'/vld'))
+		if (!file_exists(self::OUT. $short .'/vld'))
 		{
 			$path = self::IN.$short;
 			echo '<pre>'.`php -dvld.active=1 -dvld.execute=0 $path 2>&1` .'</pre>';

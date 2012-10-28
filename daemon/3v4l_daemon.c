@@ -10,24 +10,25 @@
 #include <dirent.h>
 
 
-#define OUTBASE "/tmp/"
+#define OUTBASE "/tmp"
+#define INBASE "/in"
 #define EXIT_FAILURE 1
 
-char *versionOutputPath;
-FILE *versionOutput;
-int child, outputBusy;
+char *childOutputPath;
+FILE *childOutput;
+pid_t child;
 
 void checkOutputDirectory(char *script)
 {
-	DIR *dp;
-	char *dir;
+	char dir[35], file[35];
 	sprintf(dir, OUTBASE "/%s", script);
-	dp = opendir(dir);
+	sprintf(file, INBASE "/%s", script);
+	DIR *dp = opendir(dir);
 	struct stat outStat;
 
-	if (!stat(script, NULL))
+	if (access(file, R_OK))
 	{
-		perror("Script doesn't exist");
+		perror("Input cannot be read");
 		exit(EXIT_FAILURE);
 	}
 
@@ -35,144 +36,111 @@ void checkOutputDirectory(char *script)
 		mkdir(dir, 0750);
 	else
 	{
-		if (!stat(dir, &outStat))
+		if (stat(dir, &outStat))
 		{
 			perror("Couldn't check output directory");
 			exit(EXIT_FAILURE);
 		}
 
-		if (outStat.st_mode != 0750)
+		if (outStat.st_mode != 16872)
 		{
 			fprintf(stderr, "Invalid mode for output-directory: %d", outStat.st_mode);
 			exit(EXIT_FAILURE);
 		}
-
-		chmod(dir, 0750);
 	}
 }
 
 void killChild(int sig)
 {
+	printf("[%d] Timeout, killing child %d\n", getpid(), child);
+
 	kill(child, SIGTERM);
 	usleep(500000);
 	kill(child, SIGKILL);
 }
 
-void storeOutput(int sig)
+int executeVersion(char *binary, char *script)
 {
-	FILE *fp;
-	char buffer[8096];
+	pid_t pid;
+	int pipefd[2], status, size;
+	char buffer[256], file[35], outFile[35];
+	FILE *output, *fp;
 
-	if (outputBusy)
-		return;
+	sprintf(file, INBASE "/%s", script);
+	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary));
 
-	nice(-5);
+	pipe(pipefd);
+	pid = fork();
 
-	outputBusy = 1;
-	fp = fopen(versionOutputPath, "w");
-	while (fgets(buffer, sizeof(buffer), versionOutput))
-		fwrite(buffer, 8096, sizeof(buffer), fp);
-
-	if (!feof(versionOutput))
+	if (-1 == pid)
 	{
-		perror("Could not completely store output");
-		exit(EXIT_FAILURE);
+		perror("Could not fork");
+		return 1;
 	}
+	else if (pid == 0)
+	{
+		printf("[%d] Running binary %s, script = %s\n", getpid(), binary, script);
+
+		close(pipefd[0]);
+		dup2(pipefd[1], STDOUT_FILENO);
+		dup2(pipefd[1], STDERR_FILENO);
+
+		execl(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL);
+		exit(1);
+	}
+
+//	printf("[%d] Spawned a child, childPid = %d - outFile = %s\n", getpid(), pid, outFile);
+
+	close(pipefd[1]);
+	output = fdopen(pipefd[0], "r");
+	fp = fopen(outFile, "w");
+
+	child = pid;
+	signal(SIGALRM, killChild);
+	alarm(3);
+
+	while ((size = fread(buffer, 1, sizeof buffer, output)) != 0)
+	{
+		fwrite(buffer, 1, size, fp);
+		printf("[%d] Stored %d bytes: %s\n", getpid(), size, buffer);
+	}
+
+	//wait for the child process to terminate
+	waitpid(pid, &status, 0);
+
+	printf("Done, exit-code was %d\n", status);
 
 	fclose(fp);
-	pclose(versionOutput);
-	outputBusy = 0;
-}
-
-int executeVersion(char *script[], char *version)
-{
-	char *command;
-	sprintf(command, "%s -c /etc/ -q '/in/%s' 2>&1", version, script);
-
-	if (!seteuid(99))
-	{
-		perror("Error setting effective uid");
-		exit(EXIT_FAILURE);
-	}
-
-	nice(5);
-
-	signal(SIGTERM, storeOutput);
-	sprintf(versionOutputPath, OUTBASE "/%s-%s", *script, strrchr(version, '-'));
-	versionOutput = popen(command, "r");
-
-	if (!versionOutput)
-	{
-		perror("Error executing command");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!seteuid(0))
-	{
-		perror("Error resetting effective uid");
-		exit(EXIT_FAILURE);
-	}
-
-	// Store output
-	raise(SIGTERM);
 }
 
 int main(int argc, char *argv[])
 {
 	if (1 == argc)
 	{
-		printf("Supply path to input-script as first argument");
+		printf("Supply path to input-script as first argument\n");
 		return 3;
 	}
 
 	glob_t paths;
 	char **p;
 	char *script = argv[1];
-	int pid;
+	pid_t pid;
+	char dir[35];
+	sprintf(dir, OUTBASE "/%s", script);
 
 	checkOutputDirectory(script);
 
-	if (!glob("/bin/c*", 0, NULL, &paths))
+	if (glob("/bin/php-*", 0, NULL, &paths))
 	{
-		perror("Didn't find any binaries to execute");
+		perror("Found no binaries to execute");
 		return 2;
 	}
 
 	for (p=paths.gl_pathv; *p != NULL; ++p)
-	{
-		pid = fork();
-
-		switch (pid)
-		{
-			case -1:
-				perror("Error while forking");
-				return 3;
-			break;
-
-			case 0:
-				printf("\n[%d] Executing version %s", getpid(), *p);
-
-				if (!executeVersion(&script, *p))
-					return 4;
-
-				return 0;
-			break;
-
-			default:
-				printf("\n[%d] Spawned a child for version %s, childPid = %d", getpid(), *p, pid);
-
-				child = pid;
-				signal(SIGALRM, killChild);
-				alarm(3);
-
-				waitpid(pid, NULL, 0);
-
-				alarm(0);
-			break;
-		}
-	}
+		executeVersion(*p, script);
 
 	globfree(&paths);
+	chmod(dir, strtol("0550", 0, 8));
 
 	return 0;
 }
