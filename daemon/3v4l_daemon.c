@@ -8,15 +8,15 @@
 #include <glob.h>
 #include <string.h>
 #include <dirent.h>
-
+#include <sys/times.h>
+#include <time.h>
+#include <sys/resource.h>
 
 #define OUTBASE "/tmp"
 #define INBASE "/in"
-#define EXIT_FAILURE 1
 
-char *childOutputPath;
-FILE *childOutput;
 pid_t child;
+int fileSizeExceeded = 0;
 
 void checkOutputDirectory(char *script)
 {
@@ -29,7 +29,7 @@ void checkOutputDirectory(char *script)
 	if (access(file, R_OK))
 	{
 		perror("Input cannot be read");
-		exit(EXIT_FAILURE);
+		exit(1);
 	}
 
 	if (!dp)
@@ -39,13 +39,13 @@ void checkOutputDirectory(char *script)
 		if (stat(dir, &outStat))
 		{
 			perror("Couldn't check output directory");
-			exit(EXIT_FAILURE);
+			exit(1);
 		}
 
 		if (outStat.st_mode != 16872)
 		{
 			fprintf(stderr, "Invalid mode for output-directory: %d", outStat.st_mode);
-			exit(EXIT_FAILURE);
+			exit(1);
 		}
 	}
 }
@@ -54,22 +54,43 @@ void killChild(int sig)
 {
 	printf("[%d] Timeout, killing child %d\n", getpid(), child);
 
-	kill(child, SIGTERM);
+	if (kill(child, SIGTERM))
+		perror("Error terminating child");
 	usleep(500000);
-	kill(child, SIGKILL);
+	if (kill(child, SIGKILL))
+	{
+		perror("Error killing child");
+		exit(1);
+	}
+}
+
+void _fileSizeExceeded(int sig)
+{
+	fileSizeExceeded = 1;
 }
 
 int executeVersion(char *binary, char *script)
 {
 	pid_t pid;
-	int pipefd[2], status, size;
+	int pipefd[2], status, size, totalSize = 0;
 	char buffer[256], file[35], outFile[35];
 	FILE *output, *fp;
+	static clock_t st_time;
+	static clock_t en_time;
+	static struct tms st_cpu;
+	static struct tms en_cpu;
+	struct rusage usage;
 
 	sprintf(file, INBASE "/%s", script);
 	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary));
 
+	// Since the parent is writing the output, limit it here. Limit child too
+	_setrlimit(RLIMIT_FSIZE, 64 * 1000);
+	signal(SIGXFSZ, _fileSizeExceeded);
+	fileSizeExceeded = 0;
+
 	pipe(pipefd);
+	st_time = times(&st_cpu);
 	pid = fork();
 
 	if (-1 == pid)
@@ -81,15 +102,24 @@ int executeVersion(char *binary, char *script)
 	{
 		printf("[%d] Running binary %s, script = %s\n", getpid(), binary, script);
 
+		if (setuid(99))
+		{
+			perror("Error setting userid");
+			exit(1);
+		}
+
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		dup2(pipefd[1], STDERR_FILENO);
 
+		nice(5);
+		_setrlimit(RLIMIT_CPU, 2);
+		_setrlimit(RLIMIT_DATA, 64 * 1000 * 1000);
+//		_setrlimit(RLIMIT_NOFILE, 8192);
+
 		execl(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL);
 		exit(1);
 	}
-
-//	printf("[%d] Spawned a child, childPid = %d - outFile = %s\n", getpid(), pid, outFile);
 
 	close(pipefd[1]);
 	output = fdopen(pipefd[0], "r");
@@ -101,16 +131,38 @@ int executeVersion(char *binary, char *script)
 
 	while ((size = fread(buffer, 1, sizeof buffer, output)) != 0)
 	{
+		if (fileSizeExceeded)
+			break;
+
 		fwrite(buffer, 1, size, fp);
-		printf("[%d] Stored %d bytes: %s\n", getpid(), size, buffer);
+
+		totalSize += size;
 	}
 
-	//wait for the child process to terminate
-	waitpid(pid, &status, 0);
+	printf("[%d] Stored %d bytes\n", getpid(), totalSize);
 
-	printf("Done, exit-code was %d\n", status);
+	waitpid(pid, &status, 0);
+	en_time = times(&en_cpu);
+
+	getrusage(RUSAGE_SELF, &usage);
+	printf("[%d] ru_idrss %d, ru_ixrss %d, ru_isrss %d\n", usage.ru_idrss, usage.ru_ixrss, usage.ru_isrss);
+
+	printf("Done, exit-code was %d\n", WEXITSTATUS(status));
+
+	printf("Real Time: %jd, User Time %jd, System Time %jd\n",
+		(en_time - st_time),
+		(en_cpu.tms_cutime - st_cpu.tms_cutime),
+		(en_cpu.tms_cstime - st_cpu.tms_cstime));
 
 	fclose(fp);
+}
+
+int _setrlimit(int resource, int max)
+{
+	struct rlimit limits;
+	limits.rlim_cur = max;
+	limits.rlim_max = max;
+	return setrlimit(resource, &limits);
 }
 
 int main(int argc, char *argv[])
@@ -124,7 +176,6 @@ int main(int argc, char *argv[])
 	glob_t paths;
 	char **p;
 	char *script = argv[1];
-	pid_t pid;
 	char dir[35];
 	sprintf(dir, OUTBASE "/%s", script);
 
