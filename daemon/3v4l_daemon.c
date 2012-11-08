@@ -8,15 +8,12 @@
 #include <glob.h>
 #include <string.h>
 #include <dirent.h>
-#include <sys/times.h>
-#include <time.h>
 #include <sys/resource.h>
 
 #define OUTBASE "/tmp"
 #define INBASE "/in"
 
 pid_t child;
-int fileSizeExceeded = 0;
 
 void checkOutputDirectory(char *script)
 {
@@ -50,10 +47,8 @@ void checkOutputDirectory(char *script)
 	}
 }
 
-void killChild(int sig)
+void _killChild()
 {
-	printf("[%d] Timeout, killing child %d\n", getpid(), child);
-
 	if (kill(child, SIGTERM))
 		perror("Error terminating child");
 	usleep(500000);
@@ -64,33 +59,26 @@ void killChild(int sig)
 	}
 }
 
-void _fileSizeExceeded(int sig)
+void killChild(int sig)
 {
-	fileSizeExceeded = 1;
+	printf("[%d] Timeout, killing child %d\n", getpid(), child);
+
+	_killChild();
 }
 
 int executeVersion(char *binary, char *script)
 {
 	pid_t pid;
-	int pipefd[2], status, size, totalSize = 0;
+	int pipefd[2], status, size, totalSize = 0, exitCode;
 	char buffer[256], file[35], outFile[35];
 	FILE *output, *fp;
-	static clock_t st_time;
-	static clock_t en_time;
-	static struct tms st_cpu;
-	static struct tms en_cpu;
-	struct rusage usage;
+	struct rusage r_start, r_end;
 
 	sprintf(file, INBASE "/%s", script);
 	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary));
 
-	// Since the parent is writing the output, limit it here. Limit child too
-	_setrlimit(RLIMIT_FSIZE, 64 * 1000);
-	signal(SIGXFSZ, _fileSizeExceeded);
-	fileSizeExceeded = 0;
-
 	pipe(pipefd);
-	st_time = times(&st_cpu);
+	getrusage(RUSAGE_CHILDREN, &r_start);
 	pid = fork();
 
 	if (-1 == pid)
@@ -115,6 +103,7 @@ int executeVersion(char *binary, char *script)
 		nice(5);
 		_setrlimit(RLIMIT_CPU, 2);
 		_setrlimit(RLIMIT_DATA, 64 * 1000 * 1000);
+		_setrlimit(RLIMIT_FSIZE, 64 * 1000);
 //		_setrlimit(RLIMIT_NOFILE, 8192);
 
 		execl(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL);
@@ -131,30 +120,38 @@ int executeVersion(char *binary, char *script)
 
 	while ((size = fread(buffer, 1, sizeof buffer, output)) != 0)
 	{
-		if (fileSizeExceeded)
-			break;
-
 		fwrite(buffer, 1, size, fp);
 
 		totalSize += size;
+
+		if (totalSize > 65536)
+		{
+			printf("[%d] Child %d has generated too much output, killing it\n", getpid(), child);
+			fwrite("\n[ output has been truncated ]", 1, sizeof "\n[ output has been truncated ]", fp);
+			_killChild();
+			break;
+		}
 	}
+
+	fclose(fp);
 
 	printf("[%d] Stored %d bytes\n", getpid(), totalSize);
 
-	waitpid(pid, &status, 0);
-	en_time = times(&en_cpu);
+	waitpid(child, &status, 0);
+	alarm(0);
+	getrusage(RUSAGE_CHILDREN, &r_end);
 
-	getrusage(RUSAGE_SELF, &usage);
-	printf("[%d] ru_idrss %d, ru_ixrss %d, ru_isrss %d\n", usage.ru_idrss, usage.ru_ixrss, usage.ru_isrss);
+	if (WIFEXITED(status))
+		exitCode = WEXITSTATUS(status);
+	else if WIFSIGNALED(status)
+		exitCode = 128 + WTERMSIG(status);
 
-	printf("Done, exit-code was %d\n", WEXITSTATUS(status));
-
-	printf("Real Time: %jd, User Time %jd, System Time %jd\n",
-		(en_time - st_time),
-		(en_cpu.tms_cutime - st_cpu.tms_cutime),
-		(en_cpu.tms_cstime - st_cpu.tms_cstime));
-
-	fclose(fp);
+	printf("[%d] Exit-code: %d, user: %f; system: %f\n",
+		child,
+		exitCode,
+		r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0 - r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0,
+		r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0 - r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0
+	);
 }
 
 int _setrlimit(int resource, int max)
@@ -163,6 +160,13 @@ int _setrlimit(int resource, int max)
 	limits.rlim_cur = max;
 	limits.rlim_max = max;
 	return setrlimit(resource, &limits);
+}
+
+void file_put_contents(char *path, char *output)
+{
+	FILE *fp = fopen(path, "w");
+	fwrite(output, 1, sizeof output, fp);
+	fclose(fp);
 }
 
 int main(int argc, char *argv[])
