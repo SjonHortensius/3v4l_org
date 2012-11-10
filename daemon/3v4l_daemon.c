@@ -10,7 +10,7 @@
 #include <dirent.h>
 #include <sys/resource.h>
 
-#define OUTBASE "/tmp"
+#define OUTBASE "/out"
 #define INBASE "/in"
 
 pid_t child;
@@ -39,12 +39,29 @@ void checkOutputDirectory(char *script)
 			exit(1);
 		}
 
-		if (outStat.st_mode != 16872)
+		if (outStat.st_mode != 16749 && outStat.st_mode != 16877)
 		{
 			fprintf(stderr, "Invalid mode for output-directory: %d", outStat.st_mode);
 			exit(1);
 		}
+
+		chmod(dir, strtol("0755", 0, 8));
 	}
+}
+
+int _setrlimit(int resource, int max)
+{
+	struct rlimit limits;
+	limits.rlim_cur = max;
+	limits.rlim_max = max;
+	return setrlimit(resource, &limits);
+}
+
+void file_put_contents(char *path, char *output)
+{
+	FILE *fp = fopen(path, "w");
+	fwrite(output, 1, strlen(output), fp);
+	fclose(fp);
 }
 
 void _killChild()
@@ -70,13 +87,14 @@ int executeVersion(char *binary, char *script)
 {
 	pid_t pid;
 	int pipefd[2], status, size, totalSize = 0, exitCode;
-	char buffer[256], file[35], outFile[35];
+	char buffer[256], file[35], outFile[35], outFileExit[35 + 4], outFileTime[35 + 7];
 	FILE *output, *fp;
 	struct rusage r_start, r_end;
 
 	sprintf(file, INBASE "/%s", script);
-	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary));
+	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary)+4);
 
+	setbuf(stdout, NULL);
 	pipe(pipefd);
 	getrusage(RUSAGE_CHILDREN, &r_start);
 	pid = fork();
@@ -88,7 +106,7 @@ int executeVersion(char *binary, char *script)
 	}
 	else if (pid == 0)
 	{
-		printf("[%d] Running binary %s, script = %s\n", getpid(), binary, script);
+		printf("[%d] Version %-6s script %s: ", getpid(), basename(binary)+4, script);
 
 		if (setuid(99))
 		{
@@ -126,7 +144,7 @@ int executeVersion(char *binary, char *script)
 
 		if (totalSize > 65536)
 		{
-			printf("[%d] Child %d has generated too much output, killing it\n", getpid(), child);
+			printf("child %d has generated too much output, killing it\n", child);
 			fwrite("\n[ output has been truncated ]", 1, sizeof "\n[ output has been truncated ]", fp);
 			_killChild();
 			break;
@@ -135,7 +153,7 @@ int executeVersion(char *binary, char *script)
 
 	fclose(fp);
 
-	printf("[%d] Stored %d bytes\n", getpid(), totalSize);
+	printf("stored %d bytes...", totalSize);
 
 	waitpid(child, &status, 0);
 	alarm(0);
@@ -146,27 +164,27 @@ int executeVersion(char *binary, char *script)
 	else if WIFSIGNALED(status)
 		exitCode = 128 + WTERMSIG(status);
 
-	printf("[%d] Exit-code: %d, user: %f; system: %f\n",
-		child,
-		exitCode,
-		r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0 - r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0,
-		r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0 - r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0
+	if (0 != exitCode)
+	{
+		memset(&buffer[0], 0, sizeof(buffer));
+		sprintf(outFileExit, "%s-exit", outFile);
+		sprintf(buffer, "%d", exitCode);
+		file_put_contents(outFileExit, buffer);
+	}
+	else
+		unlink(outFileExit);
+
+	memset(&buffer[0], 0, sizeof(buffer));
+	sprintf(outFileTime, "%s-timing", outFile);
+
+	sprintf(buffer, "%f:%f",
+			r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0 - r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0,
+			r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0 - r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0
 	);
-}
+	printf("\nbuff: %s\n", buffer);
+	file_put_contents(outFileTime, buffer);
 
-int _setrlimit(int resource, int max)
-{
-	struct rlimit limits;
-	limits.rlim_cur = max;
-	limits.rlim_max = max;
-	return setrlimit(resource, &limits);
-}
-
-void file_put_contents(char *path, char *output)
-{
-	FILE *fp = fopen(path, "w");
-	fwrite(output, 1, sizeof output, fp);
-	fclose(fp);
+	printf("done, exit-code: %d\n", exitCode);
 }
 
 int main(int argc, char *argv[])
@@ -195,7 +213,7 @@ int main(int argc, char *argv[])
 		executeVersion(*p, script);
 
 	globfree(&paths);
-	chmod(dir, strtol("0550", 0, 8));
+	chmod(dir, strtol("0555", 0, 8));
 
 	return 0;
 }
