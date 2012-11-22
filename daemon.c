@@ -13,6 +13,30 @@
 #define OUTBASE "/out"
 #define INBASE "/in"
 
+/*
+This code has been made to replace this bash script:
+
+#!/bin/bash
+ulimit -f 64 -m 64 -t 2 -u 128
+
+[[ ! -d /out/$1/ ]] && mkdir /out/$1/ || chmod u+w /out/$1/
+
+for bin in /bin/php-*
+do
+	echo $bin - $1
+	nice -n 15 sudo -u nobody $bin -c /etc/ -q "/in/$1" &>/out/$1/${bin##*-} & PID=$!
+	( sleep 3.1; kill -9 $PID 2>/dev/null ) &
+	wait $PID
+	ex=$?
+
+	sf=/out/$1/${bin##*-}-exit
+	[[ $ex -eq 0 && -f $sf ]] && rm $sf
+	[[ $ex -ne 0 ]] && echo -n $ex > $sf
+done
+
+chmod u-w /out/$1/
+*/
+
 pid_t child;
 
 void checkOutputDirectory(char *script)
@@ -66,6 +90,9 @@ void file_put_contents(char *path, char *output)
 
 void _killChild()
 {
+	// Remove any alarm that wants to kill this child too
+	alarm(0);
+
 	if (kill(child, SIGTERM))
 		perror("Error terminating child");
 	usleep(500000);
@@ -90,6 +117,18 @@ int executeVersion(char *binary, char *script)
 	char buffer[256], file[35], outFile[35], outFileExit[35 + 4], outFileTime[35 + 7];
 	FILE *output, *fp;
 	struct rusage r_start, r_end;
+	char* env[] = {
+		"TERM=xterm",
+		"PATH=/usr/bin:/bin",
+		"LANG=C",
+		"SHELL=/bin/bash",
+		"MAIN=/var/mail/nobody",
+		"LOGNAME=nobody",
+		"USER=nobody",
+		"USERNAME=nobody",
+		"HOME=/",
+		NULL
+	};
 
 	sprintf(file, INBASE "/%s", script);
 	sprintf(outFile, OUTBASE "/%s/%s", script, basename(binary)+4);
@@ -120,11 +159,12 @@ int executeVersion(char *binary, char *script)
 
 		nice(5);
 		_setrlimit(RLIMIT_CPU, 2);
-		_setrlimit(RLIMIT_DATA, 64 * 1000 * 1000);
-		_setrlimit(RLIMIT_FSIZE, 64 * 1000);
-//		_setrlimit(RLIMIT_NOFILE, 8192);
+		_setrlimit(RLIMIT_DATA, 64 * 1024 * 1024);
+		_setrlimit(RLIMIT_FSIZE, 64 * 1024);
+		_setrlimit(RLIMIT_NPROC, 32);
+		_setrlimit(RLIMIT_NOFILE, 4096);
 
-		execl(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL);
+		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
 		exit(1);
 	}
 
@@ -145,7 +185,7 @@ int executeVersion(char *binary, char *script)
 		if (totalSize > 65536)
 		{
 			printf("child %d has generated too much output, killing it\n", child);
-			fwrite("\n[ output has been truncated ]", 1, sizeof "\n[ output has been truncated ]", fp);
+//			fwrite("\n[ output has been truncated ]", 1, sizeof "\n[ output has been truncated ]", fp);
 			_killChild();
 			break;
 		}
@@ -178,10 +218,9 @@ int executeVersion(char *binary, char *script)
 	sprintf(outFileTime, "%s-timing", outFile);
 
 	sprintf(buffer, "%f:%f",
-			r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0 - r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0,
-			r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0 - r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0
+			(r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0) - (r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0),
+			(r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0) - (r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0)
 	);
-	printf("\nbuff: %s\n", buffer);
 	file_put_contents(outFileTime, buffer);
 
 	printf("done, exit-code: %d\n", exitCode);

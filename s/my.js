@@ -15,6 +15,8 @@ var isBusy, eval_org = new Class({
 	{
 		this.richEditor();
 
+		$$('h1').addEvent('click', function(){ window.location = '/'; });
+
 		$$('dd, dt').addEvent('click', this._clickDt);
 
 		if ($$('input[type=submit]').length == 0 || !$$('input[type=submit]')[0].hasClass('busy'))
@@ -28,7 +30,6 @@ var isBusy, eval_org = new Class({
 		new Request.HTML({
 			url: window.location.pathname,
 			method: 'GET',
-			update: $('preview'),
 			onSuccess: this._refresh.bind(this),
 			filter: 'dl > *',
 			update: $$('dl')[0],

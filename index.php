@@ -8,6 +8,7 @@ class PHPShell_Action
 		139 => 'Segmentation Fault',
 		255 => 'Generic Error',
 	);
+	protected $_db;
 
 	public function __construct()
 	{
@@ -17,6 +18,10 @@ class PHPShell_Action
 
 		if (false === $uri)
 			$uri = 'home';
+
+		ignore_user_abort();
+		$this->_db = new PDO('sqlite:db.sqlite');
+		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		if (method_exists($this, $method . ucfirst($uri)))
 			return call_user_func_array(array($this, $method . ucfirst($uri)), $params);
@@ -67,11 +72,17 @@ class PHPShell_Action
 		while ($exists && sha1($_POST['code']) !== sha1_file(self::IN.$short));
 
 		if (!$exists)
+		{
 			file_put_contents(self::IN.$short, $_POST['code']);
+			$this->_query("INSERT INTO input(hash) VALUES (?)", array($short));
+			$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
+		}
 		else
 		{
 			if (self::_isBusy($short))
 				return $this->getError(403);
+
+			$this->_db->query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
 
 			touch(self::IN.$short);
 			usleep(200000);
@@ -111,7 +122,7 @@ class PHPShell_Action
 		if ('new' == $short)
 			return $this->getError(503);
 
-		if (!preg_match('~^[a-z0-9]{5,}$~i', $short) || !file_exists(self::IN.$short))
+		if (!preg_match('~^[a-z0-9]{5,}$~i', $short) || !file_exists(self::IN.$short) || !in_array($type, array('output', 'vld', 'perf')))
 			return $this->getError(404);
 
 		$code = file_get_contents(self::IN.$short);
@@ -124,11 +135,22 @@ class PHPShell_Action
 		<textarea name="code"><?=htmlspecialchars($code)?></textarea>
 		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
 	</form>
+
+	<ul id="tabs">
+		<li<?= ('output' == $type ? ' class="active"' : '') ?>><a href="/<?=$short?>#tabs">Output</a></li>
+		<li<?= ('vld' == $type ? ' class="active"' : '') ?>><a href="/<?=$short?>/vld#tabs">VLD opcodes</a></li>
+	</ul>
+
+	<div>
 <?
 		if ('output' == $type)
 			$this->_getOutput($short);
 		elseif ('vld' == $type)
 			$this->_getVld($short);
+
+?>
+	</div>
+<?
 
 		self::_outputFooter();
 	}
@@ -140,8 +162,9 @@ class PHPShell_Action
 <head>
 	<title>3v4l.org - online PHP codepad for 80+ PHP versions<?=($title?" :: $title" : '')?></title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell"/>
+	<meta name="creator" content="Sjon Hortensius - sjon@hortensius.net" />
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
-	<link rel="stylesheet" href="/s/c.css?3"/>
+	<link rel="stylesheet" href="/s/c.css?5"/>
 </head>
 <body>
 <?
@@ -153,61 +176,102 @@ class PHPShell_Action
 	<a href="https://twitter.com/3v4l_org" target="_blank">Follow us on Twitter</a>
 
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
-	<script type="text/javascript" src="/s/c.js?3"></script>
+	<script type="text/javascript" src="/s/c.js?5"></script>
 </body>
-</html><?php
+</html><?
 	}
 
-	protected function _getOutput($file)
+	protected function _getOutput($short)
 	{
-		$results = array();
-		$outputs = array();
-		$files = glob(self::OUT. $file .'/*[0-9]');
+		$results = $this->_query("
+			SELECT version, exitCode, hash, raw
+			FROM result
+			INNER JOIN output
+				ON output.hash = result.output
+			WHERE result.input = ? and version LIKE '_.%'
+			ORDER BY hash, version", array($short));
 
-		if (!$files)
-			return;
-
-		natsort($files);
-		foreach (array_reverse($files, true) as $r)
+		if (empty($results))
 		{
-			$output = htmlspecialchars(ltrim(file_get_contents($r), "\n"), ENT_SUBSTITUTE);
+			if ($this->_importOutput($short))
+				return $this->_getOutput($short);
 
-			if (file_exists($r.'-exit'))
+			echo '<dl></dl>';
+			return;
+		}
+
+		$versionResults = array();
+		$outputs = array();
+		foreach ($results as $result)
+		{
+			$output = htmlspecialchars(ltrim($result['raw'], "\n"), ENT_SUBSTITUTE);
+
+			if ($result['exitCode'] > 0)
 			{
-				$code = file_get_contents($r.'-exit');
-				$title = isset(self::$_exitCodes[$code]) ? ' title="'. self::$_exitCodes[$code] .'"' : '';
-				$output .= '<br/><i>Process exited with code <b'. $title .'>'. $code .'</b>.</i>';
+				$title = isset(self::$_exitCodes[ $result['exitCode'] ]) ? ' title="'. self::$_exitCodes[ $result['exitCode'] ] .'"' : '';
+				$output .= '<br/><i>Process exited with code <b'. $title .'>'. $result['exitCode'] .'</b>.</i>';
 			}
 
-			$h = crc32($output);
-			$outputs[$h] = $output;
-			$results[$h][] = basename($r);
+			$h = $result['hash'];
+			$outputs[$h] = $result['raw'];
+			$versionResults[$h][] = $result['version'];
 		}
 
 		echo '<dl>';
-
 		foreach ($outputs as $hash => $output)
 		{
-			uksort($results[$hash], 'version_compare');
+			uksort($versionResults[$hash], 'version_compare');
 
-			echo '<dt id="v'.str_replace('.', '', end($results[$hash])).'">Output for ';
-			echo implode(', ', self::groupVersions($results[$hash]));
+			echo '<dt id="v'.str_replace('.', '', end($versionResults[$hash])).'">Output for ';
+			echo implode(', ', self::groupVersions($versionResults[$hash]));
 			echo '</dt><dd>'. $output.'</dd>';
 		}
-
 		echo '</dl>';
+	}
+
+	protected function _importOutput($short)
+	{
+		$files = glob(self::OUT. $short .'/*[0-9]');
+
+		if (!$files)
+			return false;
+
+		foreach ($files as $r)
+		{
+			$content = file_get_contents($r);
+			$this->_query("INSERT or IGNORE INTO output VALUES(?, ?)", array(md5($content), $content));
+
+			list($tu, $ts) = explode(':', file_get_contents($out.'-timing'));
+			$this->_query("INSERT INTO result VALUES(?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)", array(
+				$short, $hash, basename($r), file_exists($r.'-exit') ? file_get_contents($r.'-exit') : 0,
+				filemtime($r), $tu, $ts
+			));
+		}
+	}
+
+	protected function _query($statement, array $values)
+	{
+		$s = $this->_db->prepare($statement);
+		foreach ($values as $idx => $value)
+			$s->bindValue(is_int($idx) ? 1+$idx : $idx, $value);
+
+		$s->execute();
+		return $s->fetchAll(PDO::FETCH_ASSOC);
 	}
 
 	protected function _getVld($short)
 	{
-		if ('194.151.194.226' != $_SERVER['REMOTE_ADDR'])
-				die('experimental');
+		$results = $this->_query("
+			SELECT raw
+			FROM result
+			INNER JOIN output
+				ON output.hash = result.output
+			WHERE result.input = ? and version = 'vld'", array($short));
 
-		if (!file_exists(self::OUT. $short .'/vld'))
-		{
-			$path = self::IN.$short;
-			echo '<pre>'.`php -dvld.active=1 -dvld.execute=0 $path 2>&1` .'</pre>';
-		}
+		if (empty($results))
+			return print('No VLD output found, please wait for process to complete');
+
+		echo '<pre>'. $results[0]['raw'] .'</pre><p>Generated using <a href="http://derickrethans.nl/projects.html#vld">Vulcan Logic Dumper</a>, using php 5.4.0</p>';
 	}
 
 	public static function groupVersions(array $versions)

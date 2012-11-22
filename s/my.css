@@ -17,6 +17,8 @@ body
 {
 	margin: 2em;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: #333;
+	font-size: 13px;
 }
 
 form
@@ -32,6 +34,61 @@ form, dd
 	border-radius: 0.5em;
 }
 
+ul#tabs
+{
+	margin-bottom: -1px;
+	padding-left: 0;
+	clear: both;
+	overflow: hidden;
+}
+
+ul#tabs li
+{
+	float: left;
+	list-style: none;
+}
+
+ul#tabs li + li
+{
+	margin-left: 0.5em;
+}
+
+ul#tabs li a
+{
+	border-radius: 4px 4px 0 0;
+	display: block;
+	color: #0088cc;
+	text-decoration: none;
+	padding: 8px 12px;
+}
+
+ul#tabs li:not(.active) a:hover
+{
+	background: #ddd;
+	border-bottom: 1px solid #ddd;
+}
+
+ul#tabs li.active
+{
+	border-bottom-color: white;
+}
+
+ul#tabs li.active a
+{
+	color: #555;
+	border: 1px solid #ddd;
+	border-bottom-color: white;
+	cursor: default;
+}
+
+ul + div
+{
+	overflow: hidden;
+	margin: 0;
+	padding: 1.5em 2em;
+	border: 1px solid #ddd;
+}
+
 h1
 {
 	margin-top: 0;
@@ -44,7 +101,7 @@ small
 
 dl
 {
-	margin: 0 2em;
+	margin: 0;
 }
 
 dt
@@ -64,6 +121,11 @@ dd
 	font-family: monospace;
 	white-space: pre;
 	-webkit-transition: max-height 0.3s ease-out;
+}
+
+dt:target + dd
+{
+	box-shadow: 0 0 30px #ffe958;
 }
 
 dt:target:before
