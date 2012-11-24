@@ -1,0 +1,27 @@
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">google.load('visualization', '1', {packages: ['corechart']});</script>
+
+<div id="chart_div" style="width: 730px; height: 500px;"></div>
+<script type="text/javascript">
+	function drawVisualization() {
+		var data = google.visualization.arrayToDataTable([
+			['Version', 'System Time', 'User Time'],
+			<?php foreach ($data as $result){ ?>
+				['<?=$result['version']?>', <?=$result['systemTime']?>, <?=$result['userTime']-$result['systemTime']?>],
+			<? } ?>
+		]);
+
+		var options = {
+			title : 'Time per version',
+			hAxis: {title: 'version'},
+			isStacked: true,
+		};
+
+		new google.visualization.NumberFormat({fractionDigits: 4, suffix: ' ms'}).format(data, 1);
+		new google.visualization.NumberFormat({fractionDigits: 4, suffix: ' ms'}).format(data, 2);
+
+		var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+		chart.draw(data, options);
+	}
+	google.setOnLoadCallback(drawVisualization);
+</script>

@@ -1,0 +1,21 @@
+	<form method="POST" action="/new">
+		<h1>3v4l.org<small> - online PHP shell, test in 80+ different PHP versions!</small></h1>
+<? if (isset($input['source'])){ ?>
+		<a href="/<?=$input['source']?>">based on <?=$input['source']?></a>
+<? } ?>
+		<textarea name="code"><?=htmlspecialchars($code)?></textarea>
+		<input type="submit" value="eval();"<?=($isBusy?' class="busy"' : '')?> />
+	</form>
+
+	<ul id="tabs">
+		<li<?= ('output' == $type ? ' class="active"' : '') ?>><a href="/<?=$short?>#tabs">Output</a></li>
+		<li<?= ('vld' == $type ? ' class="active"' : '') ?>><a href="/<?=$short?>/vld#tabs">VLD opcodes</a></li>
+	</ul>
+
+	<div>
+<?
+	$data = call_user_func(array($this, '_get'. $type), $short);
+	require('get_'. $type .'.phtml');
+?>
+
+	</div>

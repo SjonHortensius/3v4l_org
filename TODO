@@ -1,0 +1,15 @@
+* registering an account
+	* notifications when new versions change your output (or when they don't too maybe?)
+* diff output
+* nightly builds
+* xdebug, webgrind output, valgrind
+
+* switch major, draai alleen php5 / nieuwe versies eerst
+* inline diff, 1 output en per regel overzicht van versie-verschillen
+* /asdf/raw die raw input returned zonder syntax highlighting?
+* sqlite voor:
+	* my-favorites
+	* latest-entries
+	* timing + memory usage
+	* bash > c
+* specifieke versies, [] > 5.1, [] > 5.2.*

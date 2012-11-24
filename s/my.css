@@ -29,6 +29,13 @@ form
 	box-shadow: inset 1px 1px 1px rgba(0,0,0, 0.1);
 }
 
+form a
+{
+	float: right;
+	position: relative;
+	top: -23px;
+}
+
 form, dd
 {
 	border-radius: 0.5em;
@@ -91,6 +98,7 @@ ul + div
 
 h1
 {
+	cursor: pointer;
 	margin-top: 0;
 }
 
@@ -163,6 +171,7 @@ input
 
 input.busy
 {
+	cursor: progress;
 	background-image: url(/s/load.gif), linear-gradient(top, #08C, #05C);
 	background-image: url(/s/load.gif), -webkit-linear-gradient(top, #08C, #05C);
 	background-image: url(/s/load.gif), -moz-linear-gradient(top, #08C, #05C);
