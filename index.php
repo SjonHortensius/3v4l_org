@@ -60,7 +60,14 @@ class PHPShell_Action
 		if (!$exists)
 		{
 			file_put_contents(self::IN.$short, $_POST['code']);
-			$this->_query("INSERT INTO input(hash) VALUES (?)", array($short));
+
+			$referer = explode('/', $_SERVER['HTTP_REFERER']);
+			if ($referer[2] == '3v4l.org')
+				$source = $referer[3];
+			else
+				$source = null;
+
+			$this->_query("INSERT INTO input('hash', 'source') VALUES (?, ?)", array($short, $source));
 			$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
 		}
 		else
@@ -68,7 +75,7 @@ class PHPShell_Action
 			if (self::_isBusy($short))
 				return $this->getError(403);
 
-			$this->_db->query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
+			$this->_query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
 
 			// Trigger daemon
 			touch(self::IN.$short);
@@ -116,7 +123,8 @@ class PHPShell_Action
 		$title = $short;
 		require('tpl/_head.phtml');
 
-		$input = array_pop($this->_query("SELECT * FROM input WHERE hash = ?", array($short)));
+		$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
+		$input = array_pop($input);
 		require('tpl/get.phtml');
 
 		require('tpl/_foot.phtml');
@@ -156,7 +164,10 @@ class PHPShell_Action
 
 			$prevHash = $result['hash'];
 
-			$slot['output'] = htmlspecialchars(str_replace(chr(7), '/in/'.$short, ltrim($result['raw'], "\n")), ENT_SUBSTITUTE);
+			// Replace all unescaped bell-chars by script path, and unescape raw bells
+			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, ltrim($result['raw'], "\n"));
+			$output = str_replace('\\'.chr(7), chr(7), $output);
+			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
 
 			if ($result['exitCode'] > 0)
 			{
@@ -185,11 +196,12 @@ class PHPShell_Action
 	protected function _getPerf($short)
 	{
 		return $this->_query("
-			SELECT version, userTime, systemTime
+			SELECT version, userTime, systemTime, maxMemory
 			FROM result
 			INNER JOIN output ON output.hash = result.output
+			INNER JOIN version ON version.name = result.version
 			WHERE result.input = ? and version LIKE '_.%'
-			ORDER BY version", array($short));
+			ORDER BY version.`order`", array($short));
 	}
 
 	protected function _getVld($short)
@@ -207,15 +219,7 @@ class PHPShell_Action
 		foreach ($values as $idx => $value)
 			$s->bindValue(is_int($idx) ? 1+$idx : $idx, $value);
 
-		try
-		{
-			$s->execute();
-		}
-		catch (PDOException $e)
-		{
-			echo $statement; print_r($values);
-			echo $e;
-		}
+		$s->execute();
 
 		return $s->fetchAll(PDO::FETCH_ASSOC);
 	}

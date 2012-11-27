@@ -1,5 +1,7 @@
+#!/usr/bin/php -dopen_basedir=
 <?php
-$db = new PDO('sqlite:/tmp/db.sqlite');
+
+$db = new PDO('sqlite:db.sqlite');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $db->exec("PRAGMA foreign_keys = true;");
 $db->exec("PRAGMA synchronous = off;");
@@ -11,13 +13,22 @@ function query($statement, array $values)
 	foreach ($values as $idx => $value)
 		$s->bindValue(is_int($idx) ? 1+$idx : $idx, $value);
 
-	$s->execute();
+	try
+	{
+		$s->execute();
+	}
+	catch (PDOException $e)
+	{
+		echo $s->queryString; print_r($values);
+		echo $e;
+	}
+
 	return $s->fetchAll(PDO::FETCH_ASSOC);
 }
 
 if (1)
 {
-	$base = '/var/backup/3v4l.org/var/lxc/php_shell';
+	$base = '/var/lxc/php_shell';
 	foreach (glob($base .'/in/*') as $in)
 	{
 		$in = basename($in);
@@ -27,28 +38,37 @@ if (1)
 		$files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base .'/out/'. $in .'/'));
 		foreach (new RegexIterator($files, '~/[\d.vld]{3,}$~') as $out)
 		{
-			$content = str_replace('/in/'.$in, chr(7), file_get_contents($out));
+			$content = str_replace(chr(7), '\\'.chr(7), file_get_contents($out));
+			$content = str_replace('/in/'.$in, chr(7), $content);
 			$hash = md5($content);
 
 			query("INSERT or IGNORE INTO output VALUES(?, ?)", array($hash, $content));
 
 			print '.';
 
-			list($tu, $ts) = explode(':', file_get_contents($out.'-timing'));
+			list($tu, $ts, $m) = explode(':', file_get_contents($out.'-timing'));
 			$exit = file_exists($out.'-exit') ? intval(file_get_contents($out.'-exit')):0;
-			query("INSERT INTO result VALUES(?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)", array($in, $hash, basename($out), $exit, filemtime($out), $tu, $ts));
+			query("INSERT INTO result VALUES(?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?, ?)",
+				array($in, $hash, basename($out), $exit, filemtime($out), $tu, $ts, $m)
+			);
 		}
 	}
 }
 
+query("INSERT INTO input VALUES('', NULL, 'homepage')");
 /*******************************/
 
-$fp = fopen('/var/backup/3v4l.org/var/log/httpd/access_log', 'r');
+$fp = fopen('/var/log/httpd/access_log', 'r');
 
 $p = $s = array();
 while ($l = fgets($fp))
 {
-	if (!preg_match('~([0-9.]+) - - \[(.*?)\] "([A-Z]+) (.*?) HTTP/1.1" \d+ \d+ "(.*?)" ".*"~', $l, $m))
+	/*
+195.182.52.76 - - [18/Oct/2012:12:11:16 +0200] "POST /new HTTP/1.0" 302 0 "http://3v4l.org/oErPk" "Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20100101 Firefox/15.0.1"
+31.44.93.2 - - [18/Oct/2012:12:11:16 +0200] "GET /STl1T HTTP/1.1" 200 11557 "http://3v4l.org/STl1T" "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20100101 Firefox/15.0.1"
+195.182.52.76 - - [18/Oct/2012:12:11:17 +0200] "GET /3ePj6 HTTP/1.0" 200 1645 "http://3v4l.org/oErPk" "Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20100101 Firefox/15.0.1"
+*/
+	if (!preg_match('~([0-9.]+) - - \[(.*?)\] "([A-Z]+) (.*?) HTTP/1.[01]" \d+ \d+ "(.*?)" ".*"~', $l, $m))
 	{
 //		var_dump('PREG_MISMATCH: '. $l);
 		continue;
@@ -77,30 +97,16 @@ while ($l = fgets($fp))
 		$hash = substr($r['url'], 1);
 		if (substr($p[ $r['ip'] ]['referer'], 0, 16) == 'http://3v4l.org/')
 		{
+			print 'I';
 			list($script) = explode('/', substr($p[ $r['ip'] ]['referer'], 16));
 
-			try
-			{
-				query("UPDATE input SET source = ? WHERE hash = ? AND source IS NULL", array($script, $hash));
-				print 'I';
-			}
-			catch (PDOException $e)
-			{
-				echo $e;
-			}
+			query("UPDATE input SET source = ? WHERE hash = ? AND source IS NULL", array($script, $hash));
 		}
 
 		if (!isset($s[ $r['url'] ]))
 		{
-			try
-			{
-				query("INSERT INTO submit VALUES(?, ?, ?, null, 1)", array($hash, $r['ip'], $p[ $r['ip'] ]['date']));
-				print 'S';
-			}
-			catch (PDOException $e)
-			{
-				echo $e;
-			}
+			print 'S';
+			query("INSERT INTO submit VALUES(?, ?, ?, null, 1)", array($hash, $r['ip'], $p[ $r['ip'] ]['date']));
 
 			$s[ $r['url'] ]	= true;
 			unset($p[ $r['ip'] ]);

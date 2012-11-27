@@ -54,7 +54,7 @@ void checkOutputDirectory(char *script)
 	}
 
 	if (!dp)
-		mkdir(dir, 0750);
+		mkdir(dir, 0755);
 	else
 	{
 		if (stat(dir, &outStat))
@@ -161,7 +161,7 @@ int executeVersion(char *binary, char *script)
 		_setrlimit(RLIMIT_CPU, 2);
 		_setrlimit(RLIMIT_DATA, 64 * 1024 * 1024);
 		_setrlimit(RLIMIT_FSIZE, 64 * 1024);
-		_setrlimit(RLIMIT_NPROC, 32);
+		_setrlimit(RLIMIT_NPROC, 64);
 		_setrlimit(RLIMIT_NOFILE, 4096);
 
 		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
@@ -185,7 +185,6 @@ int executeVersion(char *binary, char *script)
 		if (totalSize > 65536)
 		{
 			printf("child %d has generated too much output, killing it\n", child);
-//			fwrite("\n[ output has been truncated ]", 1, sizeof "\n[ output has been truncated ]", fp);
 			_killChild();
 			break;
 		}
@@ -217,9 +216,10 @@ int executeVersion(char *binary, char *script)
 	memset(&buffer[0], 0, sizeof(buffer));
 	sprintf(outFileTime, "%s-timing", outFile);
 
-	sprintf(buffer, "%f:%f",
+	sprintf(buffer, "%f:%f:%f",
 			(r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0) - (r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0),
-			(r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0) - (r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0)
+			(r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0) - (r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0),
+			r_end.ru_maxrss - r_start.ru_maxrss
 	);
 	file_put_contents(outFileTime, buffer);
 

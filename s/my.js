@@ -19,6 +19,9 @@ var isBusy, eval_org = new Class({
 
 		$$('dd, dt').addEvent('click', this._clickDt);
 
+		if (typeof perfData != 'undefined')
+			this.drawPerformanceGraphs();
+
 		if ($$('input[type=submit]').length == 0 || !$$('input[type=submit]')[0].hasClass('busy'))
 			return;
 
@@ -69,6 +72,40 @@ var isBusy, eval_org = new Class({
 			matchBrackets: true,
 			mode: 'application/x-httpd-php',
 		});
+	},
+
+	drawPerformanceGraphs: function()
+	{
+		var options =
+		{
+			seriesType: 'steppedArea',
+			isStacked: true,
+			series: {2: {type: 'line', targetAxisIndex: 1}},
+			chartArea: {width: '75%', height: '75%'},
+			vAxes: [
+				{minValue: 0, format: '#.### s'},
+				{minValue: 0, format: '#.### MiB'},
+			],
+		};
+
+		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 1);
+		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 2);
+		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' MiB', groupingSymbol: '.'}).format(perfData, 3);
+
+		var view = new google.visualization.DataView(perfData);
+
+		var table = new google.visualization.Table(document.getElementById('perf_data'));
+		table.draw(view, {sortColumn: 0});
+
+		var chart = new google.visualization.ComboChart(document.getElementById('perf_chart'));
+		chart.draw(perfData, options);
+
+		google.visualization.events.addListener(table, 'sort',
+			function(event)
+			{
+				perfData.sort([{column: event.column, desc: !event.ascending}]);
+				chart.draw(perfData, options);
+			});
 	}
 });
 

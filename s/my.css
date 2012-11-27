@@ -3,6 +3,7 @@
 	border-top: 1px solid black;
 	border-bottom: 1px solid black;
 	background: #fff;
+	clear: both;
 }
 
 .CodeMirror-scroll
@@ -32,8 +33,6 @@ form
 form a
 {
 	float: right;
-	position: relative;
-	top: -23px;
 }
 
 form, dd
@@ -98,6 +97,7 @@ ul + div
 
 h1
 {
+	float: left;
 	cursor: pointer;
 	margin-top: 0;
 }
@@ -145,6 +145,17 @@ dd:hover, dt:target + dd
 {
 	max-height: 50em;
 	-webkit-transition: max-height 0.3s ease-in;
+}
+
+#perf_data
+{
+	width: 500px;
+}
+
+#perf_chart
+{
+	width: 600px;
+	height: 450px;
 }
 
 input
