@@ -6,6 +6,6 @@
 <script type="text/javascript">
 var perfData = google.visualization.arrayToDataTable([
 ['Version', 'System time', 'User time', 'Max. memory usage'],
-	<?php foreach ($data as $result){ ?>['<?=$result['version']?>',<?=$result['systemTime']?>,<?=$result['userTime']?>,<?=$result['maxMemory']?>],<? } ?>
+	<?php foreach ($data as $result){ ?>['<?=$result['version']?>',<?=$result['systemTime']?>,<?=$result['userTime']?>,<?=$result['maxMemory']/1024?>],<? } ?>
 ]);
 </script>

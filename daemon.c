@@ -164,7 +164,9 @@ int executeVersion(char *binary, char *script)
 		_setrlimit(RLIMIT_NPROC, 64);
 		_setrlimit(RLIMIT_NOFILE, 4096);
 
-		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
+		sprintf(outFile, "/tmp/time-%s-%s", script, basename(binary)+4);
+//		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
+		execle("/usr/bin/time", "php", "--output", outFile, "--verbose", binary, "-c", "/etc/", "-q", file, (char*) NULL, env);
 		exit(1);
 	}
 

@@ -6,6 +6,7 @@ class PHPShell_Action
 	const OUT = '/var/lxc/php_shell/out/';
 	protected static $_exitCodes = array(
 		139 => 'Segmentation Fault',
+		137 => 'Process was killed',
 		255 => 'Generic Error',
 	);
 	protected $_db;
@@ -146,16 +147,19 @@ class PHPShell_Action
 		foreach ($results as $result)
 		{
 			$slot =& $outputs[ $result['hash'] ];
+
 			if (!isset($slot))
 				$slot = array('min' => $result['version'], 'versions' => array());
 			elseif ($result['hash'] != $prevHash)
 			{
+				// Close previous slot
 				if (isset($slot['max']))
 					array_push($slot['versions'], $slot['min'] .' - '. $slot['max']);
-				else
+				elseif (isset($slot['min']))
 					array_push($slot['versions'], $slot['min']);
 
-				unset($slot['min'], $slot['max']);
+				$slot['min'] = $result['version'];
+				unset($slot['max']);
 			}
 			elseif (!isset($slot['min']))
 				$slot['min'] = $result['version'];
@@ -179,6 +183,7 @@ class PHPShell_Action
 		$versions = array();
 		foreach ($outputs as $output)
 		{
+			// Process unclosed slots
 			if (isset($output['max']))
 				array_push($output['versions'], $output['min'] .' - '. $output['max']);
 			elseif (isset($output['min']))
@@ -226,7 +231,7 @@ class PHPShell_Action
 
 	protected static function _isBusy($short)
 	{
-		return (16749 != fileperms(self::OUT . $short));
+		return (is_dir(self::OUT . $short) && 16749 != fileperms(self::OUT . $short));
 	}
 }
 
