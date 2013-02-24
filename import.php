@@ -8,16 +8,14 @@ define('BASE', '/var/lxc/php_shell');
 define('SCRIPT', $argv[1]);
 define('VERSION', $argv[2]);
 
-function query($statement, array $values)
+function query($statement, array $parameters)
 {
 	global $db;
 	$s = $db->prepare($statement);
-	foreach ($values as $idx => $value)
-		$s->bindValue(is_int($idx) ? 1+$idx : $idx, $value);
 
 	try
 	{
-		$s->execute();
+		$s->execute($parameters);
 	}
 	catch (PDOException $e)
 	{
@@ -41,16 +39,14 @@ try
 	$hash = md5($content);
 	$exit = file_exists($file .'-exit') ? intval(file_get_contents($file .'-exit')) : 0;
 	list($tu, $ts, $m) = explode(':', file_get_contents($file .'-timing'));
-	$timeFile = BASE. '/tmp/time-'. SCRIPT .'-'. VERSION;
-	$m = `grep 'Maximum resident set size (kbytes)' $timeFile 2>&1 | cut -d' ' -f6`;
 
 	query("INSERT or IGNORE INTO output VALUES(?, ?)", array($hash, $content));
 	query("INSERT or REPLACE INTO result VALUES(?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?, ?)",
 		array(SCRIPT, $hash, VERSION, $exit, filemtime($file), $tu, $ts, $m)
 	);
 
-	foreach (array($file, $file.'-exit', $file.'-timing', $timeFile) as $f)
-		unlink($f);
+	foreach (array($file, $file.'-exit', $file.'-timing') as $f)
+		@unlink($f);
 }
 catch (PDOException $e)
 {

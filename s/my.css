@@ -1,7 +1,13 @@
+textarea, .CodeMirror
+{
+	overflow-x: auto;
+	border: 0 solid black;
+	border-width: 1px 0;
+	width: 100%;
+}
+
 .CodeMirror
 {
-	border-top: 1px solid black;
-	border-bottom: 1px solid black;
 	background: #fff;
 	clear: both;
 }
@@ -97,7 +103,6 @@ ul + div
 
 h1
 {
-	float: left;
 	cursor: pointer;
 	margin-top: 0;
 }

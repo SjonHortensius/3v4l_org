@@ -116,12 +116,12 @@ int executeVersion(char *binary, char *script)
 	int pipefd[2], status, size, totalSize = 0, exitCode;
 	char buffer[256], file[35], outFile[35], outFileExit[35 + 4], outFileTime[35 + 7];
 	FILE *output, *fp;
-	struct rusage r_start, r_end;
+	struct rusage r_child;
 	char* env[] = {
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
 		"LANG=C",
-		"SHELL=/bin/bash",
+		"SHELL=/bin/sh",
 		"MAIN=/var/mail/nobody",
 		"LOGNAME=nobody",
 		"USER=nobody",
@@ -135,7 +135,6 @@ int executeVersion(char *binary, char *script)
 
 	setbuf(stdout, NULL);
 	pipe(pipefd);
-	getrusage(RUSAGE_CHILDREN, &r_start);
 	pid = fork();
 
 	if (-1 == pid)
@@ -164,9 +163,7 @@ int executeVersion(char *binary, char *script)
 		_setrlimit(RLIMIT_NPROC, 64);
 		_setrlimit(RLIMIT_NOFILE, 4096);
 
-		sprintf(outFile, "/tmp/time-%s-%s", script, basename(binary)+4);
-//		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
-		execle("/usr/bin/time", "php", "--output", outFile, "--verbose", binary, "-c", "/etc/", "-q", file, (char*) NULL, env);
+		execle(binary, "php", "-c", "/etc/", "-q", file, (char*) NULL, env);
 		exit(1);
 	}
 
@@ -196,9 +193,8 @@ int executeVersion(char *binary, char *script)
 
 	printf("stored %d bytes...", totalSize);
 
-	waitpid(child, &status, 0);
+	wait4(child, &status, 0, &r_child);
 	alarm(0);
-	getrusage(RUSAGE_CHILDREN, &r_end);
 
 	if (WIFEXITED(status))
 		exitCode = WEXITSTATUS(status);
@@ -218,10 +214,10 @@ int executeVersion(char *binary, char *script)
 	memset(&buffer[0], 0, sizeof(buffer));
 	sprintf(outFileTime, "%s-timing", outFile);
 
-	sprintf(buffer, "%f:%f:%f",
-			(r_end.ru_utime.tv_sec + r_end.ru_utime.tv_usec / 1000000.0) - (r_start.ru_utime.tv_sec + r_start.ru_utime.tv_usec / 1000000.0),
-			(r_end.ru_stime.tv_sec + r_end.ru_stime.tv_usec / 1000000.0) - (r_start.ru_stime.tv_sec + r_start.ru_stime.tv_usec / 1000000.0),
-			r_end.ru_maxrss - r_start.ru_maxrss
+	sprintf(buffer, "%f:%f:%ld",
+			r_child.ru_utime.tv_sec + r_child.ru_utime.tv_usec / 1000000.0,
+			r_child.ru_stime.tv_sec + r_child.ru_stime.tv_usec / 1000000.0,
+			r_child.ru_maxrss
 	);
 	file_put_contents(outFileTime, buffer);
 

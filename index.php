@@ -11,7 +11,7 @@ class PHPShell_Action
 	);
 	protected $_db;
 
-	public function __construct()
+	public static function dispatch()
 	{
 		$uri = substr($_SERVER['REQUEST_URI'], 1);
 		$method = strtolower($_SERVER['REQUEST_METHOD']);
@@ -21,6 +21,11 @@ class PHPShell_Action
 			$uri = 'home';
 
 		ignore_user_abort();
+		new self($method, $uri, $params);
+	}
+
+	private function __construct($method, $uri, $params)
+	{
 		$this->_db = new PDO('sqlite:db.sqlite');
 		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -37,11 +42,11 @@ class PHPShell_Action
 
 	public function getHome()
 	{
-		require('tpl/_head.phtml');
+		$tpl = new PHPShell_Template('home');
 
-		require('tpl/home.phtml');
+//		$tpl->recent = $this->_query("SELECT * FROM input O ");
 
-		require('tpl/_foot.phtml');
+		print $tpl->getWrapped();
 	}
 
 	public function postNew()
@@ -52,13 +57,13 @@ class PHPShell_Action
 		do
 		{
 			$short = substr($hash, -$len);
-			$exists = file_exists(self::IN.$short);
+			$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
 
 			$len++;
 		}
-		while ($exists && sha1($_POST['code']) !== sha1_file(self::IN.$short));
+		while (!empty($input) && $hash !== $input[0]['sha1']);
 
-		if (!$exists)
+		if (empty($input))
 		{
 			file_put_contents(self::IN.$short, $_POST['code']);
 
@@ -68,7 +73,7 @@ class PHPShell_Action
 			else
 				$source = null;
 
-			$this->_query("INSERT INTO input('hash', 'source') VALUES (?, ?)", array($short, $source));
+			$this->_query("INSERT INTO input('hash', 'source', 'sha1') VALUES (?, ?, ?)", array($short, $source, $hash));
 			$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
 		}
 		else
@@ -76,7 +81,14 @@ class PHPShell_Action
 			if (self::_isBusy($short))
 				return $this->getError(403);
 
-			$this->_query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
+			try
+			{
+				$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
+			}
+			catch (Exception $e)
+			{
+				$this->_query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
+			}
 
 			// Trigger daemon
 			touch(self::IN.$short);
@@ -101,12 +113,12 @@ class PHPShell_Action
 
 		http_response_code($code);
 
-		$title = 'Error '. $code;
-		require('tpl/_head.phtml');
+		$tpl = new PHPShell_Template('error');
+		$tpl->title = 'Error '. $code;
+		$tpl->code = $code;
+		$tpl->text = $text;
 
-		require('tpl/error.phtml');
-
-		require('tpl/_foot.phtml');
+		die($tpl->getWrapped());
 	}
 
 	public function get($short = '', $type = 'output')
@@ -115,20 +127,23 @@ class PHPShell_Action
 		if ('new' == $short)
 			return $this->getError(503);
 
-		if (!preg_match('~^[a-z0-9]{5,}$~i', $short) || !file_exists(self::IN.$short) || !in_array($type, array('output', 'vld', 'perf')))
+		$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
+
+		if (empty($input) || !in_array($type, array('output', 'vld', 'perf')))
 			return $this->getError(404);
 
-		$code = file_get_contents(self::IN.$short);
-		$isBusy = self::_isBusy($short);
+		$tpl = new PHPShell_Template('get');
+		$tpl->title = $short;
+		$tpl->short = $short;
+		$tpl->type = $type;
+		$tpl->code = file_get_contents(self::IN.$short);
+		$tpl->isBusy = self::_isBusy($short);
+		$tpl->input = $input[0];
 
-		$title = $short;
-		require('tpl/_head.phtml');
+		$tpl->data = call_user_func(array($this, '_get'. $type), $short);
+		$tpl->subContent = $tpl->get('get_'. $type);
 
-		$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
-		$input = array_pop($input);
-		require('tpl/get.phtml');
-
-		require('tpl/_foot.phtml');
+		print $tpl->getWrapped();
 	}
 
 	protected function _getOutput($short)
@@ -137,11 +152,20 @@ class PHPShell_Action
 			SELECT version, exitCode, hash ||':'|| exitCode as hash, raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
+			INNER JOIN version ON version.name = result.version
 			WHERE result.input = ? and version LIKE '_.%'
-			ORDER BY version", array($short));
+			ORDER BY version.`order`", array($short));
 
 		if (empty($results))
-			return print('<dl></dl>');
+		{
+			if (!$this->_isBusy($short))
+			{
+//				mail('root@3v4l.org', 'importer crashed - '. $short, 'script is not busy but has no results!');
+				return $this->getError();
+			}
+
+			return array();
+		}
 
 		$outputs = array();
 		foreach ($results as $result)
@@ -218,13 +242,10 @@ class PHPShell_Action
 			WHERE result.input = ? and version = 'vld'", array($short));
 	}
 
-	protected function _query($statement, array $values)
+	protected function _query($statement, array $parameters)
 	{
 		$s = $this->_db->prepare($statement);
-		foreach ($values as $idx => $value)
-			$s->bindValue(is_int($idx) ? 1+$idx : $idx, $value);
-
-		$s->execute();
+		$s->execute($parameters);
 
 		return $s->fetchAll(PDO::FETCH_ASSOC);
 	}
@@ -235,4 +256,39 @@ class PHPShell_Action
 	}
 }
 
-$action = new PHPShell_Action();
+class PHPShell_Template
+{
+	protected $_file;
+
+	public function __construct($file)
+	{
+		$this->_file = $file;
+	}
+
+	public function getWrapped()
+	{
+		$header = $this->get('_head');
+		$footer = $this->get('_foot');
+
+		return $header . $this . $footer;
+	}
+
+	public function get($file)
+	{
+		$tpl = clone $this;
+		$tpl->_file = $file;
+
+		return (string)$tpl;
+	}
+
+	public function __toString()
+	{
+		ob_start();
+
+		require('tpl/'. $this->_file .'.phtml');
+
+		return ob_get_clean();
+	}
+}
+
+PHPShell_Action::dispatch();

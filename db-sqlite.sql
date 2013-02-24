@@ -2,6 +2,7 @@ CREATE TABLE input(
 	hash TEXT PRIMARY KEY,
 	source TEXT,
 	type TEXT,
+	sha1 TEXT,
 	FOREIGN KEY (source) REFERENCES input(hash)
 );
 
@@ -38,4 +39,3 @@ CREATE TABLE version (
 	name TEXT PRIMARY KEY,
 	released TEXT
 );
-/*insert into version select version,null from result where input = '2uRXo' ORDER BY 1000*substr(version, 1, 1)+100*substr(version,3,1)+substr(version, 5);*/
