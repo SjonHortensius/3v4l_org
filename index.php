@@ -70,9 +70,8 @@ class PHPShell_Action
 		{
 			file_put_contents(self::IN.$short, $_POST['code']);
 
-			$referer = explode('/', $_SERVER['HTTP_REFERER']);
-			if ($referer[2] == '3v4l.org')
-				$source = $referer[3];
+			if (preg_match('~^http://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
+				$source = $matches[3];
 			else
 				$source = null;
 
