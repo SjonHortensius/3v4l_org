@@ -2,9 +2,6 @@
 if (empty($this->data))
 	print('No VLD output found, please wait for process to complete');
 else {
-	$output = preg_replace('~(?<![\\\])\007~', '/in/'.$this->short, $this->data[0]['raw']);
-	$output = str_replace('\\'.chr(7), chr(7), $output);
-
-?><pre><?=$output?></pre>
+?><pre><?=$this->data?></pre>
 <p>Generated using <a href="http://derickrethans.nl/projects.html#vld">Vulcan Logic Dumper</a>, using php 5.4.0</p>
 <? } ?>

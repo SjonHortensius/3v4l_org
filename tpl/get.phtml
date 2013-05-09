@@ -11,6 +11,7 @@
 		<li<?= ('output' == $this->type ? ' class="active"' : '') ?>><a href="/<?=$this->input['hash']?>#tabs">Output</a></li>
 		<li<?= ('vld' == $this->type ? ' class="active"' : '') ?>><a href="/<?=$this->input['hash']?>/vld#tabs">VLD opcodes</a></li>
 		<li<?= ('perf' == $this->type ? ' class="active"' : '') ?>><a href="/<?=$this->input['hash']?>/perf#tabs">Performance</a></li>
+		<li<?= ('refs' == $this->type ? ' class="active"' : '') ?>><a href="/<?=$this->input['hash']?>/refs#tabs">References</a></li>
 	</ul>
 
 	<div><?=$this->subContent?></div>

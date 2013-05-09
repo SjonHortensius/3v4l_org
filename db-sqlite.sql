@@ -39,3 +39,13 @@ CREATE TABLE version (
 	name TEXT PRIMARY KEY,
 	released TEXT
 );
+
+CREATE TABLE `references` (
+	id INTEGER PRIMARY KEY,
+	operation TEXT,
+	operand TEXT,
+	link TEXT,
+	name TEXT,
+	parent INTEGER,
+	FOREIGN KEY(parent) REFERENCES `references`(id)
+);

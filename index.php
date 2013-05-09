@@ -46,7 +46,6 @@ class PHPShell_Action
 	public function getHome()
 	{
 		$tpl = new PHPShell_Template('home');
-
 //		$tpl->recent = $this->_query("SELECT * FROM input O ");
 
 		print $tpl->getWrapped();
@@ -131,7 +130,7 @@ class PHPShell_Action
 
 		$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
 
-		if (empty($input) || !in_array($type, array('output', 'vld', 'perf')))
+		if (empty($input) || !in_array($type, array('output', 'vld', 'perf', 'refs')))
 			return $this->getError(404);
 
 		$tpl = new PHPShell_Template('get');
@@ -237,11 +236,52 @@ class PHPShell_Action
 
 	protected function _getVld($short)
 	{
-		return $this->_query("
+		$row = $this->_query("
 			SELECT raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			WHERE result.input = ? and version = 'vld'", array($short));
+
+		if (empty($row))
+			return null;
+
+		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, $row[0]['raw']);
+		$output = str_replace('\\'.chr(7), chr(7), $output);
+
+		return $output;
+	}
+
+	protected function _getRefs($short)
+	{
+		$vld = $this->_getVld($short);
+
+		if (!isset($vld))
+			return $this->getError(404);
+
+		$refs = array();
+		foreach (explode("\n", $vld) as $line)
+		{
+			if (!preg_match('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?$~', $line, $match))
+				continue;
+
+			$rows = $this->_query("SELECT * FROM `references` WHERE operation = ? AND (operand IN(?) OR operand ISNULL)", array($match['op'], $match['operand']));
+			$this->_getReferencesRecursive($rows, $refs);
+		}
+
+		return $refs;
+	}
+
+	protected function _getReferencesRecursive(array $rows, array &$references = array())
+	{
+		foreach ($rows as $row)
+		{
+			$references[ $row['link'] ] = $row['name'];
+
+			if (isset($row['parent']))
+				$this->_getReferencesRecursive($this->_query("SELECT * FROM `references` WHERE id = ?", array($row['parent'])), $references);
+		}
+
+		return $references;
 	}
 
 	protected function _query($statement, array $parameters)

@@ -1,0 +1,11 @@
+<?php
+if (!isset($this->data))
+	print('No VLD output found, please wait for process to complete');
+else {
+?><ul><?
+	foreach ($this->data as $url => $name)
+	{
+		printf('<li><a href="%s">%s</a></li>', $url, $name);
+	}
+?></ul><?
+}
