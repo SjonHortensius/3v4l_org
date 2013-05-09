@@ -146,7 +146,7 @@ int executeVersion(char *binary, char *script)
 	{
 		printf("[%d] Version %-6s script %s: ", getpid(), basename(binary)+4, script);
 
-		if (setuid(99))
+		if (setgid(99) || setuid(99))
 		{
 			perror("Error setting userid");
 			exit(1);

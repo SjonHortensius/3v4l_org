@@ -13,6 +13,9 @@ class PHPShell_Action
 
 	public static function dispatch()
 	{
+		if (false !== strpos($_SERVER['REQUEST_URI'], '?'))
+			$_SERVER['REQUEST_URI'] = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], '?'));
+
 		$uri = substr($_SERVER['REQUEST_URI'], 1);
 		$method = strtolower($_SERVER['REQUEST_METHOD']);
 		$params = explode('/', $uri);
