@@ -259,11 +259,11 @@ class PHPShell_Action
 			return $this->getError(404);
 
 		$refs = array();
-		foreach (explode("\n", $vld) as $line)
-		{
-			if (!preg_match('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?$~', $line, $match))
-				continue;
+		if (!preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER))
+			return $refs;
 
+		foreach ($matches as $match)
+		{
 			$rows = $this->_query("SELECT * FROM `references` WHERE operation = ? AND (operand IN(?) OR operand ISNULL)", array($match['op'], $match['operand']));
 			$this->_getReferencesRecursive($rows, $refs);
 		}
