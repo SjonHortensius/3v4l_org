@@ -256,7 +256,7 @@ class PHPShell_Action
 		$vld = $this->_getVld($short);
 
 		if (!isset($vld))
-			return $this->getError(404);
+			return;
 
 		$refs = array();
 		if (!preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER))
