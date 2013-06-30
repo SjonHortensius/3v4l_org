@@ -13,9 +13,6 @@ class PHPShell_Action
 
 	public static function dispatch()
 	{
-		if (false !== strpos($_SERVER['REQUEST_URI'], '?'))
-			$_SERVER['REQUEST_URI'] = substr($_SERVER['REQUEST_URI'], 0, strpos($_SERVER['REQUEST_URI'], '?'));
-
 		$uri = substr($_SERVER['REQUEST_URI'], 1);
 		$method = strtolower($_SERVER['REQUEST_METHOD']);
 		$params = explode('/', $uri);
@@ -29,7 +26,7 @@ class PHPShell_Action
 
 	private function __construct($method, $uri, $params)
 	{
-		$this->_db = new PDO('sqlite:db.sqlite');
+		$this->_db = new PDO('pgsql:host=localhost;dbname=phpshell', 'phpshell', '');
 		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		if (method_exists($this, $method . ucfirst($uri)))
@@ -46,6 +43,7 @@ class PHPShell_Action
 	public function getHome()
 	{
 		$tpl = new PHPShell_Template('home');
+
 //		$tpl->recent = $this->_query("SELECT * FROM input O ");
 
 		print $tpl->getWrapped();
@@ -59,23 +57,24 @@ class PHPShell_Action
 		do
 		{
 			$short = substr($hash, -$len);
-			$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
+			$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
 
 			$len++;
 		}
-		while (!empty($input) && $hash !== $input[0]['sha1']);
+		while (!empty($input) && $hash !== $input[0]['hash']);
 
 		if (empty($input))
 		{
 			file_put_contents(self::IN.$short, $_POST['code']);
 
-			if (preg_match('~^http://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
-				$source = $matches[3];
+			$referer = explode('/', $_SERVER['HTTP_REFERER']);
+			if ($referer[2] == '3v4l.org' && !empty($referer[3]))
+				$source = $referer[3];
 			else
 				$source = null;
 
-			$this->_query("INSERT INTO input('hash', 'source', 'sha1') VALUES (?, ?, ?)", array($short, $source, $hash));
-			$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
+			$this->_query("INSERT INTO input  VALUES (?, ?, null, ?, 'new')", array($short, $source, $hash));
+			$this->_query("INSERT INTO submit VALUES (?, ?, now(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
 		}
 		else
 		{
@@ -84,11 +83,11 @@ class PHPShell_Action
 
 			try
 			{
-				$this->_query("INSERT INTO submit VALUES (?, ?, datetime(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
+				$this->_query("INSERT INTO submit VALUES (?, ?, now(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
 			}
-			catch (Exception $e)
+			catch (PDOException $e)
 			{
-				$this->_query("UPDATE submit SET updated = datetime(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
+				$this->_query("UPDATE submit SET updated = now(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
 			}
 
 			// Trigger daemon
@@ -128,9 +127,9 @@ class PHPShell_Action
 		if ('new' == $short)
 			return $this->getError(503);
 
-		$input = $this->_query("SELECT * FROM input WHERE hash = ?", array($short));
+		$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
 
-		if (empty($input) || !in_array($type, array('output', 'vld', 'perf', 'refs')))
+		if (empty($input) || !in_array($type, array('output', 'vld', 'perf')))
 			return $this->getError(404);
 
 		$tpl = new PHPShell_Template('get');
@@ -150,20 +149,17 @@ class PHPShell_Action
 	protected function _getOutput($short)
 	{
 		$results = $this->_query("
-			SELECT version, exitCode, hash ||':'|| exitCode as hash, raw
+			SELECT version, \"exitCode\", hash ||':'|| \"exitCode\" as hash, raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			INNER JOIN version ON version.name = result.version
 			WHERE result.input = ? and version LIKE '_.%'
-			ORDER BY version.`order`", array($short));
+			ORDER BY version.order", array($short));
 
 		if (empty($results))
 		{
 			if (!$this->_isBusy($short))
-			{
-//				mail('root@3v4l.org', 'importer crashed - '. $short, 'script is not busy but has no results!');
 				return $this->getError();
-			}
 
 			return array();
 		}
@@ -194,7 +190,7 @@ class PHPShell_Action
 			$prevHash = $result['hash'];
 
 			// Replace all unescaped bell-chars by script path, and unescape raw bells
-			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, ltrim($result['raw'], "\n"));
+			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, ltrim(stream_get_contents($result['raw']), "\n"));
 			$output = str_replace('\\'.chr(7), chr(7), $output);
 			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
 
@@ -226,62 +222,21 @@ class PHPShell_Action
 	protected function _getPerf($short)
 	{
 		return $this->_query("
-			SELECT version, userTime, systemTime, maxMemory
+			SELECT *
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			INNER JOIN version ON version.name = result.version
 			WHERE result.input = ? and version LIKE '_.%'
-			ORDER BY version.`order`", array($short));
+			ORDER BY version.order", array($short));
 	}
 
 	protected function _getVld($short)
 	{
-		$row = $this->_query("
+		return $this->_query("
 			SELECT raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			WHERE result.input = ? and version = 'vld'", array($short));
-
-		if (empty($row))
-			return null;
-
-		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, $row[0]['raw']);
-		$output = str_replace('\\'.chr(7), chr(7), $output);
-
-		return $output;
-	}
-
-	protected function _getRefs($short)
-	{
-		$vld = $this->_getVld($short);
-
-		if (!isset($vld))
-			return;
-
-		$refs = array();
-		if (!preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER))
-			return $refs;
-
-		foreach ($matches as $match)
-		{
-			$rows = $this->_query("SELECT * FROM `references` WHERE operation = ? AND (operand IN(?) OR operand ISNULL)", array($match['op'], $match['operand']));
-			$this->_getReferencesRecursive($rows, $refs);
-		}
-
-		return $refs;
-	}
-
-	protected function _getReferencesRecursive(array $rows, array &$references = array())
-	{
-		foreach ($rows as $row)
-		{
-			$references[ $row['link'] ] = $row['name'];
-
-			if (isset($row['parent']))
-				$this->_getReferencesRecursive($this->_query("SELECT * FROM `references` WHERE id = ?", array($row['parent'])), $references);
-		}
-
-		return $references;
 	}
 
 	protected function _query($statement, array $parameters)
