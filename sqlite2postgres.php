@@ -65,6 +65,10 @@ $p->query("TRUNCATE TABLE result CASCADE");
 $p->query("TRUNCATE TABLE version CASCADE");
 $p->query("TRUNCATE TABLE submit");
 $p->query("TRUNCATE TABLE input");
+$p->query("TRUNCATE TABLE \"references\"");
+
+foreach ($s->query("SELECT * from \"references\" ORDER BY parent ASC") as $row)
+	$p->query("INSERT INTO \"references\" VALUES(". rtrim(str_repeat('?,', count($row)), ',') .")", array_values($row));
 
 report('versions');
 

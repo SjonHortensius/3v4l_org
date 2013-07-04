@@ -1,29 +1,72 @@
 package main
 
 import (
-//	"syscall"
 	"os"
-	"path/filepath"
-//	"errors"
-	"log"
 	"os/exec"
+	"path/filepath"
+	"log"
 	"io"
 	"syscall"
 	"time"
+	_ "github.com/lib/pq"
+	"database/sql"
+	"crypto/sha1"
+	"encoding/base64"
 )
 
-
-//FIXME: globally execute setuid/setgid and SETRLIMIT and tag script as type 'misbehaving' when limits are reached, stopping execution of all versions
-
-type Version struct {
-	binary string
+type Input struct {
+	short string
 }
 
-func (this *Version) execute(script string) error {
-	log.Printf("Executing %s version %s", script, this.binary)
+type Output struct {
+	raw string
+}
 
-	cmd := exec.Command(this.binary, "-c", "/etc", "-q", "/tmp/"+script);
-	cmd.Args[0] = "php";
+type Result struct {
+	input *Input
+	output *Output
+	version string
+	exitCode int
+	created time.Time
+	userTime float64
+	systemTime float64
+	maxMemory int64
+}
+
+func (this *Input) setState(s string) {
+	if r, err := db.Exec("UPDATE input SET state = $1 where short = $2", s, this.short); err != nil {
+		log.Fatalf("Input: failed to update state: %s", err)
+	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
+		log.Fatalf("Input: failed to update state: %d, %s", a, err)
+	}
+}
+
+func (this *Output) getHash() string {
+	h := sha1.New()
+	io.WriteString(h, this.raw)
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+func (this *Result) store() {
+	if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", this.output.getHash(), this.output.raw); err != nil {
+		log.Fatalf("Output: failed to store: %s", err)
+	}
+
+	r, err := db.Exec("INSERT INTO result VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
+		this.input.short, this.output.getHash(), this.version, this.exitCode,
+		this.created, this.userTime, this.systemTime, this.maxMemory,
+	)
+
+	if err != nil {
+		log.Fatalf("Result: failed to store: %s", err)
+	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
+		log.Fatalf("Result: failed to store: %d, %s", a, err)
+	}
+}
+
+func (this *Input) execute(binary string) {
+	cmd := exec.Command(binary, "-c", "/etc", "-q", "/var/lxc/php_shell/in/"+this.short)
+	cmd.Args[0] = "php"
 	cmd.Env = []string {
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
@@ -34,30 +77,31 @@ func (this *Version) execute(script string) error {
 		"USER=nobody",
 		"USERNAME=nobody",
 		"HOME=/",
-	};
-	cmd.SysProcAttr.Credential.Uid = 99
-	cmd.SysProcAttr.Credential.Gid = 99
+	}
 
 	stdout, _ := cmd.StdoutPipe()
 	stderr, _ := cmd.StderrPipe()
 	r := io.MultiReader(stdout, stderr)
-	this.startSafe(cmd)
+	cmd.Start()
 
 	output := make([]byte, 0)
 	buffer := make([]byte, 256)
-	for _, err := r.Read(buffer); err != io.EOF; _, err = r.Read(buffer) {
+	for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
 		if err != nil {
-			log.Printf("while reading output: %s", err)
+			log.Printf("While reading output: %s", err)
 			break
 		}
 
+		buffer = buffer[:n]
 		output = append(output, buffer...)
 
 		if len(output) >= 65535 {
-			log.Println("script has generated too much output, killing it")
+			this.setState("misbehaving")
+			log.Println("Output excessive: killing")
 
 			if err := cmd.Process.Kill(); err != nil {
-				log.Fatalf("failed to kill child `%s`, aborting", err)
+				this.setState("abusive")
+				log.Fatalf("Failed to kill child `%s`, aborting", err)
 			}
 
 			break
@@ -82,25 +126,55 @@ func (this *Version) execute(script string) error {
 	select {
 		case <-time.After(3 * time.Second):
 			if err := cmd.Process.Kill(); err != nil {
-				log.Fatalf("failed to kill child `%s`, aborting", err)
+				this.setState("abusive")
+				log.Fatalf("Failed to kill child `%s`, aborting", err)
 			}
 			<-procDone // allow goroutine to exit
-			log.Println("timeout, process killed")
+			this.setState("misbehaving")
+			log.Println("Timeout: killing child")
 		case state := <-procDone:
 			waitStatus := state.Sys().(syscall.WaitStatus)
-			log.Printf("DONE ", waitStatus.ExitStatus(), state.SysUsage());
-	}
+			usage := state.SysUsage().(*syscall.Rusage)
 
-	return nil;
+			o := &Output{string(output)}
+			r := Result{
+				input: this,
+				output: o,
+				version: binary[len("/usr/bin/php-"):],
+				exitCode: waitStatus.ExitStatus(),
+				created: time.Now(),
+				userTime: float64(usage.Utime.Sec + usage.Utime.Usec / 1000000.0),
+				systemTime: float64(usage.Stime.Sec + usage.Stime.Usec / 1000000.0),
+				maxMemory: usage.Maxrss,
+			}
+			r.store()
+
+			log.Printf("Completed version %s with status %d", r.version, r.exitCode)
+	}
 }
 
-func (v *Version) startSafe(this *exec.Cmd) error {
+var (
+	db *sql.DB
+	input *Input
+)
+
+func init() {
+	if len(os.Args) < 2 {
+		log.Fatal("Missing input: script")
+	}
+
+	if script, err := os.Stat(os.Args[1]); err != nil || script.IsDir() {
+		log.Fatalf("First argument is not a valid file: %s", err)
+	} else {
+		input = &Input{script.Name()}
+	}
+
 	var limits = map [int]int {
 		syscall.RLIMIT_CPU:		2,
 		syscall.RLIMIT_DATA:	64 * 1024 * 1024,
 		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_CORE:	0,
-		syscall.RLIMIT_NOFILE:	4096,
+		syscall.RLIMIT_NOFILE:	2048,
 	}
 
 	for key, value := range limits {
@@ -108,35 +182,44 @@ func (v *Version) startSafe(this *exec.Cmd) error {
 			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
 		}
 	}
-/*
+
+	// Open connection to database
+	var err error
+	db, err = sql.Open("postgres", "user=daemon host=/run/postgresql/ dbname=phpshell sslmode=disable")
+
+	if err != nil {
+		log.Fatalf("Failed connect to db: %s", err)
+	}
+
+	// Ping to establish connection so we can drop privileges
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed ping db: %s", err)
+	}
+
 	if err := syscall.Setgid(99); err != nil {
 		log.Fatalf("Failed to setgid: %v", err)
 	}
 
 	if err := syscall.Setuid(99); err != nil {
-		log.Fatalf("failed to setuid: %v", err)
+		log.Fatalf("Failed to setuid: %v", err)
 	}
-*/
-	return this.Start()
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Missing path for script to execute")
-	}
-	log.Print(os.Args[1])
+	log.SetPrefix("["+input.short+"] ")
+	input.setState("busy")
 
-	file, err := os.Stat(os.Args[1])
-	if err != nil || file.IsDir() {
-		log.Fatalf("First argument is not a valid file: %s", err)
+	versions, err := filepath.Glob("/usr/bin/php-*")
+
+	if  err != nil {
+		log.Fatal("No binaries found to run this script: %s", err)
 	}
 
-	if versions, err := filepath.Glob("/usr/bin/php-*"); err != nil {
-		log.Fatal("No binaries found to run this script: %s", err);
-	} else {
-		for _, version := range versions {
-			version := Version{version}
-			version.execute(file.Name())
-		}
+	for _, version := range versions {
+		input.execute(version)
 	}
+
+	input.setState("done")
+
+	db.Close()
 }

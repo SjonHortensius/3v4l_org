@@ -4,6 +4,8 @@ local	phpshell	daemon	md5
 host	all			all		127.0.0.1/32	trust
 (remove all other entries)
 
+! chmod /var/lxc/php_shell/run/ o=
+
 /etc/lxc/php_shell.fstab:
 
 mount -o bind /run/postgres /var/lxc/php_shell/run/postgres
