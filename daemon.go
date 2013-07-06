@@ -34,11 +34,25 @@ type Result struct {
 }
 
 func (this *Input) setState(s string) {
-	if r, err := db.Exec("UPDATE input SET state = $1 where short = $2", s, this.short); err != nil {
+	if r, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2", s, this.short); err != nil {
 		log.Fatalf("Input: failed to update state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		log.Fatalf("Input: failed to update state: %d, %s", a, err)
 	}
+}
+
+func (this *Input) newRun() int {
+	if r, err := db.Exec("UPDATE input SET run = run + 1, state = $1 WHERE short = $2", "busy", this.short); err != nil {
+		log.Fatalf("Input: failed to update run+state: %s", err)
+	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
+		log.Fatalf("Input: failed to update run+state: %d, %s", a, err)
+	}
+
+	var run int
+	if err := db.QueryRow("SELECT run FROM input WHERE short = $1", this.short).Scan(&run); err != nil {
+		log.Fatalf("Input: failed to query run: %s", err)
+	}
+	return run;
 }
 
 func (this *Output) getHash() string {
@@ -52,9 +66,9 @@ func (this *Result) store() {
 		log.Fatalf("Output: failed to store: %s", err)
 	}
 
-	r, err := db.Exec("INSERT INTO result VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
+	r, err := db.Exec("INSERT INTO result VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 		this.input.short, this.output.getHash(), this.version, this.exitCode,
-		this.created, this.userTime, this.systemTime, this.maxMemory,
+		this.created, this.userTime, this.systemTime, this.maxMemory, run,
 	)
 
 	if err != nil {
@@ -65,7 +79,9 @@ func (this *Result) store() {
 }
 
 func (this *Input) execute(binary string) {
-	cmd := exec.Command(binary, "-c", "/etc", "-q", "/var/lxc/php_shell/in/"+this.short)
+	log.SetPrefix("["+this.short+":"+binary[len("/usr/bin/php-"):]+"] ")
+
+	cmd := exec.Command(binary, "-c", "/etc", "-q", "/in/"+this.short)
 	cmd.Args[0] = "php"
 	cmd.Env = []string {
 		"TERM=xterm",
@@ -79,35 +95,6 @@ func (this *Input) execute(binary string) {
 		"HOME=/",
 	}
 
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	r := io.MultiReader(stdout, stderr)
-	cmd.Start()
-
-	output := make([]byte, 0)
-	buffer := make([]byte, 256)
-	for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
-		if err != nil {
-			log.Printf("While reading output: %s", err)
-			break
-		}
-
-		buffer = buffer[:n]
-		output = append(output, buffer...)
-
-		if len(output) >= 65535 {
-			this.setState("misbehaving")
-			log.Println("Output excessive: killing")
-
-			if err := cmd.Process.Kill(); err != nil {
-				this.setState("abusive")
-				log.Fatalf("Failed to kill child `%s`, aborting", err)
-			}
-
-			break
-		}
-	}
-
 	/*
 	 * Channels are meant to communicate between routines. We create a channel
 	 * that transports a ProcessState, which we return from Process.Wait. The
@@ -116,46 +103,95 @@ func (this *Input) execute(binary string) {
 	 * Refs: http://stackoverflow.com/questions/11886531
 	 */
 
+	procOut := make(chan string)
 	procDone := make(chan *os.ProcessState)
 
 	go func() {
-		state, _ := cmd.Process.Wait()
-		procDone <- state
+		stdout, _ := cmd.StdoutPipe()
+		stderr, _ := cmd.StderrPipe()
+		r := io.MultiReader(stdout, stderr)
+
+		cmd.Start()
+
+		go func() {
+			state, _ := cmd.Process.Wait()
+			procDone <- state
+		}()
+
+		output := make([]byte, 0)
+		buffer := make([]byte, 256)
+		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
+			if err != nil {
+				log.Printf("While reading output: %s", err)
+				break
+			}
+
+			buffer = buffer[:n]
+			output = append(output, buffer...)
+
+			if len(output) >= 131070 {
+				this.setState("verbose")
+				log.Println("Output excessive: killing")
+
+				if err := cmd.Process.Kill(); err != nil {
+					this.setState("abusive")
+					log.Fatalf("Failed to kill child `%s`, aborting", err)
+				}
+
+				break
+			}
+		}
+
+		procOut <- string(output)
 	}()
 
+	var state *os.ProcessState
+	var output string
+
 	select {
-		case <-time.After(3 * time.Second):
+		case <-time.After(2250 * time.Millisecond):
 			if err := cmd.Process.Kill(); err != nil {
 				this.setState("abusive")
-				log.Fatalf("Failed to kill child `%s`, aborting", err)
+				log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
 			}
-			<-procDone // allow goroutine to exit
+
+			state = <-procDone
+			output = <-procOut
+
 			this.setState("misbehaving")
-			log.Println("Timeout: killing child")
-		case state := <-procDone:
-			waitStatus := state.Sys().(syscall.WaitStatus)
-			usage := state.SysUsage().(*syscall.Rusage)
-
-			o := &Output{string(output)}
-			r := Result{
-				input: this,
-				output: o,
-				version: binary[len("/usr/bin/php-"):],
-				exitCode: waitStatus.ExitStatus(),
-				created: time.Now(),
-				userTime: float64(usage.Utime.Sec + usage.Utime.Usec / 1000000.0),
-				systemTime: float64(usage.Stime.Sec + usage.Stime.Usec / 1000000.0),
-				maxMemory: usage.Maxrss,
-			}
-			r.store()
-
-			log.Printf("Completed version %s with status %d", r.version, r.exitCode)
+			log.Println("Timeout: killed")
+		case state = <-procDone:
+			output = <-procOut
 	}
+
+	waitStatus := state.Sys().(syscall.WaitStatus)
+	usage := state.SysUsage().(*syscall.Rusage)
+
+	var exitCode int
+	if waitStatus.Exited() {
+		exitCode = waitStatus.ExitStatus()
+	} else {
+		exitCode = 128 + int(waitStatus.Signal())
+	}
+
+	r := Result{
+		input:		this,
+		output:		&Output{output},
+		version:	binary[len("/usr/bin/php-"):],
+		exitCode:	exitCode,
+		created:	time.Now(),
+		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec) / 1000000.0,
+		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec) / 1000000.0,
+		maxMemory:	usage.Maxrss,
+	}
+	r.store()
+	log.Printf("Completed with status %d", r.exitCode)
 }
 
 var (
 	db *sql.DB
 	input *Input
+	run int
 )
 
 func init() {
@@ -183,9 +219,8 @@ func init() {
 		}
 	}
 
-	// Open connection to database
 	var err error
-	db, err = sql.Open("postgres", "user=daemon host=/run/postgresql/ dbname=phpshell sslmode=disable")
+	db, err = sql.Open("postgres", "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable")
 
 	if err != nil {
 		log.Fatalf("Failed connect to db: %s", err)
@@ -207,12 +242,12 @@ func init() {
 
 func main() {
 	log.SetPrefix("["+input.short+"] ")
-	input.setState("busy")
+	run = input.newRun()
 
 	versions, err := filepath.Glob("/usr/bin/php-*")
 
 	if  err != nil {
-		log.Fatal("No binaries found to run this script: %s", err)
+		log.Fatal("No binaries found to execute: %s", err)
 	}
 
 	for _, version := range versions {
@@ -220,6 +255,5 @@ func main() {
 	}
 
 	input.setState("done")
-
 	db.Close()
 }

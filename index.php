@@ -25,7 +25,7 @@ class PHPShell_Action
 
 	private function __construct($method, $uri, $params)
 	{
-		$this->_db = new PDO('pgsql:host=localhost;dbname=phpshell', 'website', '');
+		$this->_db = new PDO('pgsql:host=localhost;dbname=phpshell', 'website', '3lMC5jLazzzvd3K9lRyt0lVC5');
 		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		if (method_exists($this, $method . ucfirst($uri)))
@@ -70,7 +70,7 @@ class PHPShell_Action
 		}
 		else
 		{
-			if ($input->state != "done")
+			if ($input[0]->state == "busy")
 				return $this->getError(403);
 
 			try
@@ -135,11 +135,12 @@ class PHPShell_Action
 	protected function _getOutput($short)
 	{
 		$results = $this->_query("
-			SELECT version, \"exitCode\", hash ||':'|| \"exitCode\" as hash, raw
+			SELECT version, \"exitCode\", output.hash ||':'|| \"exitCode\" as hash, raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
+			INNER JOIN input ON input.short = result.input
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? and version LIKE '_.%'
+			WHERE result.input = ? AND result.run = input.run AND version LIKE '_.%'
 			ORDER BY version.order", array($short));
 
 		if (empty($results))
@@ -202,12 +203,27 @@ class PHPShell_Action
 
 	protected function _getPerf($short)
 	{
+/*
+		return $this->_query("
+			SELECT
+				AVG(\"systemTime\") \"systemTime\",
+				AVG(\"userTime\") \"userTime\",
+				AVG(\"maxMemory\") \"maxMemory\",
+				version,
+				count(*)
+			FROM result
+			INNER JOIN version ON version.name = result.version
+			WHERE result.input = ? AND version LIKE '_.%'
+			GROUP BY result.version", array($short));
+
+*/
 		return $this->_query("
 			SELECT *
 			FROM result
+			INNER JOIN input ON input.short = result.input
 			INNER JOIN output ON output.hash = result.output
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? and version LIKE '_.%'
+			WHERE result.input = ? AND result.run = input.run AND version LIKE '_.%'
 			ORDER BY version.order", array($short));
 	}
 
@@ -216,8 +232,9 @@ class PHPShell_Action
 		$row = $this->_query("
 			SELECT raw
 			FROM result
+			INNER JOIN input ON input.short = result.input
 			INNER JOIN output ON output.hash = result.output
-			WHERE result.input = ? and version = 'vld'", array($short));
+			WHERE result.input = ? AND result.run = input.run AND version = 'vld'", array($short));
 
 		if (empty($row))
 			return null;
@@ -255,7 +272,7 @@ class PHPShell_Action
 			$references[ $row->link ] = $row->name;
 
 			if (isset($row->parent))
-				$this->_getReferencesRecursive($this->_query("SELECT * FROM `references` WHERE id = ?", array($row->parent)), $references);
+				$this->_getReferencesRecursive($this->_query("SELECT * FROM \"references\" WHERE id = ?", array($row->parent)), $references);
 		}
 
 		return $references;

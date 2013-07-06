@@ -1,3 +1,5 @@
+delete import.php and monitor.sh
+
 /var/lib/postgres/data/pg_hba.conf:
 
 local	phpshell	daemon	md5

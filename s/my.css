@@ -204,3 +204,12 @@ body > a
 	font-size: 12px;
 	background: white;
 }
+
+.abusive {
+	position: absolute;
+	right: 20px;
+	top: 20px;
+	padding: 20px;
+	background: #c66;
+	box-shadow: 0 0 30px red;
+}

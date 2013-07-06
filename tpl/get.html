@@ -1,3 +1,9 @@
+<? if (0 && in_array($this->input->state, array("misbehaving", "abusive"))){ ?>
+	<div class="abusive">
+		<h2>Abusive script</h2>
+		<p>This script was killed while abusing our resources</p>
+	</div>
+<? } ?>
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP shell, test in 80+ different PHP versions!</small></h1>
 	<textarea name="code"><?=htmlspecialchars($this->code)?></textarea>

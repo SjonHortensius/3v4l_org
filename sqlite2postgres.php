@@ -1,6 +1,7 @@
 <?php
 
-ini_set('memory_limit', '1G');
+ini_set('memory_limit', '512M');
+ini_set('display_errors', true);
 
 function report($newName = null)
 {
@@ -26,7 +27,7 @@ function report($newName = null)
 
 class p extends PDO
 {
-	public function __construct($dsn, $username = null)
+	public function __construct($dsn, $username = null, $passwd = null, $options = null)
 	{
 		parent::__construct($dsn, $username, $passwd, $options);
 		$this->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -56,15 +57,15 @@ class p extends PDO
 	}
 }
 
-$s = new p('sqlite:db.sqlite');
-$p = new p('pgsql:host=localhost;dbname=phpshell', 'phpshell', '');
+$s = new p('sqlite:/var/backup/3v4l.org/srv/http/3v4l.org/db.sqlite');
+$p = new p('pgsql:host=127.0.0.1;dbname=phpshell', 'postgres', '');
 
 report('truncate');
-$p->query("TRUNCATE TABLE output *");
+$p->query("TRUNCATE TABLE output CASCADE");
 $p->query("TRUNCATE TABLE result CASCADE");
 $p->query("TRUNCATE TABLE version CASCADE");
 $p->query("TRUNCATE TABLE submit");
-$p->query("TRUNCATE TABLE input");
+$p->query("TRUNCATE TABLE input CASCADE");
 $p->query("TRUNCATE TABLE \"references\"");
 
 foreach ($s->query("SELECT * from \"references\" ORDER BY parent ASC") as $row)
@@ -78,6 +79,7 @@ foreach ($s->query("SELECT * from version") as $row)
 report('input');
 
 $p->query("BEGIN");
+
 $p->query("SET CONSTRAINTS ALL DEFERRED");
 foreach ($s->query("SELECT * from input") as $row)
 {
@@ -85,13 +87,15 @@ foreach ($s->query("SELECT * from input") as $row)
 		$row['state'] = 'done';
 	$p->query("INSERT INTO input VALUES(". rtrim(str_repeat('?,', count($row)), ',') .")", array_values($row));
 }
+
 $p->query("COMMIT");
 
 report('output');
 
 $o = array();
 
-foreach ($s->query("SELECT * from output") as $row)
+$sOutput = $s->query("SELECT * from output", array(), false);
+while ($row = $sOutput->fetch(PDO::FETCH_ASSOC))
 {
 	$o[ $row['hash'] ] = base64_encode(sha1($row['raw'], 1));
 	$row['hash'] = $o[ $row['hash'] ];
@@ -105,9 +109,8 @@ foreach ($s->query("SELECT * from output") as $row)
 
 report('results');
 
-$statementResults = $s->query("SELECT * from result", array(), false);
-while ($row = $statementResults->fetch(PDO::FETCH_ASSOC))
-#foreach ($s->query("SELECT * from result", array(), false) as $row)
+$sResults = $s->query("SELECT * from result", array(), false);
+while ($row = $sResults->fetch(PDO::FETCH_ASSOC))
 {
 	$row['output'] = $o[ $row['output'] ];
 	$p->query("INSERT INTO result VALUES(". rtrim(str_repeat('?,', count($row)), ',') .")", array_values($row));
