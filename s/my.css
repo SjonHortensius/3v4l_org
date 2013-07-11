@@ -152,15 +152,18 @@ dd:hover, dt:target + dd
 	-webkit-transition: max-height 0.3s ease-in;
 }
 
-#perf_data
+.perf table
 {
 	width: 500px;
+	border-collapse: collapse;
+	border-spacing: 0;
 }
 
-#perf_chart
+.perf table td
 {
-	width: 600px;
-	height: 450px;
+	text-align: right;
+	padding: 4px;
+	border-top: 1px solid #ddd;
 }
 
 input

@@ -7,7 +7,7 @@
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 	<link rel="stylesheet" href="/s/c.css"/>
 </head>
-<body>
+<body<?=isset($this->tab)?' class="'.$this->tab.'"':''?>>
 <?=$this->content?>
 
 	<a href="https://twitter.com/3v4l_org" target="_blank">Follow us on Twitter</a>

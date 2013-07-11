@@ -194,6 +194,8 @@ var (
 	run int
 )
 
+const RLIMIT_NPROC = 0x6
+
 func init() {
 	if len(os.Args) < 2 {
 		log.Fatal("Missing input: script")
@@ -211,6 +213,7 @@ func init() {
 		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_CORE:	0,
 		syscall.RLIMIT_NOFILE:	2048,
+		RLIMIT_NPROC:			64,
 	}
 
 	for key, value := range limits {

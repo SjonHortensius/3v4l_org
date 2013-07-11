@@ -19,7 +19,7 @@ var isBusy, eval_org = new Class({
 
 		$$('dd, dt').addEvent('click', this._clickDt);
 
-		if (typeof perfData != 'undefined')
+		if (document.body.hasClass('perf'))
 			this.drawPerformanceGraphs();
 
 		if ($$('input[type=submit]').length == 0 || !$$('input[type=submit]')[0].hasClass('busy'))
@@ -76,6 +76,28 @@ var isBusy, eval_org = new Class({
 
 	drawPerformanceGraphs: function()
 	{
+		var r = Raphael('chart', 600, 450), fin2 = function () {
+			var y = [], res = [];
+			for (var i = this.bars.length; i--;) {
+				y.push(this.bars[i].y);
+				res.push(this.bars[i].value || "0");
+			}
+			this.flag = r.popup(this.bars[0].x, Math.min.apply(Math, y), res.join(", ")).insertBefore(this);
+		},fout2 = function () {
+			this.flag.animate({opacity: 0}, 300, function () {this.remove();});
+		},
+		txtattr = { font: "13px sans-serif" };
+
+		var rS = [], rU = [], rM = [];
+		$$('table tbody tr').each(function(tr){
+			rS.push(parseFloat(tr.childNodes[1].textContent.split(' ').shift()));
+			rU.push(parseFloat(tr.childNodes[2].textContent.split(' ').shift()));
+			rM.push(parseInt(tr.childNodes[3].textContent.split(' ').shift().split(',').join('')));
+		});
+		console.log(rS, rU, rM);
+		r.barchart(50, 50, 550, 400, [rS, rU], {stacked: true, type: "soft", axis: "0 0 1 1"}).hoverColumn(fin2, fout2);
+	return;
+
 		var options =
 		{
 			seriesType: 'steppedArea',
