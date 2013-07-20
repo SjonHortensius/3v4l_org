@@ -1,7 +1,13 @@
 <? if (0 && in_array($this->input->state, array("misbehaving", "abusive"))){ ?>
-	<div class="abusive">
+	<div class="alert error">
 		<h2>Abusive script</h2>
 		<p>This script was killed while abusing our resources</p>
+	</div>
+<? } ?>
+<? if (0 && $opcode == "DO_FCALL" && $operand == "memory_get_usage" ){ ?>
+	<div class="alert">
+		<h2>Interested in performance?</h2>
+		<p>There is no need to compare memory usage manually, just look at the <a>performance tab</a></p>
 	</div>
 <? } ?>
 <form method="POST" action="/new">
@@ -15,7 +21,7 @@
 
 <ul id="tabs">
 	<li<?= ('output' == $this->tab ? ' class="active"' : '') ?>><a href="/<?=$this->input->short?>#tabs">Output</a></li>
-<? foreach (['vld' => 'VLD opcodes', 'perf' => 'Performance', 'refs' => 'References'] as $link => $name){ ?>
+<? foreach (['vld' => 'VLD opcodes', 'perf' => 'Performance', 'refs' => 'References', 'rel' => 'Related'] as $link => $name){ ?>
 	<li<?= ($link == $this->tab ? ' class="active"' : '')	?>><a href="/<?=$this->input->short .'/'. $link?>#tabs"><?=$name?></a></li>
 <? } ?>
 </ul>

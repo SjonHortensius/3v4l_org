@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 	"log"
 	"io"
 	"syscall"
@@ -78,10 +77,10 @@ func (this *Result) store() {
 	}
 }
 
-func (this *Input) execute(binary string) {
-	log.SetPrefix("["+this.short+":"+binary[len("/usr/bin/php-"):]+"] ")
+func (this *Input) execute(version string) {
+	log.SetPrefix("["+this.short+":"+version+"] ")
 
-	cmd := exec.Command(binary, "-c", "/etc", "-q", "/in/"+this.short)
+	cmd := exec.Command("/usr/bin/php-"+version, "-c", "/etc", "-q", "/in/"+this.short)
 	cmd.Args[0] = "php"
 	cmd.Env = []string {
 		"TERM=xterm",
@@ -107,6 +106,15 @@ func (this *Input) execute(binary string) {
 	procDone := make(chan *os.ProcessState)
 
 	go func() {
+		// FIXME: this routine runs as root again wtf
+		if err := syscall.Setgid(99); err != nil {
+			log.Fatalf("Failed to setgid: %v", err)
+		}
+
+		if err := syscall.Setuid(99); err != nil {
+			log.Fatalf("Failed to setuid: %v", err)
+		}
+
 		stdout, _ := cmd.StdoutPipe()
 		stderr, _ := cmd.StderrPipe()
 		r := io.MultiReader(stdout, stderr)
@@ -129,7 +137,7 @@ func (this *Input) execute(binary string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if len(output) >= 131070 {
+			if !(version == "xdebug" || version == "vld") && len(output) >= 65536 {
 				this.setState("verbose")
 				log.Println("Output excessive: killing")
 
@@ -177,7 +185,7 @@ func (this *Input) execute(binary string) {
 	r := Result{
 		input:		this,
 		output:		&Output{output},
-		version:	binary[len("/usr/bin/php-"):],
+		version:	version,
 		exitCode:	exitCode,
 		created:	time.Now(),
 		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec) / 1000000.0,
@@ -247,11 +255,26 @@ func main() {
 	log.SetPrefix("["+input.short+"] ")
 	run = input.newRun()
 
-	versions, err := filepath.Glob("/usr/bin/php-*")
+	rs, err := db.Query("SELECT name FROM version ORDER BY \"order\" DESC")
 
 	if  err != nil {
-		log.Fatal("No binaries found to execute: %s", err)
+		log.Fatal("No versions found to execute: %s", err)
 	}
+
+	versions := make([]string, 256)
+	i := 0
+	for rs.Next() {
+		var version string
+
+		if err := rs.Scan(&version); err != nil {
+			log.Fatal("Error fetching version: %s", err)
+		}
+
+		versions[i] = version
+		i++
+	}
+
+	versions = versions[:i-1]
 
 	for _, version := range versions {
 		input.execute(version)

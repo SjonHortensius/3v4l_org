@@ -152,6 +152,13 @@ dd:hover, dt:target + dd
 	-webkit-transition: max-height 0.3s ease-in;
 }
 
+.perf #chart,
+.perf #data
+{
+	width: 800px;
+	height: 450px
+}
+
 .perf table
 {
 	width: 500px;
@@ -208,11 +215,16 @@ body > a
 	background: white;
 }
 
-.abusive {
+.alert {
 	position: absolute;
 	right: 20px;
 	top: 20px;
 	padding: 20px;
+	background: #f5f5f5;
+	box-shadow: 0 0 30px #0074CC;
+}
+
+.abusive {
 	background: #c66;
 	box-shadow: 0 0 30px red;
 }

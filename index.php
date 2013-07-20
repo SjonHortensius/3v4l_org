@@ -47,6 +47,11 @@ class PHPShell_Action
 		PHPShell_Template::show('home');
 	}
 
+	public function getLast()
+	{
+		PHPShell_Template::show('last');
+	}
+
 	public function postNew()
 	{
 		if (false === strpos($_POST['code'], '<?'))
@@ -127,7 +132,7 @@ class PHPShell_Action
 
 		$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
 
-		if (empty($input) || !in_array($type, array('output', 'vld', 'perf', 'refs')))
+		if (empty($input) || !in_array($type, array('output', 'vld', 'perf', 'refs', 'rel')))
 			return $this->getError(404);
 
 		PHPShell_Template::show('get', [
@@ -238,35 +243,34 @@ class PHPShell_Action
 		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, stream_get_contents($row[0]->raw));
 		$output = str_replace('\\'.chr(7), chr(7), $output);
 
+/**/
+		if (preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $output, $matches, PREG_SET_ORDER))
+		{
+			foreach ($matches as $match)
+			{
+				$operand = isset($match['operand']) ? $match['operand'] : null;
+				try
+				{
+					$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], $operand));
+				}
+				catch (Exception $e)
+				{
+					// ignore duplicates
+				}
+			}
+		}
+/**/
 		return $output;
 	}
 
 	protected function _getRefs($short)
 	{
-		$refs = ($this->_query("SELECT link, name FROM operations o INNER JOIN \"references\" r ON r.operation = o.operation AND o.operand = r.operand WHERE input = ?", array($short)));
-		if (!empty($refs))
-			die(var_dump($refs));
+		// Populate operations
+		$this->_getVld($short);
 
-		$vld = $this->_getVld($short);
+		$refs = $this->_query("SELECT link, name FROM operations o INNER JOIN \"references\" r ON r.operation = o.operation AND o.operand = r.operand WHERE input = ?", array($short));
 
-		if (!isset($vld))
-			return;
-
-		$refs = array();
-		if (!preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER))
-			return $refs;
-
-		foreach ($matches as $match)
-		{
-			$operand = isset($match['operand']) ? $match['operand'] : null;
-			try{
-				$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], $operand));
-			}
-			catch (Exception $e)
-			{}
-		}
-
-		return $refs;
+		return $this->_getReferencesRecursive($refs);
 	}
 
 	protected function _getReferencesRecursive(array $rows, array &$references = array())
@@ -279,7 +283,7 @@ class PHPShell_Action
 				$this->_getReferencesRecursive($this->_query("SELECT * FROM references WHERE id = ?", array($row->parent)), $references);
 		}
 
-//		return $references;
+		return $references;
 	}
 
 	protected function _query($statement, array $parameters)

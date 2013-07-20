@@ -76,6 +76,7 @@ var isBusy, eval_org = new Class({
 
 	drawPerformanceGraphs: function()
 	{
+/*
 		var r = Raphael('chart', 600, 450), fin2 = function () {
 			var y = [], res = [];
 			for (var i = this.bars.length; i--;) {
@@ -94,10 +95,11 @@ var isBusy, eval_org = new Class({
 			rU.push(parseFloat(tr.childNodes[2].textContent.split(' ').shift()));
 			rM.push(parseInt(tr.childNodes[3].textContent.split(' ').shift().split(',').join('')));
 		});
-		console.log(rS, rU, rM);
+		var leftgutter = 30, bottomgutter = 20, width = 600, height = 450;
+		r.drawGrid(leftgutter + X * .5 + .5, topgutter + .5, width - leftgutter - X, height - topgutter - bottomgutter, 10, 10, "#000");
 		r.barchart(50, 50, 550, 400, [rS, rU], {stacked: true, type: "soft", axis: "0 0 1 1"}).hoverColumn(fin2, fout2);
 	return;
-
+*/
 		var options =
 		{
 			seriesType: 'steppedArea',
@@ -116,10 +118,10 @@ var isBusy, eval_org = new Class({
 
 		var view = new google.visualization.DataView(perfData);
 
-		var table = new google.visualization.Table(document.getElementById('perf_data'));
+		var table = new google.visualization.Table(document.getElementById('data'));
 		table.draw(view, {sortColumn: 0});
 
-		var chart = new google.visualization.ComboChart(document.getElementById('perf_chart'));
+		var chart = new google.visualization.ComboChart(document.getElementById('chart'));
 		chart.draw(perfData, options);
 
 		google.visualization.events.addListener(table, 'sort',
