@@ -228,9 +228,14 @@ body > a
 	padding: 20px;
 	background: #f5f5f5;
 	box-shadow: 0 0 30px #0074CC;
+	border-radius: 0.5em;
 }
 
-.abusive {
+.alert h2 {
+	margin: 0;
+}
+
+.alert.error {
 	background: #c66;
 	box-shadow: 0 0 30px red;
 }

@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"crypto/sha1"
 	"encoding/base64"
+	"runtime"
 )
 
 type Input struct {
@@ -152,7 +153,7 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if version == "xdebug" || version == "vld" || len(output) < 65536 {
+			if version == "xdebug" || version == "vld" || totalOutput + len(output) < 512 * 1024 {
 				continue
 			}
 
@@ -160,11 +161,16 @@ func (this *Input) execute(version string) {
 			log.Println("Output excessive: killing")
 
 			if err := cmd.Process.Kill(); err != nil {
-				this.setState("abusive")
-				log.Fatalf("Failed to kill child `%s`, aborting", err)
+				if err.Error() != "os: process already finished" {
+					this.setState("abusive")
+				}
 			}
 
-			break
+			log.Fatalf("Too much output `%s`, aborting", totalOutput + len(output))
+		}
+
+		if version != "xdebug" && version != "vld" {
+			totalOutput += len(output)
 		}
 
 		procOut <- string(output)
@@ -210,13 +216,13 @@ func (this *Input) execute(version string) {
 		maxMemory:	usage.Maxrss,
 	}
 	r.store()
-	log.Printf("Completed with status %d", r.exitCode)
 }
 
 var (
 	db *sql.DB
 	input *Input
 	run int
+	totalOutput int = 0
 )
 
 const RLIMIT_NPROC = 0x6

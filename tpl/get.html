@@ -1,13 +1,27 @@
-<? if (0 && in_array($this->input->state, array("misbehaving", "abusive"))){ ?>
+<?
+switch ($this->input->state)
+{
+	case 'misbehaving':
+	case 'abusive':
+?>
 	<div class="alert error">
 		<h2>Abusive script</h2>
-		<p>This script was killed while abusing our resources</p>
+		<p>This script was stopped while abusing our resources</p>
 	</div>
-<? } ?>
-<? if (0 && $opcode == "DO_FCALL" && $operand == "memory_get_usage" ){ ?>
+<? break;
+	case 'verbose':
+?>
+	<div class="alert warning">
+		<h2>Verbose script</h2>
+		<p>This script was stopped because it was generating too much output</p>
+	</div>
+<? break;
+}
+?>
+<? if (0&& $opcode == "DO_FCALL" && $operand == "memory_get_usage" ){ ?>
 	<div class="alert">
 		<h2>Interested in performance?</h2>
-		<p>There is no need to compare memory usage manually, just look at the <a>performance tab</a></p>
+		<p>There is no need to compare memory-usage manually, just look at the <a>performance tab</a></p>
 	</div>
 <? } ?>
 <form method="POST" action="/new">
@@ -16,7 +30,9 @@
 <? if (!empty($this->input->source)){ ?>
 	<a href="/<?=$this->input->source?>">based on <?=$this->input->source?></a>
 <? } ?>
+<? if (in_array($this->input->source, array('new', 'done', 'busy'))){ ?>
 	<input type="submit" value="eval();"<?=($this->input->state == 'busy' ? ' class="busy"' : '')?> />
+<? } ?>
 </form>
 
 <ul id="tabs">

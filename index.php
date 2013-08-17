@@ -277,7 +277,7 @@ class PHPShell_Action
 
 		return $this->_getReferencesRecursive($refs);
 	}
-
+/*
 	protected function _getRel($short)
 	{
 		$related = $this->_query("SELECT short, \"operationCount\" FROM input WHERE source = ? LIMIT 9", array($short));
@@ -287,7 +287,7 @@ class PHPShell_Action
 
 		return $related;
 	}
-
+*/
 	protected function _getReferencesRecursive(array $rows, array &$references = array())
 	{
 		foreach ($rows as $row)
