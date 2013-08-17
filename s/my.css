@@ -159,14 +159,20 @@ dd:hover, dt:target + dd
 	height: 450px
 }
 
-.perf table
+.rel td>div
 {
-	width: 500px;
+	width: 375px;
+	height: 200px;
+}
+
+table
+{
+	width: 800px;
 	border-collapse: collapse;
 	border-spacing: 0;
 }
 
-.perf table td
+table td
 {
 	text-align: right;
 	padding: 4px;

@@ -8,7 +8,7 @@ _gaq.push(['_trackPageview']);
 	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
 
-var isBusy, eval_org = new Class({
+var evalOrg, eval_org = new Class({
 	refreshTimer: null,
 
 	initialize: function()
@@ -16,16 +16,12 @@ var isBusy, eval_org = new Class({
 		this.richEditor();
 
 		$$('h1').addEvent('click', function(){ window.location = '/'; });
-
 		$$('dd, dt').addEvent('click', this._clickDt);
 
-		if (document.body.hasClass('perf'))
-			this.drawPerformanceGraphs();
+		if ($$('input[type=submit]').length == 1 && $$('input[type=submit]')[0].hasClass('busy'))
+			this.refreshTimer = setInterval(this.refresh.bind(this), 1000);
 
-		if ($$('input[type=submit]').length == 0 || !$$('input[type=submit]')[0].hasClass('busy'))
-			return;
-
-		this.refreshTimer = setInterval(this.refresh.bind(this), 1000);
+		events.each(function(ev){ ev.bind(this)(); }, this);
 	},
 
 	refresh: function()
@@ -71,10 +67,18 @@ var isBusy, eval_org = new Class({
 			lineWrapping: true,
 			matchBrackets: true,
 			mode: 'application/x-httpd-php',
+			autofocus: true,
 		});
+
+		$$('.CodeMirror').each(function (el){
+			el.addEvent('keydown', function(ev){
+				if (event.ctrlKey && event.keyIdentifier == 'Enter')
+					$$('input[type=submit]')[0].click();
+			})
+		}); 
 	},
 
-	drawPerformanceGraphs: function()
+	drawPerformanceGraphs: function(data, chart, table)
 	{
 /*
 		var r = Raphael('chart', 600, 450), fin2 = function () {
@@ -100,6 +104,7 @@ var isBusy, eval_org = new Class({
 		r.barchart(50, 50, 550, 400, [rS, rU], {stacked: true, type: "soft", axis: "0 0 1 1"}).hoverColumn(fin2, fout2);
 	return;
 */
+		data.unshift(['Version', 'System time', 'User time', 'Max. memory usage']);
 		var options =
 		{
 			seriesType: 'steppedArea',
@@ -110,7 +115,8 @@ var isBusy, eval_org = new Class({
 				{minValue: 0, format: '#.### s'},
 				{minValue: 0, format: '#.### MiB'},
 			],
-		};
+			colors: ['#36c', '#3c6', '#f90']
+		}, perfData = google.visualization.arrayToDataTable(data);
 
 		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 1);
 		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 2);
@@ -118,11 +124,14 @@ var isBusy, eval_org = new Class({
 
 		var view = new google.visualization.DataView(perfData);
 
-		var table = new google.visualization.Table(document.getElementById('data'));
-		table.draw(view, {sortColumn: 0});
-
-		var chart = new google.visualization.ComboChart(document.getElementById('chart'));
+		var chart = new google.visualization.ComboChart(chart);
 		chart.draw(perfData, options);
+
+		if (!table)
+			return;
+
+		var table = new google.visualization.Table(table);
+		table.draw(view, {sortColumn: 0});
 
 		google.visualization.events.addListener(table, 'sort',
 			function(event)
@@ -133,4 +142,4 @@ var isBusy, eval_org = new Class({
 	}
 });
 
-window.addEvent('domready', function(){ new eval_org; });
+window.addEvent('domready', function(){ evalOrg = new eval_org; });

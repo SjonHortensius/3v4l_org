@@ -21,7 +21,7 @@
 
 <ul id="tabs">
 	<li<?= ('output' == $this->tab ? ' class="active"' : '') ?>><a href="/<?=$this->input->short?>#tabs">Output</a></li>
-<? foreach (['vld' => 'VLD opcodes', 'perf' => 'Performance', 'refs' => 'References', 'rel' => 'Related'] as $link => $name){ ?>
+<? foreach (['vld' => 'VLD opcodes', 'perf' => 'Performance', 'refs' => 'References', /*'rel' => 'Related'*/] as $link => $name){ ?>
 	<li<?= ($link == $this->tab ? ' class="active"' : '')	?>><a href="/<?=$this->input->short .'/'. $link?>#tabs"><?=$name?></a></li>
 <? } ?>
 </ul>

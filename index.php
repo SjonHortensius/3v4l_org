@@ -98,7 +98,7 @@ class PHPShell_Action
 			touch(self::IN. $short);
 		}
 
-		usleep(200000);
+		usleep(300000);
 		die(header('Location: /'. $short, 302));
 	}
 
@@ -132,12 +132,37 @@ class PHPShell_Action
 
 		$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
 
-		if (empty($input) || !in_array($type, array('output', 'vld', 'perf', 'refs', 'rel')))
+		if (empty($input) || !method_exists($this, '_get'.ucfirst($type)))
 			return $this->getError(404);
+		else
+			$input = $input[0];
+
+		// Attempt to retrigger the daemon
+		if ($input->state == 'new')
+		{
+			touch(self::IN. $short);
+			usleep(200000);
+			$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
+			$input = $input[0];
+		}
+
+		if (!isset($input->operationCount) && $vld = $this->_getVld($short))
+		{
+			$count = preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER);
+			$this->_query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", array($count, $short));
+
+			foreach ($matches as $match)
+			{
+				try
+				{
+					$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], isset($match['operand']) ? $match['operand'] : null));
+				} catch (PDOException $e){}
+			}
+		}
 
 		PHPShell_Template::show('get', [
 			'title' =>  $short,
-			'input' => $input[0],
+			'input' => $input,
 			'code' => file_get_contents(self::IN. $short),
 			'data' => call_user_func(array($this, '_get'. $type), $short),
 			'tab' => $type,
@@ -243,34 +268,24 @@ class PHPShell_Action
 		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, stream_get_contents($row[0]->raw));
 		$output = str_replace('\\'.chr(7), chr(7), $output);
 
-/**/
-		if (preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $output, $matches, PREG_SET_ORDER))
-		{
-			foreach ($matches as $match)
-			{
-				$operand = isset($match['operand']) ? $match['operand'] : null;
-				try
-				{
-					$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], $operand));
-				}
-				catch (Exception $e)
-				{
-					// ignore duplicates
-				}
-			}
-		}
-/**/
 		return $output;
 	}
 
 	protected function _getRefs($short)
 	{
-		// Populate operations
-		$this->_getVld($short);
-
 		$refs = $this->_query("SELECT link, name FROM operations o INNER JOIN \"references\" r ON r.operation = o.operation AND o.operand = r.operand WHERE input = ?", array($short));
 
 		return $this->_getReferencesRecursive($refs);
+	}
+
+	protected function _getRel($short)
+	{
+		$related = $this->_query("SELECT short, \"operationCount\" FROM input WHERE source = ? LIMIT 9", array($short));
+
+		foreach ($related as &$input)
+			$input->perf = $this->_getPerf($input->short);
+
+		return $related;
 	}
 
 	protected function _getReferencesRecursive(array $rows, array &$references = array())

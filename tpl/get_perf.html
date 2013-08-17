@@ -4,8 +4,9 @@
 <div id="chart"></div>
 <div id="data"></div>
 <script type="text/javascript">
-var perfData = google.visualization.arrayToDataTable([
-['Version', 'System time', 'User time', 'Max. memory usage'],
-	<?php foreach ($this->data as $result){ ?>['<?=$result->version?>',<?=$result->system?>,<?=$result->user?>,<?=$result->memory/1024?>],<? } ?>
-]);
+var perfData = [
+	<?php foreach ($this->data as $result){ ?>['<?=$result->version?>',<?=round($result->system, 3)?>,<?=round($result->user, 3)?>,<?=round($result->memory/1024, 3)?>],<? }?>
+];
+
+events.push(function(){ this.drawPerformanceGraphs(perfData, $('chart'), $('data')); });
 </script>

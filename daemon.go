@@ -51,7 +51,7 @@ func (this *Input) newRun() int {
 	if err := db.QueryRow("SELECT run FROM input WHERE short = $1", this.short).Scan(&run); err != nil {
 		log.Fatalf("Input: failed to query run: %s", err)
 	}
-	return run;
+	return run
 }
 
 func (this *Output) getHash() string {
@@ -106,6 +106,21 @@ func (this *Input) execute(version string) {
 	procDone := make(chan *os.ProcessState)
 
 	go func() {
+		var limits = map [int]int {
+			syscall.RLIMIT_CPU:		2,
+			syscall.RLIMIT_DATA:	64 * 1024 * 1024,
+			syscall.RLIMIT_FSIZE:	64 * 1024,
+			syscall.RLIMIT_CORE:	0,
+			syscall.RLIMIT_NOFILE:	2048,
+			RLIMIT_NPROC:			64,
+		}
+
+		for key, value := range limits {
+			if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(value)}); err != nil {
+				log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
+			}
+		}
+
 		// FIXME: this routine runs as root again wtf
 		if err := syscall.Setgid(99); err != nil {
 			log.Fatalf("Failed to setgid: %v", err)
@@ -137,17 +152,19 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if !(version == "xdebug" || version == "vld") && len(output) >= 65536 {
-				this.setState("verbose")
-				log.Println("Output excessive: killing")
-
-				if err := cmd.Process.Kill(); err != nil {
-					this.setState("abusive")
-					log.Fatalf("Failed to kill child `%s`, aborting", err)
-				}
-
-				break
+			if version == "xdebug" || version == "vld" || len(output) < 65536 {
+				continue
 			}
+
+			this.setState("verbose")
+			log.Println("Output excessive: killing")
+
+			if err := cmd.Process.Kill(); err != nil {
+				this.setState("abusive")
+				log.Fatalf("Failed to kill child `%s`, aborting", err)
+			}
+
+			break
 		}
 
 		procOut <- string(output)
@@ -215,21 +232,6 @@ func init() {
 		input = &Input{script.Name()}
 	}
 
-	var limits = map [int]int {
-		syscall.RLIMIT_CPU:		2,
-		syscall.RLIMIT_DATA:	64 * 1024 * 1024,
-		syscall.RLIMIT_FSIZE:	64 * 1024,
-		syscall.RLIMIT_CORE:	0,
-		syscall.RLIMIT_NOFILE:	2048,
-		RLIMIT_NPROC:			64,
-	}
-
-	for key, value := range limits {
-		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(value)}); err != nil {
-			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
-		}
-	}
-
 	var err error
 	db, err = sql.Open("postgres", "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable")
 
@@ -278,6 +280,7 @@ func main() {
 
 	for _, version := range versions {
 		input.execute(version)
+		runtime.GC()
 	}
 
 	input.setState("done")
