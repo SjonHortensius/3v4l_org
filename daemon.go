@@ -1,17 +1,17 @@
 package main
 
 import (
+	"crypto/sha1"
+	"database/sql"
+	"encoding/base64"
+	_ "github.com/lib/pq"
+	"io"
+	"log"
 	"os"
 	"os/exec"
-	"log"
-	"io"
+	"strings"
 	"syscall"
 	"time"
-	"strings"
-	_ "github.com/lib/pq"
-	"database/sql"
-	"crypto/sha1"
-	"encoding/base64"
 )
 
 type Input struct {
@@ -23,14 +23,14 @@ type Output struct {
 }
 
 type Result struct {
-	input *Input
-	output *Output
-	version string
-	exitCode int
-	created time.Time
-	userTime float64
-	systemTime float64
-	maxMemory int64
+	input		*Input
+	output		*Output
+	version		string
+	exitCode	int
+	created		time.Time
+	userTime	float64
+	systemTime	float64
+	maxMemory	int64
 }
 
 func (this *Input) setState(s string) {
@@ -88,11 +88,11 @@ func (this *Result) store() {
 }
 
 func (this *Input) execute(version string) {
-	log.SetPrefix("["+this.short+":"+version+"] ")
+	log.SetPrefix("[" + this.short + ":" + version + "] ")
 
 	cmd := exec.Command("/usr/bin/php-"+version, "-c", "/etc", "-q", "/in/"+this.short)
 	cmd.Args[0] = "php"
-	cmd.Env = []string {
+	cmd.Env = []string{
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
 		"LANG=C",
@@ -119,7 +119,7 @@ func (this *Input) execute(version string) {
 	procDone := make(chan *os.ProcessState)
 
 	go func() {
-		var limits = map [int]int {
+		var limits = map[int]int{
 			syscall.RLIMIT_CPU:		2,
 			syscall.RLIMIT_DATA:	64 * 1024 * 1024,
 			syscall.RLIMIT_FSIZE:	64 * 1024,
@@ -165,7 +165,7 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if version[1] != '.' || len(output) < 128 * 1024{
+			if version[1] != '.' || len(output) < 128*1024 {
 				continue
 			}
 
@@ -188,22 +188,22 @@ func (this *Input) execute(version string) {
 	var output string
 
 	select {
-		case <-time.After(2250 * time.Millisecond):
-			if err := cmd.Process.Kill(); err != nil {
-				if err.Error() != "os: process already finished" {
-					this.setState("abusive")
-				}
-
-				log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
+	case <-time.After(2250 * time.Millisecond):
+		if err := cmd.Process.Kill(); err != nil {
+			if err.Error() != "os: process already finished" {
+				this.setState("abusive")
 			}
 
-			state = <-procDone
-			output = <-procOut
+			log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
+		}
 
-			this.setState("misbehaving")
-			log.Println("Timeout: killed")
-		case state = <-procDone:
-			output = <-procOut
+		state = <-procDone
+		output = <-procOut
+
+		this.setState("misbehaving")
+		log.Println("Timeout: killed")
+	case state = <-procDone:
+		output = <-procOut
 	}
 
 	waitStatus := state.Sys().(syscall.WaitStatus)
@@ -222,8 +222,8 @@ func (this *Input) execute(version string) {
 		version:	version,
 		exitCode:	exitCode,
 		created:	time.Now(),
-		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec) / 1000000.0,
-		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec) / 1000000.0,
+		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
+		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
 		maxMemory:	usage.Maxrss,
 	}
 	r.store()
@@ -270,12 +270,12 @@ func init() {
 }
 
 func main() {
-	log.SetPrefix("["+input.short+"] ")
+	log.SetPrefix("[" + input.short + "] ")
 	run = input.newRun()
 
 	rs, err := db.Query("SELECT name FROM version ORDER BY \"order\" DESC")
 
-	if  err != nil {
+	if err != nil {
 		log.Fatal("No versions found to execute: %s", err)
 	}
 

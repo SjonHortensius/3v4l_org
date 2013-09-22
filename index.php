@@ -216,9 +216,10 @@ class PHPShell_Action
 
 			$prevHash = $result->hash;
 
-			// Replace all unescaped bell-chars by script path, and unescape raw bells
-			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, ltrim(stream_get_contents($result->raw), "\n"));
-			$output = str_replace('\\'.chr(7), chr(7), $output);
+			$output = ltrim(stream_get_contents($result->raw), "\n");
+			$output = preg_replace('~(?<![\\\])\006~', $result->version, $output);
+			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, $output);
+			$output = str_replace(array('\\'.chr(6), '\\'.chr(7)), array(chr(6), chr(7)), $output);
 			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
 
 			if ($result->exitCode > 0)
