@@ -7,6 +7,7 @@ import (
 	"io"
 	"syscall"
 	"time"
+	"strings"
 	_ "github.com/lib/pq"
 	"database/sql"
 	"crypto/sha1"
@@ -54,6 +55,13 @@ func (this *Input) newRun() int {
 	return run
 }
 
+func (this *Output) process(result *Result) bool {
+	this.raw = strings.Replace(this.raw, result.version, "\x06", -1)
+	this.raw = strings.Replace(this.raw, result.input.short, "\x07", -1)
+
+	return true
+}
+
 func (this *Output) getHash() string {
 	h := sha1.New()
 	io.WriteString(h, this.raw)
@@ -61,6 +69,8 @@ func (this *Output) getHash() string {
 }
 
 func (this *Result) store() {
+	this.output.process(this)
+
 	if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", this.output.getHash(), this.output.raw); err != nil {
 		log.Fatalf("Output: failed to store: %s", err)
 	}
@@ -155,7 +165,7 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if version[1] != '.' || len(output) < 64 * 1024{
+			if version[1] != '.' || len(output) < 128 * 1024{
 				continue
 			}
 
@@ -278,7 +288,6 @@ func main() {
 
 		versions = append(versions, version)
 	}
-	rs.Close()
 
 	for _, version := range versions {
 		input.execute(version)
