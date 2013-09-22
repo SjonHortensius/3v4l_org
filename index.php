@@ -69,6 +69,9 @@ class PHPShell_Action
 		}
 		while (!empty($input) && $hash !== $input[0]->hash);
 
+		// After hashing so we dont get loads of new shorts from 'old' code
+		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), "\n", $_POST['code']));
+
 		if (empty($input))
 		{
 			file_put_contents(self::IN.$short, $_POST['code']);
@@ -164,8 +167,13 @@ class PHPShell_Action
 			'title' =>  $short,
 			'input' => $input,
 			'code' => file_get_contents(self::IN. $short),
-			'data' => call_user_func(array($this, '_get'. $type), $short),
+			'data' => call_user_func(array($this, '_get'. ucfirst($type)), $short),
 			'tab' => $type,
+			'showTab' => array(
+				'vld' => strlen($this->_getVld($short)) > 0,
+				'refs' => count($this->_getRefs($short)) > 0,
+				'segfault' => strlen($this->_getSegfault($short)) > 0,
+			),
 		]);
 	}
 
@@ -255,12 +263,22 @@ class PHPShell_Action
 
 	protected function _getVld($short)
 	{
+		return $this->__getResult($short, 'vld');
+	}
+
+	protected function _getSegfault($short)
+	{
+		return $this->__getResult($short, 'segfault');
+	}
+
+	protected function __getResult($short, $version)
+	{
 		$row = $this->_query("
 			SELECT raw
 			FROM result
 			INNER JOIN input ON input.short = result.input
 			INNER JOIN output ON output.hash = result.output
-			WHERE result.input = ? AND result.run = input.run AND version = 'vld'", array($short));
+			WHERE result.input = ? AND result.run = input.run AND version = ?", array($short, $version));
 
 		if (empty($row))
 			return null;
@@ -273,10 +291,20 @@ class PHPShell_Action
 
 	protected function _getRefs($short)
 	{
-		$refs = $this->_query("SELECT link, name FROM operations o INNER JOIN \"references\" r ON r.operation = o.operation AND o.operand = r.operand WHERE input = ?", array($short));
-
-		return $this->_getReferencesRecursive($refs);
+		return $this->_query("
+WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
+  SELECT id, r.operation, link, name, parent
+  FROM operations o
+  INNER JOIN \"references\" r ON r.operation = o.operation AND (o.operand = r.operand OR r.operand IS NULL)
+  WHERE input = ?
+  UNION ALL
+  SELECT C.id, C.operation, C.link, C.name, C.parent
+  FROM recRefs P
+  INNER JOIN \"references\" C on P.id = C.parent
+)
+SELECT link, name FROM recRefs;", array($short));
 	}
+
 /*
 	protected function _getRel($short)
 	{
@@ -288,18 +316,6 @@ class PHPShell_Action
 		return $related;
 	}
 */
-	protected function _getReferencesRecursive(array $rows, array &$references = array())
-	{
-		foreach ($rows as $row)
-		{
-			$references[ $row->link ] = $row->name;
-
-			if (isset($row->parent))
-				$this->_getReferencesRecursive($this->_query("SELECT * FROM references WHERE id = ?", array($row->parent)), $references);
-		}
-
-		return $references;
-	}
 
 	protected function _query($statement, array $parameters)
 	{

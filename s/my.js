@@ -14,6 +14,7 @@ var evalOrg, eval_org = new Class({
 	initialize: function()
 	{
 		this.richEditor();
+		this.showFeedbackButton();
 
 		$$('h1').addEvent('click', function(){ window.location = '/'; });
 		$$('dd, dt').addEvent('click', this._clickDt);
@@ -75,35 +76,11 @@ var evalOrg, eval_org = new Class({
 				if (event.ctrlKey && event.keyIdentifier == 'Enter')
 					$$('input[type=submit]')[0].click();
 			})
-		}); 
+		});
 	},
 
 	drawPerformanceGraphs: function(data, chart, table)
 	{
-/*
-		var r = Raphael('chart', 600, 450), fin2 = function () {
-			var y = [], res = [];
-			for (var i = this.bars.length; i--;) {
-				y.push(this.bars[i].y);
-				res.push(this.bars[i].value || "0");
-			}
-			this.flag = r.popup(this.bars[0].x, Math.min.apply(Math, y), res.join(", ")).insertBefore(this);
-		},fout2 = function () {
-			this.flag.animate({opacity: 0}, 300, function () {this.remove();});
-		},
-		txtattr = { font: "13px sans-serif" };
-
-		var rS = [], rU = [], rM = [];
-		$$('table tbody tr').each(function(tr){
-			rS.push(parseFloat(tr.childNodes[1].textContent.split(' ').shift()));
-			rU.push(parseFloat(tr.childNodes[2].textContent.split(' ').shift()));
-			rM.push(parseInt(tr.childNodes[3].textContent.split(' ').shift().split(',').join('')));
-		});
-		var leftgutter = 30, bottomgutter = 20, width = 600, height = 450;
-		r.drawGrid(leftgutter + X * .5 + .5, topgutter + .5, width - leftgutter - X, height - topgutter - bottomgutter, 10, 10, "#000");
-		r.barchart(50, 50, 550, 400, [rS, rU], {stacked: true, type: "soft", axis: "0 0 1 1"}).hoverColumn(fin2, fout2);
-	return;
-*/
 		data.unshift(['Version', 'System time', 'User time', 'Max. memory usage']);
 		var options =
 		{
@@ -139,6 +116,21 @@ var evalOrg, eval_org = new Class({
 				perfData.sort([{column: event.column, desc: !event.ascending}]);
 				chart.draw(perfData, options);
 			});
+	},
+
+	showFeedbackButton: function()
+	{
+		UserVoice = window.UserVoice || [];
+		UserVoice.push(['showTab', 'classic_widget', {
+		  mode: 'feedback',
+		  primary_color: '#cc6d00',
+		  link_color: '#007dbf',
+		  forum_id: 219058,
+		  tab_label: 'Feedback',
+		  tab_color: '#cc6d00',
+		  tab_position: 'middle-right',
+		  tab_inverted: false
+		}]);
 	}
 });
 

@@ -11,7 +11,6 @@ import (
 	"database/sql"
 	"crypto/sha1"
 	"encoding/base64"
-	"runtime"
 )
 
 type Input struct {
@@ -93,6 +92,9 @@ func (this *Input) execute(version string) {
 		"USER=nobody",
 		"USERNAME=nobody",
 		"HOME=/",
+//		"LD_PRELOAD=/usr/lib/libSegFault.so",
+//		"SEGFAULT_USE_ALTSTACK=1",
+//		"SEGFAULT_OUTPUT_NAME=blaat.txt",
 	}
 
 	/*
@@ -143,7 +145,7 @@ func (this *Input) execute(version string) {
 		}()
 
 		output := make([]byte, 0)
-		buffer := make([]byte, 256)
+		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
 			if err != nil {
 				log.Printf("While reading output: %s", err)
@@ -153,7 +155,7 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if version == "xdebug" || version == "vld" || totalOutput + len(output) < 512 * 1024 {
+			if version[1] != '.' || len(output) < 64 * 1024{
 				continue
 			}
 
@@ -166,11 +168,7 @@ func (this *Input) execute(version string) {
 				}
 			}
 
-			log.Fatalf("Too much output `%s`, aborting", totalOutput + len(output))
-		}
-
-		if version != "xdebug" && version != "vld" {
-			totalOutput += len(output)
+			log.Fatalf("Too much output, aborting")
 		}
 
 		procOut <- string(output)
@@ -182,7 +180,10 @@ func (this *Input) execute(version string) {
 	select {
 		case <-time.After(2250 * time.Millisecond):
 			if err := cmd.Process.Kill(); err != nil {
-				this.setState("abusive")
+				if err.Error() != "os: process already finished" {
+					this.setState("abusive")
+				}
+
 				log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
 			}
 
@@ -222,7 +223,6 @@ var (
 	db *sql.DB
 	input *Input
 	run int
-	totalOutput int = 0
 )
 
 const RLIMIT_NPROC = 0x6
@@ -269,24 +269,19 @@ func main() {
 		log.Fatal("No versions found to execute: %s", err)
 	}
 
-	versions := make([]string, 256)
-	i := 0
+	var versions []string
+	var version string
 	for rs.Next() {
-		var version string
-
 		if err := rs.Scan(&version); err != nil {
 			log.Fatal("Error fetching version: %s", err)
 		}
 
-		versions[i] = version
-		i++
+		versions = append(versions, version)
 	}
-
-	versions = versions[:i-1]
+	rs.Close()
 
 	for _, version := range versions {
 		input.execute(version)
-		runtime.GC()
 	}
 
 	input.setState("done")

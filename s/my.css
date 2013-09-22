@@ -80,6 +80,12 @@ ul#tabs li:not(.active) a:hover
 	border-bottom: 1px solid #ddd;
 }
 
+ul#tabs li.disabled a
+{
+	color: #888;
+	cursor: help;
+}
+
 ul#tabs li.active
 {
 	border-bottom-color: white;
@@ -152,11 +158,15 @@ dd:hover, dt:target + dd
 	-webkit-transition: max-height 0.3s ease-in;
 }
 
-.perf #chart,
-.perf #data
+.perf #chart
 {
 	width: 800px;
 	height: 450px
+}
+
+.perf #data table
+{
+	width: 600px !important;
 }
 
 .rel td>div
