@@ -57,6 +57,8 @@ class PHPShell_Action
 		if (false === strpos($_POST['code'], '<?'))
 			return $this->getError(400);
 
+		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), "\n", $_POST['code']));
+
 		$hash = gmp_strval(gmp_init(sha1($_POST['code']), 16), 58);
 		$len = 5;
 
@@ -68,9 +70,6 @@ class PHPShell_Action
 			$len++;
 		}
 		while (!empty($input) && $hash !== $input[0]->hash);
-
-		// After hashing so we dont get loads of new shorts from 'old' code
-		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), "\n", $_POST['code']));
 
 		if (empty($input))
 		{
