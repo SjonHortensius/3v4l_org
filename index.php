@@ -76,7 +76,7 @@ class PHPShell_Action
 			file_put_contents(self::IN.$short, $_POST['code']);
 
 			$source = null;
-			if (preg_match('~^http://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
+			if (preg_match('~^https?://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
 				$source = $matches[1];
 
 			$this->_query("INSERT INTO input  VALUES (?, ?, null, ?, 'new')", array($short, $source, $hash));
@@ -132,10 +132,20 @@ class PHPShell_Action
 		if ('new' == $short)
 			return $this->getError(503);
 
+		if (!method_exists($this, '_get'.ucfirst($type)))
+			return $this->getError(404);
+
 		$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
 
-		if (empty($input) || !method_exists($this, '_get'.ucfirst($type)))
-			return $this->getError(404);
+		if (empty($input))
+		{
+			$input = $this->_query("SELECT * FROM input WHERE alias = ?", array($short));
+
+			if (empty($input))
+				return $this->getError(404);
+			else
+				die(header('Location: /'. $input[0]->short .($type != 'output'? '/'.$type : ''), 302));
+		}
 		else
 			$input = $input[0];
 

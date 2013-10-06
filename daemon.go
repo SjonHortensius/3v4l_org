@@ -71,6 +71,13 @@ func (this *Output) getHash() string {
 func (this *Result) store() {
 	this.output.process(this)
 
+	hash := this.output.getHash()
+
+	if false == allOutput[hash] {
+		allOutput[hash] = true;
+		totalOutput += len(this.output.raw)
+	}
+
 	if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", this.output.getHash(), this.output.raw); err != nil {
 		log.Fatalf("Output: failed to store: %s", err)
 	}
@@ -121,7 +128,7 @@ func (this *Input) execute(version string) {
 	go func() {
 		var limits = map[int]int{
 			syscall.RLIMIT_CPU:		2,
-			syscall.RLIMIT_DATA:	64 * 1024 * 1024,
+			syscall.RLIMIT_DATA:	128 * 1024 * 1024,
 			syscall.RLIMIT_FSIZE:	64 * 1024,
 			syscall.RLIMIT_CORE:	0,
 			syscall.RLIMIT_NOFILE:	2048,
@@ -165,7 +172,7 @@ func (this *Input) execute(version string) {
 			buffer = buffer[:n]
 			output = append(output, buffer...)
 
-			if version[1] != '.' || len(output) < 128*1024 {
+			if version[1] != '.' || (totalOutput + len(output)) < 128*1024 {
 				continue
 			}
 
@@ -233,6 +240,8 @@ var (
 	db *sql.DB
 	input *Input
 	run int
+	allOutput = map[string]bool {}
+	totalOutput = 0
 )
 
 const RLIMIT_NPROC = 0x6

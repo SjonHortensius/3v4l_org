@@ -22,7 +22,8 @@ textarea, .CodeMirror
 
 body
 {
-	margin: 2em;
+	max-width: 1250px;
+	margin:  2em auto;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	color: #333;
 	font-size: 13px;
