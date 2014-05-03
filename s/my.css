@@ -153,7 +153,7 @@ dt:target:before
 	content: '\00BB\0020';
 }
 
-dd:hover, dt:target + dd
+dd:hover, dt:target + dd, dd:only-of-type
 {
 	max-height: 50em;
 	-webkit-transition: max-height 0.3s ease-in;
