@@ -97,6 +97,15 @@ func (this *Result) store() {
 func (this *Input) execute(version string) {
 	log.SetPrefix("[" + this.short + ":" + version + "] ")
 
+	// FIXME Should not be necessary
+	if err := syscall.Setgid(99); err != nil {
+		log.Fatalf("Failed to setgid: %v", err)
+	}
+
+	if err := syscall.Setuid(99); err != nil {
+		log.Fatalf("Failed to setuid: %v", err)
+	}
+
 	cmd := exec.Command("/usr/bin/php-"+version, "-c", "/etc", "-q", "/in/"+this.short)
 	cmd.Args[0] = "php"
 	cmd.Env = []string{
@@ -109,9 +118,6 @@ func (this *Input) execute(version string) {
 		"USER=nobody",
 		"USERNAME=nobody",
 		"HOME=/",
-//		"LD_PRELOAD=/usr/lib/libSegFault.so",
-//		"SEGFAULT_USE_ALTSTACK=1",
-//		"SEGFAULT_OUTPUT_NAME=blaat.txt",
 	}
 
 	/*
@@ -125,42 +131,16 @@ func (this *Input) execute(version string) {
 	procOut := make(chan string)
 	procDone := make(chan *os.ProcessState)
 
-	go func() {
-		var limits = map[int]int{
-			syscall.RLIMIT_CPU:		2,
-			syscall.RLIMIT_DATA:	128 * 1024 * 1024,
-			syscall.RLIMIT_FSIZE:	64 * 1024,
-			syscall.RLIMIT_CORE:	0,
-			syscall.RLIMIT_NOFILE:	2048,
-			RLIMIT_NPROC:			64,
-		}
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+	cmdR := io.MultiReader(stdout, stderr)
 
-		for key, value := range limits {
-			if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(value)}); err != nil {
-				log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
-			}
-		}
+	if err := cmd.Start(); err != nil {
+		log.Printf("While starting: %s", err)
+		return
+	}
 
-		// FIXME: this routine runs as root again wtf
-		if err := syscall.Setgid(99); err != nil {
-			log.Fatalf("Failed to setgid: %v", err)
-		}
-
-		if err := syscall.Setuid(99); err != nil {
-			log.Fatalf("Failed to setuid: %v", err)
-		}
-
-		stdout, _ := cmd.StdoutPipe()
-		stderr, _ := cmd.StderrPipe()
-		r := io.MultiReader(stdout, stderr)
-
-		cmd.Start()
-
-		go func() {
-			state, _ := cmd.Process.Wait()
-			procDone <- state
-		}()
-
+	go func(c *exec.Cmd, r io.Reader) {
 		output := make([]byte, 0)
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
@@ -182,14 +162,23 @@ func (this *Input) execute(version string) {
 			if err := cmd.Process.Kill(); err != nil {
 				if err.Error() != "os: process already finished" {
 					this.setState("abusive")
+					log.Fatalf("Too much output, aborting")
 				}
 			}
-
-			log.Fatalf("Too much output, aborting")
 		}
 
 		procOut <- string(output)
-	}()
+	}(cmd, cmdR)
+
+	go func(c *exec.Cmd) {
+		state, err := c.Process.Wait()
+
+		if err != nil {
+			log.Printf("While waiting for process: %s", err)
+		}
+
+		procDone <- state
+	}(cmd)
 
 	var state *os.ProcessState
 	var output string
@@ -267,6 +256,22 @@ func init() {
 	// Ping to establish connection so we can drop privileges
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Failed ping db: %s", err)
+	}
+
+	var limits = map[int]int{
+		syscall.RLIMIT_CPU:		2,
+		syscall.RLIMIT_DATA:	128 * 1024 * 1024,
+//			syscall.RLIMIT_FSIZE:	64 * 1024,
+		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
+		syscall.RLIMIT_CORE:	0,
+		syscall.RLIMIT_NOFILE:	2048,
+		RLIMIT_NPROC:			64,
+	}
+
+	for key, value := range limits {
+		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(value)}); err != nil {
+			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
+		}
 	}
 
 	if err := syscall.Setgid(99); err != nil {
