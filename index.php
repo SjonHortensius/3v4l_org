@@ -1,8 +1,11 @@
 <?php
 
-class PHPShell_Action
+require('/srv/http/.common/TooBasic/init.php');
+
+class Phpshell_Controller extends TooBasic_Controller
 {
 	const IN  = '/var/lxc/php_shell/in/';
+#	const IN  = '/var/backup/3v4l.org/var/lxc/php_shell/in/';
 	protected static $_exitCodes = array(
 		139 => 'Segmentation Fault',
 		137 => 'Process was killed',
@@ -10,46 +13,27 @@ class PHPShell_Action
 	);
 	protected $_db;
 
-	public static function dispatch()
-	{
-		if (false !== strpos($_SERVER['REQUEST_URI'], '?'))
-			$_SERVER['REQUEST_URI'] = strstr($_SERVER['REQUEST_URI'], '?', true);
-
-		$uri = substr($_SERVER['REQUEST_URI'], 1);
-		$method = strtolower($_SERVER['REQUEST_METHOD']);
-		$params = explode('/', $uri);
-
-		if (false === $uri)
-			$uri = 'home';
-
-		ignore_user_abort();
-		new self($method, $uri, $params);
-	}
-
-	private function __construct($method, $uri, $params)
+	protected function _construct()
 	{
 		$this->_db = new PDO('pgsql:host=localhost;dbname=phpshell', 'website', '3lMC5jLazzzvd3K9lRyt0lVC5');
 		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-		if (method_exists($this, $method . ucfirst($uri)))
-			return call_user_func_array(array($this, $method . ucfirst($uri)), $params);
-
-		return call_user_func_array(array($this, $method), $params);
 	}
 
-	public function __call($method, array $arguments)
+	public function getIndex()
 	{
-		$this->getError(405);
+		TooBasic_Template::show('index');
 	}
 
-	public function getHome()
+	public function getBlog($id)
 	{
-		PHPShell_Template::show('home');
+		$id = (int)$id;
+
+		TooBasic_Template::show('blog', ['content' => file_get_contents('b/'.$id.'.html')]);
 	}
 
 	public function getLast()
 	{
-		PHPShell_Template::show('last');
+		TooBasic_Template::show('last', ['last' => $this->_query("SELECT * FROM submit LEFT JOIN input ON input.short = submit.input WHERE input.state = 'done' ORDER BY created DESC LIMIT 10")]);
 	}
 
 	public function postNew()
@@ -57,7 +41,7 @@ class PHPShell_Action
 		if (false === strpos($_POST['code'], '<?'))
 			return $this->getError(400);
 
-		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), "\n", $_POST['code']));
+		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), array("\n", "\n"), $_POST['code']));
 
 		$hash = gmp_strval(gmp_init(sha1($_POST['code']), 16), 58);
 		$len = 5;
@@ -99,7 +83,8 @@ class PHPShell_Action
 			// Trigger daemon
 			touch(self::IN. $short);
 		}
-
+#maintenance mode
+#return $this->getError(501);
 		usleep(300000);
 		die(header('Location: /'. $short, 302));
 	}
@@ -114,12 +99,13 @@ class PHPShell_Action
 			case 404:	$text = 'The requested script does not exist.'; break;
 			case 405:	$text = 'Method not allowed.'; break;
 			case 503:	$text = 'Please refrain from hammering this service. You are limited to 5 POST requests per minute.'; break;
+			case 501:	$code = 503; $text = 'We are currently in maintenance, read-only mode.'; break;
 			default:	$code = 500; $text = 'An unexpected error has occured.';
 		}
 
 		http_response_code($code);
 
-		PHPShell_Template::show('error', [
+		TooBasic_Template::show('error', [
 			'title' =>  'Error '. $code,
 			'code' => $code,
 			'text' => $text,
@@ -158,9 +144,9 @@ class PHPShell_Action
 			$input = $input[0];
 		}
 
-		if (!isset($input->operationCount) && $vld = $this->_getVld($short))
+		if (!isset($input->operationCount) && $vld = $this->_getVld($input))
 		{
-			$count = preg_match_all('~ *(?<line>\d*) *\d+[ >]*(?<op>[A-Z_]+) *(?<ext>\d*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER);
+			$count = preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER);
 			$this->_query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", array($count, $short));
 
 			foreach ($matches as $match)
@@ -172,30 +158,30 @@ class PHPShell_Action
 			}
 		}
 
-		PHPShell_Template::show('get', [
+		TooBasic_Template::show('get', [
 			'title' =>  $short,
 			'input' => $input,
 			'code' => file_get_contents(self::IN. $short),
-			'data' => call_user_func(array($this, '_get'. ucfirst($type)), $short),
+			'data' => call_user_func(array($this, '_get'. ucfirst($type)), $input),
 			'tab' => $type,
 			'showTab' => array(
-				'vld' => strlen($this->_getVld($short)) > 0,
-				'refs' => count($this->_getRefs($short)) > 0,
-				'segfault' => strlen($this->_getSegfault($short)) > 0,
+				'perf' => true,
+				'vld' => strlen($this->_getVld($input)) > 0,
+				'refs' => count($this->_getRefs($input)) > 0,
+				'segfault' => strlen($this->_getSegfault($input)) > 0,
 			),
 		]);
 	}
 
-	protected function _getOutput($short)
+	protected function _getOutput($input)
 	{
 		$results = $this->_query("
-			SELECT version, \"exitCode\", output.hash ||':'|| \"exitCode\" as hash, raw
+			SELECT version, \"exitCode\", raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
-			INNER JOIN input ON input.short = result.input
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? AND result.run = input.run AND version LIKE '_.%'
-			ORDER BY version.order", array($short));
+			WHERE result.input = ? AND result.run = ? AND version.name LIKE '_.%'
+			ORDER BY version.order", array($input->short, $input->run));
 
 		if (empty($results))
 			return array();
@@ -203,11 +189,17 @@ class PHPShell_Action
 		$outputs = array();
 		foreach ($results as $result)
 		{
-			$slot =& $outputs[ $result->hash ];
+			$output = ltrim(stream_get_contents($result->raw), "\n");
+			$output = preg_replace('~(?<![\\\])\006~', $result->version, $output);
+			$output = preg_replace('~(?<![\\\])\007~', $input->short, $output);
+			$output = str_replace(array('\\'.chr(6), '\\'.chr(7)), array(chr(6), chr(7)), $output);
+			$hash = sha1($output);
+
+			$slot =& $outputs[ $hash ];
 
 			if (!isset($slot))
 				$slot = array('min' => $result->version, 'versions' => array());
-			elseif ($result->hash != $prevHash)
+			elseif ($hash != $prevHash)
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -223,12 +215,8 @@ class PHPShell_Action
 			else
 				$slot['max'] = $result->version;
 
-			$prevHash = $result->hash;
+			$prevHash = $hash;
 
-			$output = ltrim(stream_get_contents($result->raw), "\n");
-			$output = preg_replace('~(?<![\\\])\006~', $result->version, $output);
-			$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, $output);
-			$output = str_replace(array('\\'.chr(6), '\\'.chr(7)), array(chr(6), chr(7)), $output);
 			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
 
 			if ($result->exitCode > 0)
@@ -256,7 +244,7 @@ class PHPShell_Action
 		return $versions;
 	}
 
-	protected function _getPerf($short)
+	protected function _getPerf(Stdclass $input)
 	{
 		return $this->_query("
 			SELECT
@@ -266,40 +254,44 @@ class PHPShell_Action
 				version
 			FROM result
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? AND version LIKE '_.%'
+			WHERE result.input = ? AND version.name LIKE '_.%'
 			GROUP BY result.version
-			ORDER BY MAX(version.order)", array($short));
+			ORDER BY MAX(version.order)", array($input->short));
 	}
 
-	protected function _getVld($short)
+	protected function _getVld(Stdclass $input)
 	{
-		return $this->__getResult($short, 'vld');
+		return $this->__getResult($input, 'vld');
 	}
 
-	protected function _getSegfault($short)
+	protected function _getHhvm(Stdclass $input)
 	{
-		return $this->__getResult($short, 'segfault');
+		return $this->__getResult($input, 'hhvm-3.0.1');
 	}
 
-	protected function __getResult($short, $version)
+	protected function _getSegfault(Stdclass $input)
+	{
+		return $this->__getResult($input, 'segfault');
+	}
+
+	protected function __getResult(Stdclass $input, $version)
 	{
 		$row = $this->_query("
 			SELECT raw
 			FROM result
-			INNER JOIN input ON input.short = result.input
 			INNER JOIN output ON output.hash = result.output
-			WHERE result.input = ? AND result.run = input.run AND version = ?", array($short, $version));
+			WHERE result.input = ? AND result.run = ? AND version = ?", array($input->short, $input->run, $version));
 
 		if (empty($row))
 			return null;
 
-		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$short, stream_get_contents($row[0]->raw));
+		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$input->short, stream_get_contents($row[0]->raw));
 		$output = str_replace('\\'.chr(7), chr(7), $output);
 
 		return $output;
 	}
 
-	protected function _getRefs($short)
+	protected function _getRefs(Stdclass $input)
 	{
 		return $this->_query("
 WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
@@ -312,7 +304,7 @@ WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
   FROM recRefs P
   INNER JOIN \"references\" C on P.id = C.parent
 )
-SELECT link, name FROM recRefs;", array($short));
+SELECT link, name FROM recRefs;", array($input->short));
 	}
 
 /*
@@ -327,7 +319,7 @@ SELECT link, name FROM recRefs;", array($short));
 	}
 */
 
-	protected function _query($statement, array $parameters)
+	protected function _query($statement, array $parameters = array())
 	{
 		$s = $this->_db->prepare($statement);
 		$s->execute($parameters);
@@ -336,48 +328,4 @@ SELECT link, name FROM recRefs;", array($short));
 	}
 }
 
-class PHPShell_Template
-{
-	protected $_file;
-
-	public function __construct($file)
-	{
-		$this->_file = $file;
-	}
-
-	public function getWrapped()
-	{
-		$wrapped = $this->get("_wrapper");
-		$wrapped->content = $this;
-		return $wrapped;
-	}
-
-	public function get($file)
-	{
-		$tpl = clone $this;
-		$tpl->_file = $file;
-
-		return $tpl;
-	}
-
-	public static function show($file, array $variables = array())
-	{
-		$tpl = new self($file);
-
-		foreach ($variables as $key => $value)
-			$tpl->$key = $value;
-
-		print $tpl->getWrapped();
-	}
-
-	public function __toString()
-	{
-		ob_start();
-
-		require('tpl/'. $this->_file .'.html');
-
-		return ob_get_clean();
-	}
-}
-
-PHPShell_Action::dispatch();
+Phpshell_Controller::dispatch();

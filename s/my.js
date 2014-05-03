@@ -8,8 +8,9 @@ _gaq.push(['_trackPageview']);
 	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
 
-var evalOrg, eval_org = new Class({
+var evalOrg = new Class({
 	refreshTimer: null,
+	refreshCount: 0,
 
 	initialize: function()
 	{
@@ -27,6 +28,8 @@ var evalOrg, eval_org = new Class({
 
 	refresh: function()
 	{
+		this.refreshCount++;
+
 		new Request.HTML({
 			url: window.location.pathname,
 			method: 'GET',
@@ -40,7 +43,7 @@ var evalOrg, eval_org = new Class({
 	{
 		$$('dd, dt').addEvent('click', this._clickDt);
 
-		if (!html.match(/class="busy"/))
+		if (!html.match(/class="busy"/) || this.refreshCount>99)
 		{
 			clearInterval(this.refreshTimer);
 			$$('input[type=submit]')[0].removeClass('busy');
@@ -122,16 +125,19 @@ var evalOrg, eval_org = new Class({
 	{
 		UserVoice = window.UserVoice || [];
 		UserVoice.push(['showTab', 'classic_widget', {
-		  mode: 'feedback',
-		  primary_color: '#cc6d00',
-		  link_color: '#007dbf',
-		  forum_id: 219058,
-		  tab_label: 'Feedback',
-		  tab_color: '#cc6d00',
-		  tab_position: 'middle-right',
-		  tab_inverted: false
+			mode: 'full',
+			primary_color: '#cc6d00',
+			link_color: '#007dbf',
+			default_mode: 'support',
+			forum_id: 219058,
+			support_tab_name: 'Get Help',
+			feedback_tab_name: 'Submit Ideas',
+			tab_label: 'Feedback & Support',
+			tab_color: '#cc6d00',
+			tab_position: 'middle-right',
+			tab_inverted: false
 		}]);
 	}
 });
 
-window.addEvent('domready', function(){ evalOrg = new eval_org; });
+window.addEvent('domready', function(){ new evalOrg; });
