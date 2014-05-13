@@ -2,7 +2,6 @@
 	<h2>Beta hhvm output</h2>
 	<p>It took a lot of effort to get hhvm working; please let me know what you think!<br/>Ideas are also welcome; my ToDo list currently includes:</p>
 	<ul>
-		<li>Add <i>hhvm</i> tab / merge with PHP output</li>
 		<li>Add <i>hhvm</i> timings to performance tab</li>
 		<li>Detect &lt;?hh prefix and skip php &amp; vld</li>
 	</ul>

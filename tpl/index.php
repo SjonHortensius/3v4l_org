@@ -19,13 +19,13 @@
 <div class="col">
 	<h2>Examples:</h2>
 	<ul>
-		<li><a href="/ZTHDR/perf">Performance problems in array_diff</a></li>
-		<li><a href="/TpeZO">Booleans can be changed within a namespace</a></li>
-		<li><a href="/XsL22">A resource which is cast to an object will result in a key 'scalar'</a></li>
+		<li><a href="/am3S3/perf">Performance problems in array_diff</a></li>
+		<li><a href="/S2AFZ">Booleans can be changed within a namespace</a></li>
+		<li><a href="/XiQG0">A resource which is cast to an object will result in a key 'scalar'</a></li>
 		<li><a href="/11Ltt"> __toString evolves when used in comparisons</a></li>
-		<li><a href="/ni9WO">New binary implementation and its problems</a></li>
-		<li><a href="/2eNuB">Overwriting $this when using references</a></li>
-		<li><a href="/1Z4W4">Broken formatting in DateTime</a></li>
+		<li><a href="/gaLMA">New binary implementation and its problems</a></li>
+		<li><a href="/uNUDC">Overwriting $this when using references</a></li>
+		<li><a href="/DgUUQ">Broken formatting in DateTime</a></li>
 	</ul>
 </div>
 

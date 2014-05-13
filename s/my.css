@@ -108,7 +108,7 @@ ul + div
 	border: 1px solid #ddd;
 }
 
-h1
+h1:not(:only-child)
 {
 	cursor: pointer;
 	margin-top: 0;
@@ -163,6 +163,11 @@ dd:hover, dt:target + dd, dd:only-of-type
 {
 	width: 800px;
 	height: 450px
+}
+
+.perf .hhvm
+{
+	float: right;
 }
 
 .perf #data table

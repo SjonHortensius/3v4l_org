@@ -34,6 +34,8 @@ type Result struct {
 }
 
 func (this *Input) setState(s string) {
+	log.Printf("State changed to: %s", s)
+
 	if r, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2", s, this.short); err != nil {
 		log.Fatalf("Input: failed to update state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
@@ -45,7 +47,7 @@ func (this *Input) newRun() int {
 	if r, err := db.Exec("UPDATE input SET run = run + 1, state = $1 WHERE short = $2", "busy", this.short); err != nil {
 		log.Fatalf("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		log.Fatalf("Input: failed to update run+state: %d, %s", a, err)
+		log.Fatalf("Input: failed to update run+state: %d rows affected, %s", a, err)
 	}
 
 	var run int
@@ -75,7 +77,13 @@ func (this *Result) store() {
 
 	if false == allOutput[hash] {
 		allOutput[hash] = true;
-		totalOutput += len(this.output.raw)
+
+		// Count helpers less
+		if this.version[1] == '.' {
+			totalOutput += len(this.output.raw)
+		} else {
+			totalOutput += len(this.output.raw)/3
+		}
 	}
 
 	if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", this.output.getHash(), this.output.raw); err != nil {
@@ -159,11 +167,13 @@ func (this *Input) execute(version string) {
 			this.setState("verbose")
 			log.Println("Output excessive: killing")
 
-			if err := cmd.Process.Kill(); err != nil {
-				if err.Error() != "os: process already finished" {
-					this.setState("abusive")
-					log.Fatalf("Too much output, aborting")
-				}
+			if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
+				this.setState("abusive")
+				log.Fatalf("Didnt stop: aborting")
+			}
+
+			if totalOutput > 256*1024 {
+				log.Fatalf("Output excessive:  aborting")
 			}
 		}
 
@@ -184,7 +194,7 @@ func (this *Input) execute(version string) {
 	var output string
 
 	select {
-	case <-time.After(2250 * time.Millisecond):
+	case <-time.After(1500 * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
 			if err.Error() != "os: process already finished" {
 				this.setState("abusive")

@@ -23,7 +23,7 @@ class Phpshell_Controller extends TooBasic_Controller
 	{
 		TooBasic_Template::show('index');
 	}
-
+/*
 	public function getBlog($id)
 	{
 		$id = (int)$id;
@@ -31,9 +31,45 @@ class Phpshell_Controller extends TooBasic_Controller
 		TooBasic_Template::show('blog', ['content' => file_get_contents('b/'.$id.'.html')]);
 	}
 
+	public function getSearch($operation, $operand = null)
+	{
+		$results = $this->_query('');
+
+		TooBasic_Template::show('search', ['results' => $results]);
+	}
+*/
+	public function getUpdateOperations($waa)
+	{
+		ini_set('memory_limit', '128M');
+
+		if ($waa != 'meukee')
+			return $this->getError(404);
+
+		foreach ($this->_query("SELECT short FROM input WHERE state != ? AND \"operationCount\" ISNULL", array('new')) as $r)
+		{
+			ob_start();
+			$this->get($r->short, 'output');
+			ob_end_clean();
+			echo '.';
+		}
+	}
+
 	public function getLast()
 	{
-		TooBasic_Template::show('last', ['last' => $this->_query("SELECT * FROM submit LEFT JOIN input ON input.short = submit.input WHERE input.state = 'done' ORDER BY created DESC LIMIT 10")]);
+		$entries = $this->_query('
+			SELECT
+				input,
+				AVG("userTime") "userTime",
+				AVG("systemTime") "systemTime",
+				AVG("maxMemory") "maxMemory",
+				COUNT(DISTINCT output) "nrOutput",
+				MAX(run) run
+			FROM result
+			WHERE input IN (SELECT input FROM submit ORDER BY created DESC LIMIT 10)
+			GROUP BY input'
+		);
+
+		TooBasic_Template::show('last', ['last' => $entries]);
 	}
 
 	public function postNew()
@@ -180,7 +216,7 @@ class Phpshell_Controller extends TooBasic_Controller
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? AND result.run = ? AND version.name LIKE '_.%'
+			WHERE result.input = ? AND result.run = ? AND NOT version.order ISNULL
 			ORDER BY version.order", array($input->short, $input->run));
 
 		if (empty($results))
@@ -199,7 +235,7 @@ class Phpshell_Controller extends TooBasic_Controller
 
 			if (!isset($slot))
 				$slot = array('min' => $result->version, 'versions' => array());
-			elseif ($hash != $prevHash)
+			elseif ($hash != $prevHash || false !== strpos($result->version, '-') || false !== strpos($result->version, '@'))
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -241,6 +277,13 @@ class Phpshell_Controller extends TooBasic_Controller
 		uksort($versions, 'version_compare');
 		$versions = array_reverse($versions, true);
 
+		end($versions);
+		if ('hhvm-3.0.1' == key($versions))
+		{
+			$output = array_pop($versions);
+			$versions = ['hhvm-3.0.1' => $output] + $versions;
+		}
+
 		return $versions;
 	}
 
@@ -254,7 +297,7 @@ class Phpshell_Controller extends TooBasic_Controller
 				version
 			FROM result
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? AND version.name LIKE '_.%'
+			WHERE result.input = ? AND (version.name LIKE '_.%' OR version.name LIKE 'hhvm-%')
 			GROUP BY result.version
 			ORDER BY MAX(version.order)", array($input->short));
 	}
@@ -285,7 +328,7 @@ class Phpshell_Controller extends TooBasic_Controller
 		if (empty($row))
 			return null;
 
-		$output = preg_replace('~(?<![\\\])\007~', '/in/'.$input->short, stream_get_contents($row[0]->raw));
+		$output = preg_replace('~(?<![\\\])\007~', $input->short, stream_get_contents($row[0]->raw));
 		$output = str_replace('\\'.chr(7), chr(7), $output);
 
 		return $output;
