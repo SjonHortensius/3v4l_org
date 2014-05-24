@@ -1,0 +1,244 @@
+<script src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
+<!--
+	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler/Lines.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler/List.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Parser.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Loader.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Parser/Smart.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Lighter.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel/Html.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel/Php.js"></script>
+	<script type="text/javascript" src="http://dev/Lighter/Source/Wick.js"></script>
+
+	<script type="text/javascript">
+		window.addEvent('domready', function() {
+			var lighter = new Lighter({
+				loader:   new Loader({
+					stylesheets: 'http://dev/Lighter/Source/Flame/',
+					scripts:     'http://dev/Lighter/Source/Fuels/',
+				}),
+				parser:   new Parser.Smart({ strict: true }),
+				compiler: new Compiler.List({ editable: true, altLines: 'hover',}),
+			});
+
+			$$('.code').each(function(el) {
+				lighter.light(el);
+			});
+		});
+	</script>
+-->
+<style type="text/css">
+.editable {
+	border: 1px solid #ddd;
+	padding: 10px;
+	margin: 10px;
+	min-height: 100px;
+	color: #999;
+}
+.editable { color: #333; }
+.editable .username { color: gray; }
+.editable .keyword { color: blue; }
+.editable .string { color: red; }
+
+</style>
+<pre class="editable code" contentEditable="true">
+&lt;?php
+
+class Stuff
+{
+	public static function countObjTypes( array $data, array $types )
+	{
+		$return['Other'] = 0;
+
+		foreach ( $types as $type )
+			$return[$type] = 0;
+
+		foreach ( ( array ) $data as $obj ) {
+			$set = false;
+			array_walk( $types, function( $type ) use ( $obj, &amp;$return, &amp;$set )
+			{
+				if ( is_a( $obj, $type ) ) {
+					$return[$type]++;
+					$set = true;
+				}
+			} );
+
+			if ( !$set )
+				$return['Other']++;
+		}
+
+		return $return;
+	}
+
+	public static function getArrayValueByPath($array, $path) {
+		#$path = (array) array_filter( $path );
+
+		if( !empty( $path ) ) {
+			foreach ( $path as $key ) if( !isset( $array[$key] ) ) return NULL; $array = $array[$key];
+			return $array;
+		} else {
+			return false;
+		}
+	}
+}
+
+// An example of how to use it
+$form  = new Form( 'Form', 'post' );
+
+$honeyPot1 = new HoneyPotField( time() );
+$honeyPot1-&gt;validator( new Validator( new HoneyPotTimeRule( 'This form was filled in too quickly, assumed bot, please allow 2 seconds to fill in the form' ) ) );
+$honeyPot2 = new HoneyPotField();
+$honeyPot2-&gt;validator( new Validator( new EqualRule( 'This field was unexpectedly filled in, assumed bot', '' ) ) );
+
+$q1l =  new LabelField( 'Question 1' );
+$q1 = new InputField( 'text' );
+
+$q2l =  new LabelField( 'Question 2' );
+$q2 = new InputField( 'text' );
+
+$form-&gt;addGroup( new HoneyPotGroup( $honeyPot1, $honeyPot2 ) );
+$form-&gt;addGroup( new QuestionGroup( $q1l, $q1 ) );
+$form-&gt;addGroup( new QuestionGroup( $q2l, $q2 ) );
+$form-&gt;addField( new UploadField( 'text' ) );
+
+$form-&gt;addField( new ActionField( 'Send' ) );
+
+if( $form-&gt;isSubmitted() )
+	$form-&gt;validate(  );
+echo $form-&gt;render(  ); // outputs the form + elements
+</pre>
+
+<script type="text/javascript">
+
+var phpEditor = new Class({
+	element: null,
+	keywords: ['abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
+		'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends',
+		'final', 'finally', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'interface',
+		'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch',
+		'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'true', 'false', 'null'],
+
+	initialize: function(el)
+	{
+		this.element = el;
+
+		el.addEvent('keyup', function(e)
+		{
+			if (e.code == 32 || (e.code > 47 && e.code < 91 && !e.control && !e.shift && !e.alt))
+				this.onChange();
+		}.bind(this));
+	},
+
+	onChange: function ()
+	{
+		var sel = this.saveSelection();
+
+		this.element.innerHTML = this.element.innerHTML.replace(/<span class=".*?">(.*?)<\/span>/g,"$1");
+		this.element.innerHTML = this.element.innerHTML.replace(/(["'])(.*?)(\1)/g, '<b>$1$2$3</b>');
+		this.element.innerHTML = this.element.innerHTML.replace(/((\/\/|#).*)/g, '<del>$1</del>');
+		this.element.innerHTML = this.element.innerHTML.replace(/(\w+)/g, this._highlightWord.bind(this));
+
+		this.restoreSelection(sel);
+	},
+
+	_highlightWord: function(match, word)
+	{
+console.log('_highlightWord', word);
+		if (this.keywords.indexOf(word) > -1)
+			return '<span class="keyword">' + word + '</span>';
+		else
+			return word;
+	},
+
+	traverseText: function(n, c)
+	{
+		if (n.nodeType == 3)
+			c(n);
+		else
+			for (var i = 0, len = n.childNodes.length; i<len; ++i)
+				this.traverseText(n.childNodes[i], c);
+	},
+
+	saveSelection: function()
+	{
+		var offset = 0, start = 0, end = 0, found = false, stop = {};
+		var processText = function(n)
+		{
+			if (!found && n == range.startContainer)
+			{
+				start = offset + range.startOffset;
+				found = true;
+			}
+
+			if (found && n == range.endContainer)
+			{
+				end = offset + range.endOffset;
+				throw stop;
+			}
+
+			offset += n.length;
+		}
+
+		var sel = window.getSelection(), range = sel.getRangeAt(0);
+		if (sel.rangeCount)
+		{
+			try
+			{
+				this.traverseText(this.element, processText);
+			}
+			catch (ex)
+			{
+				if (ex != stop)
+					throw ex;
+			}
+		}
+
+		return {
+			start: start,
+			end: end
+		};
+	},
+
+	restoreSelection: function(sel)
+	{
+		var offset = 0, range = document.createRange(), found = false, stop = {};
+		range.collapse(this.element, 0);
+
+		var processText = function(n)
+		{
+			var nextOffset = offset + n.length;
+
+			if (!found && sel.start >= offset && sel.start <= nextOffset)
+			{
+				range.setStart(n, sel.start - offset);
+				found = true;
+			}
+
+			if (found && sel.end >= offset && sel.end <= nextOffset)
+			{
+				range.setEnd(n, sel.end - offset);
+				throw stop;
+			}
+
+			offset = nextOffset;
+		}
+
+		try
+		{
+			this.traverseText(this.element, processText);
+		}
+		catch (ex)
+		{
+			if (ex != stop)
+				throw ex;
+
+			window.getSelection().removeAllRanges();
+			window.getSelection().addRange(range);
+		}
+	},
+});
+
+window.addEvent('domready', function(){ $$(".editable").each(function(ed){ new phpEditor(ed); }); });
+</script>
