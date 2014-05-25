@@ -181,6 +181,11 @@ dd:hover, dt:target + dd, dd:only-of-type
 	height: 200px;
 }
 
+.perf table td
+{
+	text-align: right;
+}
+
 table
 {
 	width: 800px;
@@ -190,7 +195,6 @@ table
 
 table td
 {
-	text-align: right;
 	padding: 4px;
 	border-top: 1px solid #ddd;
 }

@@ -4,70 +4,63 @@ require('/srv/http/.common/TooBasic/init.php');
 
 class Phpshell_Controller extends TooBasic_Controller
 {
-	const IN  = '/var/lxc/php_shell/in/';
-#	const IN  = '/var/backup/3v4l.org/var/lxc/php_shell/in/';
 	protected static $_exitCodes = array(
 		139 => 'Segmentation Fault',
 		137 => 'Process was killed',
 		255 => 'Generic Error',
 	);
-	protected $_db;
+	public static $db;
 
 	protected function _construct()
 	{
-		$this->_db = new PDO('pgsql:host=localhost;dbname=phpshell', 'website', '3lMC5jLazzzvd3K9lRyt0lVC5');
-		$this->_db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		self::$db = new TooBasic_Pdo('pgsql:host=localhost;dbname=phpshell', 'website', '3lMC5jLazzzvd3K9lRyt0lVC5');
 	}
 
 	public function getIndex()
 	{
-		TooBasic_Template::show('index');
-	}
-/*
-	public function getBlog($id)
-	{
-		$id = (int)$id;
-
-		TooBasic_Template::show('blog', ['content' => file_get_contents('b/'.$id.'.html')]);
+		TooBasic_Template::show('index', [
+			'code' => "<?php\n\n",
+			'input' => (object)['source' => null, 'state' => 'new'],
+		]);
 	}
 
 	public function getSearch($operation, $operand = null)
 	{
-		$results = $this->_query('');
+		$entries = self::$db->fetchObjects('
+			SELECT
+				short as input,
+				input."operationCount",
+				input.run run,
+				operations.operation
+				AVG("userTime") "userTime",
+				AVG("systemTime") "systemTime",
+				AVG("maxMemory") "maxMemory",
+				COUNT(DISTINCT output) * 100 / COUNT(output) variance
+			FROM input
+			JOIN result ON (result.input = input.short)
+			WHERE input IN (SELECT input FROM submit ORDER BY created DESC LIMIT 10)
+			GROUP BY input.short
+		');
 
 		TooBasic_Template::show('search', ['results' => $results]);
-	}
-*/
-	public function getUpdateOperations($waa)
-	{
-		ini_set('memory_limit', '128M');
-
-		if ($waa != 'meukee')
-			return $this->getError(404);
-
-		foreach ($this->_query("SELECT short FROM input WHERE state != ? AND \"operationCount\" ISNULL", array('new')) as $r)
-		{
-			ob_start();
-			$this->get($r->short, 'output');
-			ob_end_clean();
-			echo '.';
-		}
 	}
 
 	public function getLast()
 	{
-		$entries = $this->_query('
+		$entries = self::$db->fetchObjects('
 			SELECT
-				input,
+				short as input,
+				input."operationCount",
+				input.run run,
 				AVG("userTime") "userTime",
 				AVG("systemTime") "systemTime",
 				AVG("maxMemory") "maxMemory",
-				COUNT(DISTINCT output) "nrOutput",
-				MAX(run) run
-			FROM result
+				COUNT(DISTINCT output) * 100 / COUNT(output) variance
+			FROM input
+			JOIN result ON (result.input = input.short)
 			WHERE input IN (SELECT input FROM submit ORDER BY created DESC LIMIT 10)
-			GROUP BY input'
-		);
+			GROUP BY input.short
+		', []);
 
 		TooBasic_Template::show('last', ['last' => $entries]);
 	}
@@ -77,52 +70,37 @@ class Phpshell_Controller extends TooBasic_Controller
 		if (false === strpos($_POST['code'], '<?'))
 			return $this->getError(400);
 
-		$_POST['code'] = trim(str_replace(array("\r\n", "\r"), array("\n", "\n"), $_POST['code']));
+		$code = Phpshell_Script::clean($_POST['code']);
+		$hash = Phpshell_Script::getHash($code);
 
-		$hash = gmp_strval(gmp_init(sha1($_POST['code']), 16), 58);
-		$len = 5;
-
-		do
+		try
 		{
-			$short = substr($hash, -$len);
-			$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
+			$input = Phpshell_Script::byHash($hash);
 
-			$len++;
+			if ($input->state == "busy")
+				return $this->getError(403);
+
+			$input->trigger();
 		}
-		while (!empty($input) && $hash !== $input[0]->hash);
-
-		if (empty($input))
+		catch (Exception $e)
 		{
-			file_put_contents(self::IN.$short, $_POST['code']);
-
+			// No results from ::byHash
 			$source = null;
 			if (preg_match('~^https?://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
 				$source = $matches[1];
 
-			$this->_query("INSERT INTO input  VALUES (?, ?, null, ?, 'new')", array($short, $source, $hash));
-			$this->_query("INSERT INTO submit VALUES (?, ?, now(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
+			$input = Phpshell_Script::create($code, $source);
 		}
-		else
-		{
-			if ($input[0]->state == "busy")
-				return $this->getError(403);
 
-			try
-			{
-				$this->_query("INSERT INTO submit VALUES (?, ?, now(), null, 1)", array($short, $_SERVER['REMOTE_ADDR']));
-			}
-			catch (PDOException $e)
-			{
-				$this->_query("UPDATE submit SET updated = now(), count = count + 1 WHERE input = ? AND ip = ?", array($short, $_SERVER['REMOTE_ADDR']));
-			}
+		self::$db->preparedExec("WITH upsert AS (UPDATE submit SET updated = now(), count = count + 1 WHERE input = :short AND ip = :remote RETURNING *)
+			INSERT INTO submit SELECT :short, :remote, now(), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
+			[':short' => $input->short, ':remote' => $_SERVER['REMOTE_ADDR']]);
 
-			// Trigger daemon
-			touch(self::IN. $short);
-		}
 #maintenance mode
 #return $this->getError(501);
-		usleep(300000);
-		die(header('Location: /'. $short, 302));
+
+		usleep(250 * 1000);
+		die(header('Location: /'. $input->short, 302));
 	}
 
 	public function getError($code = null)
@@ -157,61 +135,56 @@ class Phpshell_Controller extends TooBasic_Controller
 		if (!method_exists($this, '_get'.ucfirst($type)))
 			return $this->getError(404);
 
-		$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
-
-		if (empty($input))
+		try
 		{
-			$input = $this->_query("SELECT * FROM input WHERE alias = ?", array($short));
-
-			if (empty($input))
-				return $this->getError(404);
-			else
-				die(header('Location: /'. $input[0]->short .($type != 'output'? '/'.$type : ''), 302));
+			$input = Phpshell_Script::byShort($short);
 		}
-		else
-			$input = $input[0];
+		catch (Exception $e)
+		{
+			try
+			{
+				$input = Phpshell_Controller::$db->fetchObject("SELECT * FROM input WHERE alias = ?", [$short], 'Phpshell_Script');
+				die(header('Location: /'. $input->short .($type != 'output' ? '/'.$type : ''), 302));
+			}
+			catch (Exception $e)
+			{
+				return $this->getError(404);
+			}
+		}
 
 		// Attempt to retrigger the daemon
 		if ($input->state == 'new')
 		{
-			touch(self::IN. $short);
-			usleep(200000);
-			$input = $this->_query("SELECT * FROM input WHERE short = ?", array($short));
-			$input = $input[0];
+			$input->trigger();
+
+			// Refresh state
+			$input = Phpshell_Script::byShort($short);
 		}
 
 		if (!isset($input->operationCount) && $vld = $this->_getVld($input))
 		{
-			$count = preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER);
-			$this->_query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", array($count, $short));
-
-			foreach ($matches as $match)
-			{
-				try
-				{
-					$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], isset($match['operand']) ? $match['operand'] : null));
-				} catch (PDOException $e){}
-			}
+			preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld, $matches, PREG_SET_ORDER);
+			$input->setOperations($matches);
 		}
 
-		TooBasic_Template::show('get', [
-			'title' =>  $short,
+		TooBasic_Template::show('script', [
+			'title' =>  $input->short,
 			'input' => $input,
-			'code' => file_get_contents(self::IN. $short),
+			'code' => $input->getCode(),
 			'data' => call_user_func(array($this, '_get'. ucfirst($type)), $input),
 			'tab' => $type,
-			'showTab' => array(
-				'perf' => true,
-				'vld' => strlen($this->_getVld($input)) > 0,
+			'showTab' => [
+				'vld' => isset($input->operationCount),
 				'refs' => count($this->_getRefs($input)) > 0,
 				'segfault' => strlen($this->_getSegfault($input)) > 0,
-			),
+				'analyze' => null !== $this->_getAnalyze($input),
+			],
 		]);
 	}
 
-	protected function _getOutput($input)
+	protected function _getOutput(Phpshell_Script $input)
 	{
-		$results = $this->_query("
+		$results = self::$db->fetchObjects("
 			SELECT version, \"exitCode\", raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
@@ -274,9 +247,11 @@ class Phpshell_Controller extends TooBasic_Controller
 			$versions[ implode(', ', $output['versions']) ] = $output['output'];
 		}
 
+		#fixme; attempt to maintain version.order from query?
 		uksort($versions, 'version_compare');
 		$versions = array_reverse($versions, true);
 
+		// Put hhvm-on top instead of at bottom
 		end($versions);
 		if ('hhvm-3.0.1' == key($versions))
 		{
@@ -287,9 +262,9 @@ class Phpshell_Controller extends TooBasic_Controller
 		return $versions;
 	}
 
-	protected function _getPerf(Stdclass $input)
+	protected function _getPerf(Phpshell_Script $input)
 	{
-		return $this->_query("
+		return self::$db->fetchObjects("
 			SELECT
 				AVG(\"systemTime\") as system,
 				AVG(\"userTime\") as user,
@@ -297,29 +272,35 @@ class Phpshell_Controller extends TooBasic_Controller
 				version
 			FROM result
 			INNER JOIN version ON version.name = result.version
-			WHERE result.input = ? AND (version.name LIKE '_.%' OR version.name LIKE 'hhvm-%')
+			WHERE result.input = ? AND (version.name LIKE '_.%' OR version.name LIKE 'hhvm-_.%')
 			GROUP BY result.version
 			ORDER BY MAX(version.order)", array($input->short));
 	}
 
-	protected function _getVld(Stdclass $input)
+	protected function _getVld(Phpshell_Script $input)
 	{
 		return $this->__getResult($input, 'vld');
 	}
 
-	protected function _getHhvm(Stdclass $input)
+	protected function _getAnalyze(Phpshell_Script $input)
 	{
-		return $this->__getResult($input, 'hhvm-3.0.1');
+		return $this->__getResult($input, 'hhvm-analyze');
 	}
 
-	protected function _getSegfault(Stdclass $input)
+	// Deprecated
+	protected function _getHhvm(Phpshell_Script $input)
+	{
+		die(header('Location: /'. $input->short, 302));
+	}
+
+	protected function _getSegfault(Phpshell_Script $input)
 	{
 		return $this->__getResult($input, 'segfault');
 	}
 
-	protected function __getResult(Stdclass $input, $version)
+	protected function __getResult(Phpshell_Script $input, $version)
 	{
-		$row = $this->_query("
+		$row = self::$db->fetchObjects("
 			SELECT raw
 			FROM result
 			INNER JOIN output ON output.hash = result.output
@@ -334,9 +315,9 @@ class Phpshell_Controller extends TooBasic_Controller
 		return $output;
 	}
 
-	protected function _getRefs(Stdclass $input)
+	protected function _getRefs(Phpshell_Script $input)
 	{
-		return $this->_query("
+		return self::$db->fetchObjects("
 WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
   SELECT id, r.operation, link, name, parent
   FROM operations o
@@ -349,25 +330,97 @@ WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
 )
 SELECT link, name FROM recRefs;", array($input->short));
 	}
-
 /*
-	protected function _getRel($short)
+	protected function _getRel(Phpshell_Script $input)
 	{
-		$related = $this->_query("SELECT short, \"operationCount\" FROM input WHERE source = ? LIMIT 9", array($short));
-
-		foreach ($related as &$input)
-			$input->perf = $this->_getPerf($input->short);
-
-		return $related;
+		return self::$db->fetchObjects("SELECT * FROM input WHERE source = ? LIMIT 9", [$input->short], 'Phpshell_Script');
 	}
 */
+}
 
-	protected function _query($statement, array $parameters = array())
+class Phpshell_Script
+{
+	const PATH  = '/var/lxc/php_shell/in/';
+
+	protected function __construct()
 	{
-		$s = $this->_db->prepare($statement);
-		$s->execute($parameters);
+		if (!isset($this->short))
+			throw new Exception;
+	}
 
-		return $s->fetchAll(PDO::FETCH_CLASS);
+	public static function clean($code)
+	{
+		return trim(str_replace(array("\r\n", "\r"), array("\n", "\n"), $code));
+	}
+
+	public static function getHash($code)
+	{
+		return gmp_strval(gmp_init(sha1($code), 16), 58);
+	}
+
+	public static function byHash($hash)
+	{
+		return Phpshell_Controller::$db->fetchObject("SELECT * from input WHERE hash = ?", [$hash], get_class());
+	}
+
+	public static function create($code, $source)
+	{
+		$hash = self::getHash($code);
+		$len = 5;
+
+		if (file_exists(self::PATH. $this->short))
+			throw new Exception('Duplicate script, this shouldn\'t happen');
+
+		do
+		{
+			$short = substr($hash, -$len);
+			$dups = Phpshell_Controller::$db->fetchObject("SELECT COUNT(*) FROM input WHERE short = ?", [$short]);
+
+			$len++;
+		}
+		while ($dups->count > 0);
+
+		file_put_contents(self::PATH. $short, $code);
+
+		Phpshell_Controller::$db->preparedExec("INSERT INTO input (short, source, hash) VALUES (?, ?, ?)", [$short, $source, $hash]);
+
+		return self::byHash($hash);
+	}
+
+	public static function byShort($short)
+	{
+		return Phpshell_Controller::$db->fetchObject("SELECT * FROM input WHERE short = ?", [$short], get_class());
+	}
+
+	public function getCode()
+	{
+		if (!isset($this->short))
+			throw new Exception('We don\'t really know this script...');
+
+		if (!is_readable(self::PATH. $this->short))
+			throw new Exception('Although we have heard of this script; we are not sure where we left the sourcecode...');
+
+		return file_get_contents(self::PATH. $this->short);
+	}
+
+	public function setOperations(array $operations)
+	{
+		$this->operationCount = count($operations);
+		Phpshell_Controller::$db->preparedExec("UPDATE input SET \"operationCount\" = ? WHERE short = ?", [$this->operationCount, $this->short]);
+
+		foreach ($operations as $match)
+		{
+			try
+			{
+				$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], isset($match['operand']) ? $match['operand'] : null));
+			} catch (PDOException $e){ }
+		}
+	}
+
+	public function trigger()
+	{
+//		touch(self::PATH. $this->short);
+		usleep(200 * 1000);
 	}
 }
 

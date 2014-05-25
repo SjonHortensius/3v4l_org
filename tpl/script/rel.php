@@ -1,13 +1,3 @@
-<form>
-	<h1>3v4l.org<small> - online PHP shell, test in 80+ different PHP versions!</small></h1>
-</form>
-
-<ul id="tabs">
-	<li class="active"><a>Latest submissions</a></li>
-	<li><a>Search results</a></li>
-</ul>
-
-<div>
 <table>
 <tr>
 	<th>name</th>
@@ -19,7 +9,7 @@
 	<th>% variance</th>
 </tr>
 <?php
-	foreach ($this->last as $result)
+	foreach ($this->data as $result)
 	{
 ?>
 <tr>
@@ -35,5 +25,3 @@
 	}
 ?>
 </table>
-
-</div>

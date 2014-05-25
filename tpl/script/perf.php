@@ -12,7 +12,8 @@ foreach ($this->data as $result)
 		$result->version = $m[1].'0'.$m[2];
 	elseif (substr($result->version, 0, 5) == 'hhvm-')
 	{
-		array_push($hhvm, $result);
+		if ($result->version != 'hhvm-analyze')
+			array_push($hhvm, $result);
 		continue;
 	}
 

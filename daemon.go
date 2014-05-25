@@ -34,12 +34,10 @@ type Result struct {
 }
 
 func (this *Input) setState(s string) {
-	log.Printf("State changed to: %s", s)
-
-	if r, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2", s, this.short); err != nil {
-		log.Fatalf("Input: failed to update state: %s", err)
-	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		log.Fatalf("Input: failed to update state: %d, %s", a, err)
+	if r, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2 AND state = \"busy\"", s, this.short); err != nil {
+		log.Fatalf("Input: failed to update state to `%s`: %s", s, err)
+	} else {
+		log.Printf("State changed to: %s", s)
 	}
 }
 
@@ -164,16 +162,16 @@ func (this *Input) execute(version string) {
 				continue
 			}
 
-			this.setState("verbose")
 			log.Println("Output excessive: killing")
 
 			if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
 				this.setState("abusive")
-				log.Fatalf("Didnt stop: aborting")
+				log.Fatalf("Didn't stop: aborting")
 			}
 
 			if totalOutput > 256*1024 {
-				log.Fatalf("Output excessive:  aborting")
+				this.setState("verbose")
+				log.Fatalf("Output excessive: aborting")
 			}
 		}
 
@@ -194,20 +192,22 @@ func (this *Input) execute(version string) {
 	var output string
 
 	select {
-	case <-time.After(1500 * time.Millisecond):
-		if err := cmd.Process.Kill(); err != nil {
-			if err.Error() != "os: process already finished" {
-				this.setState("abusive")
-			}
-
+	case <-time.After(2000 * time.Millisecond):\
+		if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
+			this.setState("abusive")
 			log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
 		}
 
 		state = <-procDone
 		output = <-procOut
 
+		totalTimeouts++;
 		this.setState("misbehaving")
 		log.Println("Timeout: killed")
+
+		if totalTimeouts > 3 {
+			log.Fatalf("Too many (%d) timeouts, aborting", totalTimeouts)
+		}
 	case state = <-procDone:
 		output = <-procOut
 	}
@@ -241,6 +241,7 @@ var (
 	run int
 	allOutput = map[string]bool {}
 	totalOutput = 0
+	totalTimeouts = 0
 )
 
 const RLIMIT_NPROC = 0x6
@@ -271,7 +272,7 @@ func init() {
 	var limits = map[int]int{
 		syscall.RLIMIT_CPU:		2,
 		syscall.RLIMIT_DATA:	128 * 1024 * 1024,
-//			syscall.RLIMIT_FSIZE:	64 * 1024,
+//		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:	0,
 		syscall.RLIMIT_NOFILE:	2048,
