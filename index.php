@@ -174,10 +174,11 @@ class Phpshell_Controller extends TooBasic_Controller
 			'data' => call_user_func(array($this, '_get'. ucfirst($type)), $input),
 			'tab' => $type,
 			'showTab' => [
+				'perf' => true,
 				'vld' => isset($input->operationCount),
 				'refs' => count($this->_getRefs($input)) > 0,
 				'segfault' => strlen($this->_getSegfault($input)) > 0,
-				'analyze' => null !== $this->_getAnalyze($input),
+				'analyze' => !in_array($this->_getAnalyze($input), [null, '[]']),
 			],
 		]);
 	}
@@ -330,12 +331,11 @@ WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
 )
 SELECT link, name FROM recRefs;", array($input->short));
 	}
-/*
+
 	protected function _getRel(Phpshell_Script $input)
 	{
 		return self::$db->fetchObjects("SELECT * FROM input WHERE source = ? LIMIT 9", [$input->short], 'Phpshell_Script');
 	}
-*/
 }
 
 class Phpshell_Script
@@ -368,9 +368,6 @@ class Phpshell_Script
 		$hash = self::getHash($code);
 		$len = 5;
 
-		if (file_exists(self::PATH. $this->short))
-			throw new Exception('Duplicate script, this shouldn\'t happen');
-
 		do
 		{
 			$short = substr($hash, -$len);
@@ -379,6 +376,9 @@ class Phpshell_Script
 			$len++;
 		}
 		while ($dups->count > 0);
+
+		if (file_exists(self::PATH. $short))
+			throw new Exception('Duplicate script, this shouldn\'t happen');
 
 		file_put_contents(self::PATH. $short, $code);
 
@@ -412,14 +412,17 @@ class Phpshell_Script
 		{
 			try
 			{
-				$this->_query("INSERT INTO operations VALUES(?, ?, ?)", array($short, $match['op'], isset($match['operand']) ? $match['operand'] : null));
+				if (isset($match['operand']) && strlen($match['operand']) > 64)
+					continue;
+
+				Phpshell_Controller::$db->preparedExec("INSERT INTO operations VALUES(?, ?, ?)", array($this->short, $match['op'], isset($match['operand']) ? $match['operand'] : null));
 			} catch (PDOException $e){ }
 		}
 	}
 
 	public function trigger()
 	{
-//		touch(self::PATH. $this->short);
+		touch(self::PATH. $this->short);
 		usleep(200 * 1000);
 	}
 }

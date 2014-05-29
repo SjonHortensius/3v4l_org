@@ -38,8 +38,9 @@
 	color: #999;
 }
 .editable { color: #333; }
-.editable .username { color: gray; }
+.editable .comment { color: gray; }
 .editable .keyword { color: blue; }
+.editable .variable { color: green; }
 .editable .string { color: red; }
 
 </style>
@@ -48,9 +49,12 @@
 
 class Stuff
 {
+	/*
+		Important comment
+	*/
 	public static function countObjTypes( array $data, array $types )
 	{
-		$return['Other'] = 0;
+#		$return['Other'] = 0;
 
 		foreach ( $types as $type )
 			$return[$type] = 0;
@@ -71,17 +75,6 @@ class Stuff
 
 		return $return;
 	}
-
-	public static function getArrayValueByPath($array, $path) {
-		#$path = (array) array_filter( $path );
-
-		if( !empty( $path ) ) {
-			foreach ( $path as $key ) if( !isset( $array[$key] ) ) return NULL; $array = $array[$key];
-			return $array;
-		} else {
-			return false;
-		}
-	}
 }
 
 // An example of how to use it
@@ -91,19 +84,6 @@ $honeyPot1 = new HoneyPotField( time() );
 $honeyPot1-&gt;validator( new Validator( new HoneyPotTimeRule( 'This form was filled in too quickly, assumed bot, please allow 2 seconds to fill in the form' ) ) );
 $honeyPot2 = new HoneyPotField();
 $honeyPot2-&gt;validator( new Validator( new EqualRule( 'This field was unexpectedly filled in, assumed bot', '' ) ) );
-
-$q1l =  new LabelField( 'Question 1' );
-$q1 = new InputField( 'text' );
-
-$q2l =  new LabelField( 'Question 2' );
-$q2 = new InputField( 'text' );
-
-$form-&gt;addGroup( new HoneyPotGroup( $honeyPot1, $honeyPot2 ) );
-$form-&gt;addGroup( new QuestionGroup( $q1l, $q1 ) );
-$form-&gt;addGroup( new QuestionGroup( $q2l, $q2 ) );
-$form-&gt;addField( new UploadField( 'text' ) );
-
-$form-&gt;addField( new ActionField( 'Send' ) );
 
 if( $form-&gt;isSubmitted() )
 	$form-&gt;validate(  );
@@ -135,9 +115,20 @@ var phpEditor = new Class({
 	{
 		var sel = this.saveSelection();
 
-		this.element.innerHTML = this.element.innerHTML.replace(/<span class=".*?">(.*?)<\/span>/g,"$1");
-		this.element.innerHTML = this.element.innerHTML.replace(/(["'])(.*?)(\1)/g, '<b>$1$2$3</b>');
-		this.element.innerHTML = this.element.innerHTML.replace(/((\/\/|#).*)/g, '<del>$1</del>');
+		this.element.innerHTML = this.element.innerHTML.replace(/<span class=".*?">(.*?)<\/span>/g, "$1");
+
+/*
+		this.element.getChildren().each(function(el){
+			if (3 != el.nodeType)
+				return;
+
+			el.innerHTML = el.innerHTML.replace(/(["'])(.*?)(\1)/g, '<span class="string">$1$2$3</span>');
+		});
+*/
+//fixme; these regexp should only run on textNodes
+		this.element.innerHTML = this.element.innerHTML.replace(/(["'])(.*?)(\1)/g, '<span class="string">$1$2$3</span>');
+		this.element.innerHTML = this.element.innerHTML.replace(/(\$\w+)/g, '<span class="variable">$1</span>');
+		this.element.innerHTML = this.element.innerHTML.replace(/((\/\/|#).*)/g, '<span class="comment">$1</span>');
 		this.element.innerHTML = this.element.innerHTML.replace(/(\w+)/g, this._highlightWord.bind(this));
 
 		this.restoreSelection(sel);

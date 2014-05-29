@@ -15,8 +15,11 @@ if (isset($this->input, $this->code))
 	?><form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 	<textarea name="code"><?=htmlspecialchars($this->code)?></textarea>
-<? if (!empty($this->input->source)){ ?>
+<? if (isset($this->input->source)){ ?>
 	<a href="/<?=$this->input->source?>">based on <?=$this->input->source?></a>
+<? } ?>
+<? if (isset($this->input->user)){ ?>
+	<a rel="external" href="//twitter.com/<?=$this->input->user?>">created by <?=$this->input->user?></a>
 <? } ?>
 <? if (in_array($this->input->state, array('new', 'done', 'busy'))){ ?>
 	<input type="submit" value="eval();" class="<?=$this->input->state?>" title="shortcut: ctrl+enter" />

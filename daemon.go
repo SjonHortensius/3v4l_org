@@ -34,7 +34,7 @@ type Result struct {
 }
 
 func (this *Input) setState(s string) {
-	if r, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2 AND state = \"busy\"", s, this.short); err != nil {
+	if _, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2 AND state = 'busy'	", s, this.short); err != nil {
 		log.Fatalf("Input: failed to update state to `%s`: %s", s, err)
 	} else {
 		log.Printf("State changed to: %s", s)
@@ -192,7 +192,7 @@ func (this *Input) execute(version string) {
 	var output string
 
 	select {
-	case <-time.After(2000 * time.Millisecond):\
+	case <-time.After(2000 * time.Millisecond):
 		if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
 			this.setState("abusive")
 			log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)

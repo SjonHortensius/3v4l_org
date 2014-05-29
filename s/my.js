@@ -16,6 +16,7 @@ var evalOrg = new Class({
 	{
 		this.richEditor();
 		this.showFeedbackButton();
+		this.externalLinks();
 
 		$$('h1').addEvent('click', function(){ window.location = '/'; });
 		$$('dd, dt').addEvent('click', this._clickDt);
@@ -119,6 +120,13 @@ var evalOrg = new Class({
 				perfData.sort([{column: event.column, desc: !event.ascending}]);
 				chart.draw(perfData, options);
 			});
+	},
+
+	externalLinks: function()
+	{
+		$$('a[rel=external]').each(function (el){
+			el.setAttribute('target', '_blank');
+		});
 	},
 
 	showFeedbackButton: function()

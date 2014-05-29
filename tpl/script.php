@@ -30,7 +30,7 @@ switch ($this->input->state)
 	<li<?= ('output' == $this->tab ? ' class="active"' : '') ?>><a href="/<?=$this->input->short?>#tabs">Output</a></li>
 <?foreach ($tabs as $link => $name)
 {
-	$disable = !(isset($this->showTab[ $link ]) && true == $this->showTab[ $link ]);
+	$disable = isset($this->showTab[ $link ]) && false == $this->showTab[ $link ];
 ?>
 	<li<?= ($link == $this->tab ? ' class="active"' : ($disable ? ' class="disabled" title="not available"' : '')) ?>><a href="/<?=$this->input->short .'/'. $link?>#tabs"><?=$name?></a></li>
 <?
