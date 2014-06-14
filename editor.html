@@ -1,95 +1,21 @@
 <script src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
-<!--
-	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler/Lines.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Compiler/List.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Parser.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Loader.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Parser/Smart.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Lighter.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel/Html.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Fuel/Php.js"></script>
-	<script type="text/javascript" src="http://dev/Lighter/Source/Wick.js"></script>
-
-	<script type="text/javascript">
-		window.addEvent('domready', function() {
-			var lighter = new Lighter({
-				loader:   new Loader({
-					stylesheets: 'http://dev/Lighter/Source/Flame/',
-					scripts:     'http://dev/Lighter/Source/Fuels/',
-				}),
-				parser:   new Parser.Smart({ strict: true }),
-				compiler: new Compiler.List({ editable: true, altLines: 'hover',}),
-			});
-
-			$$('.code').each(function(el) {
-				lighter.light(el);
-			});
-		});
-	</script>
--->
+<script src="ext/shjs/sh_php.min.js"></script>
+<script src="ext/shjs/sh_main.min.js"></script>
+<link rel="stylesheet" type="text/css" href="ext/shjs/sh_style.css"/>
 <style type="text/css">
 .editable {
 	border: 1px solid #ddd;
 	padding: 10px;
 	margin: 10px;
 	min-height: 100px;
-	color: #999;
+	color: #333;
 }
-.editable { color: #333; }
 .editable .comment { color: gray; }
-.editable .keyword { color: blue; }
-.editable .variable { color: green; }
-.editable .string { color: red; }
+.editable > .keyword { color: blue; }
+.editable > .variable { color: green; }
+.editable > .string { color: red; }
 
 </style>
-<pre class="editable code" contentEditable="true">
-&lt;?php
-
-class Stuff
-{
-	/*
-		Important comment
-	*/
-	public static function countObjTypes( array $data, array $types )
-	{
-#		$return['Other'] = 0;
-
-		foreach ( $types as $type )
-			$return[$type] = 0;
-
-		foreach ( ( array ) $data as $obj ) {
-			$set = false;
-			array_walk( $types, function( $type ) use ( $obj, &amp;$return, &amp;$set )
-			{
-				if ( is_a( $obj, $type ) ) {
-					$return[$type]++;
-					$set = true;
-				}
-			} );
-
-			if ( !$set )
-				$return['Other']++;
-		}
-
-		return $return;
-	}
-}
-
-// An example of how to use it
-$form  = new Form( 'Form', 'post' );
-
-$honeyPot1 = new HoneyPotField( time() );
-$honeyPot1-&gt;validator( new Validator( new HoneyPotTimeRule( 'This form was filled in too quickly, assumed bot, please allow 2 seconds to fill in the form' ) ) );
-$honeyPot2 = new HoneyPotField();
-$honeyPot2-&gt;validator( new Validator( new EqualRule( 'This field was unexpectedly filled in, assumed bot', '' ) ) );
-
-if( $form-&gt;isSubmitted() )
-	$form-&gt;validate(  );
-echo $form-&gt;render(  ); // outputs the form + elements
-</pre>
-
 <script type="text/javascript">
 
 var phpEditor = new Class({
@@ -104,43 +30,35 @@ var phpEditor = new Class({
 	{
 		this.element = el;
 
-		el.addEvent('keyup', function(e)
+		el.addEvent('keyup', this.onChange);
+
+		this.onChange();
+	},
+
+	onChange: function (e)
+	{
+		try
 		{
-			if (e.code == 32 || (e.code > 47 && e.code < 91 && !e.control && !e.shift && !e.alt))
-				this.onChange();
-		}.bind(this));
-	},
+			var sel = this.saveSelection();
+		}
+		catch (ex)
+		{
+			var sel = false;
+		}
 
-	onChange: function ()
-	{
-		var sel = this.saveSelection();
+//		if ('enter' == e.key)
+//			return false;
+		
+//		this.element.innerHTML= this.element.innerHTML.replace(/<\/?div>/g, "\n");
 
-		this.element.innerHTML = this.element.innerHTML.replace(/<span class=".*?">(.*?)<\/span>/g, "$1");
+		while (this.element.innerHTML != (stripped = this.element.innerHTML.replace(/<span class=".*?">([\s\S]*?)<\/span>/g, "$1")))
+			this.element.innerHTML = stripped;
 
-/*
-		this.element.getChildren().each(function(el){
-			if (3 != el.nodeType)
-				return;
 
-			el.innerHTML = el.innerHTML.replace(/(["'])(.*?)(\1)/g, '<span class="string">$1$2$3</span>');
-		});
-*/
-//fixme; these regexp should only run on textNodes
-		this.element.innerHTML = this.element.innerHTML.replace(/(["'])(.*?)(\1)/g, '<span class="string">$1$2$3</span>');
-		this.element.innerHTML = this.element.innerHTML.replace(/(\$\w+)/g, '<span class="variable">$1</span>');
-		this.element.innerHTML = this.element.innerHTML.replace(/((\/\/|#).*)/g, '<span class="comment">$1</span>');
-		this.element.innerHTML = this.element.innerHTML.replace(/(\w+)/g, this._highlightWord.bind(this));
+		sh_highlightDocument()
 
-		this.restoreSelection(sel);
-	},
-
-	_highlightWord: function(match, word)
-	{
-console.log('_highlightWord', word);
-		if (this.keywords.indexOf(word) > -1)
-			return '<span class="keyword">' + word + '</span>';
-		else
-			return word;
+		if (sel)
+			this.restoreSelection(sel);
 	},
 
 	traverseText: function(n, c)
@@ -231,5 +149,50 @@ console.log('_highlightWord', word);
 	},
 });
 
-window.addEvent('domready', function(){ $$(".editable").each(function(ed){ new phpEditor(ed); }); });
+window.addEvent('domready', function(){ new phpEditor($('c')); });
 </script>
+<pre class="sh_php" contentEditable="true" id="c">
+&lt;?php
+
+class Stuff
+{
+	/*
+		Important comment
+	*/
+	public static function countObjTypes( array $data, array $types )
+	{
+#		$return['Other'] = 0;
+
+		foreach ( $types as $type )
+			$return[$type] = 0;
+
+		foreach ( ( array ) $data as $obj ) {
+			$set = false;
+			array_walk( $types, function( $type ) use ( $obj, &amp;$return, &amp;$set )
+			{
+				if ( is_a( $obj, $type ) ) {
+					$return[$type]++;
+					$set = true;
+				}
+			} );
+
+			if ( !$set )
+				$return['Other']++;
+		}
+
+		return $return;
+	}
+}
+
+// An example of how to use it
+$form  = new Form( 'Form', 'post' );
+
+$honeyPot1 = new HoneyPotField( time() );
+$honeyPot1-&gt;validator( new Validator( new HoneyPotTimeRule( 'This form was filled in too quickly, assumed bot, please allow 2 seconds to fill in the form' ) ) );
+$honeyPot2 = new HoneyPotField();
+$honeyPot2-&gt;validator( new Validator( new EqualRule( 'This field was unexpectedly filled in, assumed bot', '' ) ) );
+
+if( $form-&gt;isSubmitted() )
+	$form-&gt;validate(  );
+echo $form-&gt;render(  ); // outputs the form + elements
+</pre>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html dir="ltr" lang="en-US">
 <head>
-	<title>3v4l <?=(isset($this->title)?' :: '.$this->title : '')?> - EvAluate your code in our online PHP &amp; hhvm shell (100+ versions)</title>
+	<title>3v4l <?=(isset($this->title)?' :: '.$this->title : '')?> - EvAluate your code in our online PHP &amp; HHVM shell (100+ versions)</title>
 	<meta name="keywords" content="php,codepad,fiddle,phpfiddle,shell,xdebug,vld,performance,hhvm,online,shell"/>
 	<meta name="author" content="Sjon Hortensius - sjon@hortensius.net" />
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
@@ -16,10 +16,10 @@ if (isset($this->input, $this->code))
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 	<textarea name="code"><?=htmlspecialchars($this->code)?></textarea>
 <? if (isset($this->input->source)){ ?>
-	<a href="/<?=$this->input->source?>">based on <?=$this->input->source?></a>
+	<a href="/<?=$this->input->source?>"><i class="icon-share-alt"></i>based on <?=$this->input->source?></a>
 <? } ?>
 <? if (isset($this->input->user)){ ?>
-	<a rel="external" href="//twitter.com/<?=$this->input->user?>">created by <?=$this->input->user?></a>
+	<a rel="external" href="https://twitter.com/<?=$this->input->user?>"><i class="icon-user"></i>created by <?=$this->input->user?></a>
 <? } ?>
 <? if (in_array($this->input->state, array('new', 'done', 'busy'))){ ?>
 	<input type="submit" value="eval();" class="<?=$this->input->state?>" title="shortcut: ctrl+enter" />

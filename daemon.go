@@ -14,8 +14,16 @@ import (
 	"time"
 )
 
+type Version struct {
+	name string
+	command string
+	isHelper bool
+}
+
 type Input struct {
 	short string
+	uniqueOutput map [string]bool
+	penalty	int
 }
 
 type Output struct {
@@ -25,7 +33,7 @@ type Output struct {
 type Result struct {
 	input		*Input
 	output		*Output
-	version		string
+	version		*Version
 	exitCode	int
 	created		time.Time
 	userTime	float64
@@ -33,11 +41,25 @@ type Result struct {
 	maxMemory	int64
 }
 
-func (this *Input) setState(s string) {
-	if _, err := db.Exec("UPDATE input SET state = $1 WHERE short = $2 AND state = 'busy'	", s, this.short); err != nil {
-		log.Fatalf("Input: failed to update state to `%s`: %s", s, err)
-	} else {
-		log.Printf("State changed to: %s", s)
+func (this *Input) penalize(r string, p int) {
+	this.penalty += p
+
+	if p == 0 {
+		return;
+	}
+
+	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $1) / run WHERE short = $2", this.penalty, this.short); err != nil {
+		log.Fatalf("Input: failed to set penalty to `%d`: %s", p, err)
+	}
+
+	log.Printf("Penalized %d for: %s", p, r)
+
+	if this.penalty > 256 {
+		if _, err := db.Exec("UPDATE input SET state = 'abusive' WHERE short = $1 AND state = 'busy'", input.short); err != nil {
+			log.Printf("Input: failed to update state to `abusive`: %s", err)
+		}
+
+		log.Fatalf("Panalty limit reached: aborting")
 	}
 }
 
@@ -45,7 +67,7 @@ func (this *Input) newRun() int {
 	if r, err := db.Exec("UPDATE input SET run = run + 1, state = $1 WHERE short = $2", "busy", this.short); err != nil {
 		log.Fatalf("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		log.Fatalf("Input: failed to update run+state: %d rows affected, %s", a, err)
+		log.Fatalf("Input: failed to update run+state; %d rows affected, %s", a, err)
 	}
 
 	var run int
@@ -56,7 +78,7 @@ func (this *Input) newRun() int {
 }
 
 func (this *Output) process(result *Result) bool {
-	this.raw = strings.Replace(this.raw, result.version, "\x06", -1)
+	this.raw = strings.Replace(this.raw, result.version.name, "\x06", -1)
 	this.raw = strings.Replace(this.raw, result.input.short, "\x07", -1)
 
 	return true
@@ -73,14 +95,11 @@ func (this *Result) store() {
 
 	hash := this.output.getHash()
 
-	if false == allOutput[hash] {
-		allOutput[hash] = true;
+	if false == this.input.uniqueOutput[hash] {
+		this.input.uniqueOutput[hash] = true;
 
-		// Count helpers less
-		if this.version[1] == '.' {
-			totalOutput += len(this.output.raw)
-		} else {
-			totalOutput += len(this.output.raw)/3
+		if !this.version.isHelper {
+			this.input.penalize("Excessive total output", len(this.output.raw)/2048)
 		}
 	}
 
@@ -89,7 +108,7 @@ func (this *Result) store() {
 	}
 
 	r, err := db.Exec("INSERT INTO result VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-		this.input.short, this.output.getHash(), this.version, this.exitCode,
+		this.input.short, this.output.getHash(), this.version.name, this.exitCode,
 		this.created, this.userTime, this.systemTime, this.maxMemory, run,
 	)
 
@@ -100,8 +119,10 @@ func (this *Result) store() {
 	}
 }
 
-func (this *Input) execute(version string) {
-	log.SetPrefix("[" + this.short + ":" + version + "] ")
+func (this *Input) execute(v *Version) {
+	cmdArgs := strings.Split(v.command, " ")
+
+	log.SetPrefix("[" + this.short + ":" + v.name + "] ")
 
 	// FIXME Should not be necessary
 	if err := syscall.Setgid(99); err != nil {
@@ -112,8 +133,9 @@ func (this *Input) execute(version string) {
 		log.Fatalf("Failed to setuid: %v", err)
 	}
 
-	cmd := exec.Command("/usr/bin/php-"+version, "-c", "/etc", "-q", "/in/"+this.short)
-	cmd.Args[0] = "php"
+	cmdArgs = append(cmdArgs, "/in/"+this.short)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+//	cmd.Args[0] = "php" # hhvm doesn't like this...
 	cmd.Env = []string{
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
@@ -156,23 +178,20 @@ func (this *Input) execute(version string) {
 			}
 
 			buffer = buffer[:n]
-			output = append(output, buffer...)
 
-			if version[1] != '.' || (totalOutput + len(output)) < 128*1024 {
+			// 32 KiB is the length of phpinfo() output
+			if len(output) < 32 * 1024 || (v.isHelper && len(output) < 256*1024) {
+				output = append(output, buffer...)
 				continue
 			}
 
-			log.Println("Output excessive: killing")
-
-			if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
-				this.setState("abusive")
-				log.Fatalf("Didn't stop: aborting")
+			if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process") {
+				this.penalize("Didn't stop: "+ err.Error(), 256)
 			}
+		}
 
-			if totalOutput > 256*1024 {
-				this.setState("verbose")
-				log.Fatalf("Output excessive: aborting")
-			}
+		if !v.isHelper {
+			this.penalize("Excessive output", len(output)/10240)
 		}
 
 		procOut <- string(output)
@@ -193,21 +212,14 @@ func (this *Input) execute(version string) {
 
 	select {
 	case <-time.After(2000 * time.Millisecond):
-		if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished") {
-			this.setState("abusive")
-			log.Fatalf("Timeout: Failed to kill child `%s`, aborting", err)
+		if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process") {
+			this.penalize("Failed to kill after timeout", 256)
 		}
 
 		state = <-procDone
 		output = <-procOut
 
-		totalTimeouts++;
-		this.setState("misbehaving")
-		log.Println("Timeout: killed")
-
-		if totalTimeouts > 3 {
-			log.Fatalf("Too many (%d) timeouts, aborting", totalTimeouts)
-		}
+		this.penalize("Process timed out", 64)
 	case state = <-procDone:
 		output = <-procOut
 	}
@@ -225,7 +237,7 @@ func (this *Input) execute(version string) {
 	r := Result{
 		input:		this,
 		output:		&Output{output},
-		version:	version,
+		version:	v,
 		exitCode:	exitCode,
 		created:	time.Now(),
 		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
@@ -239,9 +251,6 @@ var (
 	db *sql.DB
 	input *Input
 	run int
-	allOutput = map[string]bool {}
-	totalOutput = 0
-	totalTimeouts = 0
 )
 
 const RLIMIT_NPROC = 0x6
@@ -254,7 +263,7 @@ func init() {
 	if script, err := os.Stat(os.Args[1]); err != nil || script.IsDir() {
 		log.Fatalf("First argument is not a valid file: %s", err)
 	} else {
-		input = &Input{script.Name()}
+		input = &Input{script.Name(), make(map[string]bool), 0}
 	}
 
 	var err error
@@ -271,7 +280,7 @@ func init() {
 
 	var limits = map[int]int{
 		syscall.RLIMIT_CPU:		2,
-		syscall.RLIMIT_DATA:	128 * 1024 * 1024,
+		syscall.RLIMIT_DATA:	256 * 1024 * 1024,
 //		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:	0,
@@ -298,26 +307,36 @@ func main() {
 	log.SetPrefix("[" + input.short + "] ")
 	run = input.newRun()
 
-	rs, err := db.Query("SELECT name FROM version ORDER BY \"order\" DESC")
+	// prevent problems if we are still uid=0
+	defer func() {
+		os.RemoveAll("/tmp/")
+		os.Mkdir("/tmp/", 1777)
+	}()
+
+	rs, err := db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
 
 	if err != nil {
 		log.Fatal("No versions found to execute: %s", err)
 	}
 
-	var versions []string
-	var version string
+	var versions []Version
 	for rs.Next() {
-		if err := rs.Scan(&version); err != nil {
+		v := Version{}
+
+		if err := rs.Scan(&v.name, &v.command, &v.isHelper); err != nil {
 			log.Fatal("Error fetching version: %s", err)
 		}
 
-		versions = append(versions, version)
+		versions = append(versions, v)
 	}
 
-	for _, version := range versions {
-		input.execute(version)
+	for _, v := range versions {
+		input.execute(&v)
 	}
 
-	input.setState("done")
+	if _, err := db.Exec("UPDATE input SET state = 'done' WHERE short = $1 AND state = 'busy'", input.short); err != nil {
+		log.Printf("Input: failed to update state to `done`: %s", err)
+	}
+
 	db.Close()
 }

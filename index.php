@@ -13,7 +13,7 @@ class Phpshell_Controller extends TooBasic_Controller
 
 	protected function _construct()
 	{
-		self::$db = new TooBasic_Pdo('pgsql:host=localhost;dbname=phpshell', 'website', '3lMC5jLazzzvd3K9lRyt0lVC5');
+		self::$db = new TooBasic_Pdo('pgsql:host=localhost;dbname=phpshell', 'website', 'QVT359fHZXqobf2SV2MiZ9uR');
 	}
 
 	public function getIndex()
@@ -143,7 +143,7 @@ class Phpshell_Controller extends TooBasic_Controller
 		{
 			try
 			{
-				$input = Phpshell_Controller::$db->fetchObject("SELECT * FROM input WHERE alias = ?", [$short], 'Phpshell_Script');
+				$input = self::$db->fetchObject("SELECT * FROM input WHERE alias = ?", [$short], 'Phpshell_Script');
 				die(header('Location: /'. $input->short .($type != 'output' ? '/'.$type : ''), 302));
 			}
 			catch (Exception $e)
@@ -183,10 +183,19 @@ class Phpshell_Controller extends TooBasic_Controller
 		]);
 	}
 
+	public function postAssert($input, $version, $run)
+	{
+		$result = self::$db->fetchObject("SELECT * FROM result INNER JOIN version ON version.name = result.version WHERE input = ? AND version = ? AND !version.\"isHelper\"", [$input, $version]);
+
+
+
+		self::$db->preparedExec("INSERT INTO assertion VALUES(?, ?, ?, ?)", [$input, $result->output, $result->exitCode, $user]);
+	}
+
 	protected function _getOutput(Phpshell_Script $input)
 	{
 		$results = self::$db->fetchObjects("
-			SELECT version, \"exitCode\", raw
+			SELECT version, \"exitCode\", raw, version.order
 			FROM result
 			INNER JOIN output ON output.hash = result.output
 			INNER JOIN version ON version.name = result.version
@@ -208,7 +217,7 @@ class Phpshell_Controller extends TooBasic_Controller
 			$slot =& $outputs[ $hash ];
 
 			if (!isset($slot))
-				$slot = array('min' => $result->version, 'versions' => array());
+				$slot = array('min' => $result->version, 'versions' => array(), 'order' => 0);
 			elseif ($hash != $prevHash || false !== strpos($result->version, '-') || false !== strpos($result->version, '@'))
 			{
 				// Close previous slot
@@ -225,6 +234,8 @@ class Phpshell_Controller extends TooBasic_Controller
 			else
 				$slot['max'] = $result->version;
 
+			$slot['order'] = max($slot['order'], $result->order);
+
 			$prevHash = $hash;
 
 			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
@@ -236,6 +247,11 @@ class Phpshell_Controller extends TooBasic_Controller
 			}
 		}
 
+		usort($outputs, function($a, $b)
+		{
+			return $b['order'] - $a['order'];
+		});
+
 		$versions = array();
 		foreach ($outputs as $output)
 		{
@@ -246,18 +262,6 @@ class Phpshell_Controller extends TooBasic_Controller
 				array_push($output['versions'], $output['min']);
 
 			$versions[ implode(', ', $output['versions']) ] = $output['output'];
-		}
-
-		#fixme; attempt to maintain version.order from query?
-		uksort($versions, 'version_compare');
-		$versions = array_reverse($versions, true);
-
-		// Put hhvm-on top instead of at bottom
-		end($versions);
-		if ('hhvm-3.0.1' == key($versions))
-		{
-			$output = array_pop($versions);
-			$versions = ['hhvm-3.0.1' => $output] + $versions;
 		}
 
 		return $versions;
