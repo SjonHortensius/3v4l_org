@@ -44,7 +44,7 @@ type Result struct {
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 
-	if p == 0 {
+	if p < 1 {
 		return;
 	}
 
@@ -59,7 +59,7 @@ func (this *Input) penalize(r string, p int) {
 			log.Printf("Input: failed to update state to `abusive`: %s", err)
 		}
 
-		log.Fatalf("Panalty limit reached: aborting")
+		log.Fatalf("Penalty limit reached: aborting")
 	}
 }
 
@@ -212,8 +212,12 @@ func (this *Input) execute(v *Version) {
 
 	select {
 	case <-time.After(2000 * time.Millisecond):
-		if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process") {
-			this.penalize("Failed to kill after timeout", 256)
+		if err := cmd.Process.Kill(); err != nil {
+			log.Printf("FYI kill after timeout resulted in : %s", err)
+
+			if err.Error() != "os: process already finished" && err.Error() != "no such process" {
+				this.penalize("Failed to kill after timeout", 256)
+			}
 		}
 
 		state = <-procDone
@@ -307,10 +311,11 @@ func main() {
 	log.SetPrefix("[" + input.short + "] ")
 	run = input.newRun()
 
-	// prevent problems if we are still uid=0
 	defer func() {
+		syscall.Setgid(99)
+		syscall.Setuid(99)
+
 		os.RemoveAll("/tmp/")
-		os.Mkdir("/tmp/", 1777)
 	}()
 
 	rs, err := db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")

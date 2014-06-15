@@ -1,0 +1,37 @@
+<form method="POST" action="/new">
+	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
+	<textarea name="code">{print htmlspecialchars($action->code);}</textarea>
+
+	{if (isset($this->input->source))}
+		<a href="/{input->source}"><i class="icon-share-alt"></i>based on {input->source}</a>
+	{/}
+
+	{if (isset($this->input->user))}
+		<a rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
+	{/}
+
+	{if (in_array($this->input->state, array('new', 'done', 'busy')))}
+		<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" />
+	{/}
+</form>
+
+<ul id="tabs">
+{foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
+	<li
+		{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
+			 class="disabled" title="not available"
+		{:}
+			{if ($this->link == Basic::$userinput['tab'])}
+				 class="active"
+			{/}
+		{/}
+	>
+		<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">{name}</a>
+	</li>
+{/}
+
+</ul>
+
+<div>
+	{$this->show('script/'.Basic::$userinput['tab']);}
+</div>

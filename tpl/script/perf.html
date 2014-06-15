@@ -1,0 +1,37 @@
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">google.load('visualization', '1', {packages: ['corechart', 'table']});</script>
+
+<script type="text/javascript">
+var perfData = [
+	{$hhvm = [];}
+	{foreach ($this->input->getPerf() as $this->result)}
+		{if (substr($this->result['version'], 0, 5) == 'hhvm-')}
+			{if ($this->result['version'] != 'hhvm-analyze')}
+				{array_push($hhvm, $this->result);}
+			{/}
+		{:}
+			{if (preg_match('~^(\d\.\d\.)(\d)$~', $this->result['version'], $m))}
+				{$this->result['version'] = $m[1].'0'.$m[2];}
+			{/}
+			[
+				'{result['version']}',
+				{print round($this->result['system'], 3);},
+				{print round($this->result['user'], 3);},
+				{print round($this->result['memory']/1024, 3);},
+			],
+		{/}
+	{/}
+];
+
+events.push(function(){ this.drawPerformanceGraphs(perfData, $('chart'), $('data')); });
+</script>
+{foreach ($hhvm as $this->result)}
+	<ul class="hhvm">
+		<li>{result['version']} statistics:</li>
+		<li>System time: <b>{print round($this->result['system'], 3);} s</b></li>
+		<li>User time: <b>{print round($this->result['user'], 3);} s</b></li>
+		<li>Memory: <b>{print round($this->result['memory']/1024, 3);} MiB</b></li>
+	</ul>
+{/}
+<div id="chart"></div>
+<div id="data"></div>

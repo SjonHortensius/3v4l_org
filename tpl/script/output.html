@@ -1,0 +1,16 @@
+<dl>
+{foreach ($this->input->getOutput() as $this->versions => $this->output)}
+	{$this->id = @array_shift(explode(' ', str_replace(',', ' ', $versions)));}
+
+	<dt id="v{print str_replace('.', '', $id);}">
+		Output for {versions}
+		<a class="inactive" title="Tag this output as correct" href="/assert/{input->short}/{id}/{input->run}">
+			<i class="icon-ok"></i>
+		</a>
+	</dt>
+
+	<dd>
+		{output}
+	</dd>
+{/}
+</dl>

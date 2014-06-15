@@ -1,0 +1,228 @@
+<?php
+
+class PhpShell_Input extends PhpShell_Entity
+{
+	protected static $_primary = 'short';
+	protected static $_relations = [
+		'user' => PhpShell_User
+	];
+	protected static $_numerical = ['operationCount', 'run', 'penalty'];
+
+	protected static $_exitCodes = array(
+		139 => 'Segmentation Fault',
+		137 => 'Process was killed',
+		255 => 'Generic Error',
+	);
+	const PATH  = '/var/lxc/php_shell/in/';
+
+	public function getCode()
+	{
+		if (!is_readable(self::PATH. $this->short))
+			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...');
+
+		return file_get_contents(self::PATH. $this->short);
+	}
+
+	public static function clean($code)
+	{
+		return trim(str_replace(array("\r\n", "\r"), array("\n", "\n"), $code));
+	}
+
+	public static function getHash($code)
+	{
+		return gmp_strval(gmp_init(sha1($code), 16), 58);
+	}
+
+	public static function byHash($hash)
+	{
+		return self::find('hash = ?', [$hash])->getSingle();
+	}
+
+	public static function create($code, PhpShell_Input $source)
+	{
+		$hash = self::getHash($code);
+		$len = 5;
+
+		do
+		{
+			$short = substr($hash, -$len);
+			$dups = self::find('short = ?', [$short]);
+
+			$len++;
+		}
+		while (count($dups) > 0);
+
+		if (file_exists(self::PATH. $short))
+			throw new PhpShell_Input_DuplicateScriptException('Duplicate script, this shouldn\'t happen');
+
+		file_put_contents(self::PATH. $short, $code);
+
+		return parent::create(['short' => $short, 'source' => $source, 'hash' => $hash]);
+	}
+
+	public function updateOperations()
+	{
+		try
+		{
+			$vld = PhpShell_Result::find('version = ? AND input = ? AND run = ? AND "exitCode" = 0', ['vld', $this->short, $this->run])->getSingle();
+		}
+		catch (Basic_EntitySet_NoSingleResultException $e)
+		{
+			return;
+		}
+
+		preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
+
+		$this->save(['operationCount' => count($operations)]);
+
+		foreach ($operations as $match)
+		{
+			if (isset($match['operand']) && strlen($match['operand']) > 64)
+				continue;
+
+			try
+			{
+				PhpShell_Operation::create([
+					'input' => $this,
+					'operation' => $match['op'],
+					'operand' => isset($match['operand']) ? $match['operand'] : null,
+				]);
+			}
+			catch (Exception $e){}
+		}
+	}
+
+	public function trigger()
+	{
+		touch(self::PATH. $this->short);
+
+		// Make sure state comes fresh from the db
+		unset(self::$_cache[ get_class($this) ][ $this->{static::$_primary} ]);
+
+		usleep(200 * 1000);
+	}
+
+	public function getOutput()
+	{
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->short, $this->run));
+
+		$outputs = array();
+		foreach ($results as $result)
+		{
+			$output = $result->output->getRaw($result->input, $result->version);
+
+			$hash = sha1($output.':'.$result->exitCode);
+			$slot =& $outputs[ $hash ];
+
+			if (!isset($slot))
+				$slot = array('min' => $result->version_name, 'versions' => [], 'order' => 0);
+			elseif ($hash != $prevHash || false !== strpos($result->version->name, '-') || false !== strpos($result->version_name, '@'))
+			{
+				// Close previous slot
+				if (isset($slot['max']))
+					array_push($slot['versions'], $slot['min'] .' - '. $slot['max']);
+				elseif (isset($slot['min']))
+					array_push($slot['versions'], $slot['min']);
+
+				$slot['min'] = $result->version;
+				unset($slot['max']);
+			}
+			elseif (!isset($slot['min']))
+				$slot['min'] = $result->version_name;
+			else
+				$slot['max'] = $result->version_name;
+
+			$slot['order'] = max($slot['order'], $result->order);
+			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
+
+			if ($result->exitCode > 0)
+			{
+				$title = isset(self::$_exitCodes[ $result->exitCode ]) ? ' title="'. self::$_exitCodes[ $result->exitCode ] .'"' : '';
+				$slot['output'] .= '<br/><i>Process exited with code <b'. $title .'>'. $result->exitCode .'</b>.</i>';
+			}
+
+			$prevHash = $hash;
+		}
+
+		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
+
+		$versions = array();
+		foreach ($outputs as $output)
+		{
+			// Process unclosed slots
+			if (isset($output['max']))
+				array_push($output['versions'], $output['min'] .' - '. $output['max']);
+			elseif (isset($output['min']))
+				array_push($output['versions'], $output['min']);
+
+			$versions[ implode(', ', $output['versions']) ] = $output['output'];
+		}
+
+		return $versions;
+	}
+
+	public function getPerf()
+	{
+		return Basic::$database->query("
+			SELECT
+				AVG(\"systemTime\") as system,
+				AVG(\"userTime\") as user,
+				AVG(\"maxMemory\") as memory,
+				version
+			FROM result
+			INNER JOIN version ON version.name = result.version
+			WHERE result.input = ? AND NOT version.\"isHelper\"
+			GROUP BY result.version
+			ORDER BY MAX(version.order)", [$this->short]);
+	}
+
+	public function getRefs()
+	{
+		return Basic::$database->query("
+			WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
+			  SELECT id, r.operation, link, name, parent
+			  FROM operations o
+			  INNER JOIN \"references\" r ON r.operation = o.operation AND (o.operand = r.operand OR r.operand IS NULL)
+			  WHERE input = ?
+			  UNION ALL
+			  SELECT C.id, C.operation, C.link, C.name, C.parent
+			  FROM recRefs P
+			  INNER JOIN \"references\" C on P.id = C.parent
+			)
+			SELECT link, name FROM recRefs;", [$this->short]);
+	}
+
+	public function getLastModified()
+	{
+		return Basic::$database->query("SELECT MAX(created) FROM result WHERE input = ? AND run = ?", [$this->short, $this->run])->fetchArray('max')[0];
+	}
+
+
+	public function getSegfault()
+	{
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 139', [
+			$this->short,
+			'segfault',
+			$this->run,
+		]);
+	}
+
+	public function getVld()
+	{
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 0', [
+			$this->short,
+			'vld',
+			$this->run,
+		]);
+	}
+
+	public function getAnalyze()
+	{
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 0 AND output != ?', [
+			$this->short,
+			'hhvm-analyze',
+			$this->run,
+			base64_encode(sha1("[]", true)),
+		]);
+	}
+}

@@ -1,3 +1,10 @@
+<form method="POST" action="/new">
+	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
+	<textarea name="code">{print htmlspecialchars($action->code);}</textarea>
+
+	<input type="submit" value="eval();" class="new" title="shortcut: ctrl+enter" />
+</form>
+
 <div class="col">
 	<h2>About</h2>
 	<p>3v4l.org is an online shell that allows you to evaluate (hence 3v4l) your code on our servers. We support more than 100 different PHP versions (every version released since 4.3.0) plus HHVM for you to use. For every script you submit, we return:
