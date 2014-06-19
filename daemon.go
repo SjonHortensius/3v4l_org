@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"syscall"
 	"time"
@@ -211,7 +212,7 @@ func (this *Input) execute(v *Version) {
 	var output string
 
 	select {
-	case <-time.After(2000 * time.Millisecond):
+	case <-time.After(2500 * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
 			log.Printf("FYI kill after timeout resulted in : %s", err)
 
@@ -293,7 +294,7 @@ func init() {
 	}
 
 	for key, value := range limits {
-		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(value)}); err != nil {
+		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value)*1.25)}); err != nil {
 			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
 		}
 	}
@@ -312,10 +313,15 @@ func main() {
 	run = input.newRun()
 
 	defer func() {
-		syscall.Setgid(99)
-		syscall.Setuid(99)
+		syscall.Setgid(99);
+		syscall.Setuid(99);
 
 		os.RemoveAll("/tmp/")
+
+		// Sometimes we lose /tmp. Test if we cause this by recreating it
+		// d-wxrw---x
+		syscall.Umask(0)
+		os.Mkdir("/tmp/", 0777|os.ModeSticky)
 	}()
 
 	rs, err := db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
@@ -334,6 +340,18 @@ func main() {
 
 		versions = append(versions, v)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c)
+
+	go func() {
+		for {
+			s := <-c
+			if s.String() != "child exited" {
+				log.Println("Got signal:", s)
+			}
+		}
+	}()
 
 	for _, v := range versions {
 		input.execute(&v)
