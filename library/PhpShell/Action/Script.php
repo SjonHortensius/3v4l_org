@@ -25,7 +25,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			]
 		],
 	);
-	public $cacheLength = '5 minutes';
+//	public $cacheLength = '5 minutes';
 	public $code;
 	public $input;
 	public $showTab = [];
@@ -36,7 +36,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		// Bug? A hammering user will GET /new which doesn't exist and results in 404 instead of 503
 		if ('new' == Basic::$userinput['script'])
-			return $this->getError(503);
+			throw new PhpShell_RateLimitingReachedException('Please refrain from hammering this service. You are limited to 5 POST requests per minute', [], 503);
 
 		try
 		{
@@ -82,30 +82,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'analyze' => count($this->input->getAnalyze()) > 0,
 		];
 
-
-/*
-switch ($this->input->state)
-{
-	case 'misbehaving':
-	case 'abusive':
-?>
-	<div class="alert error">
-		<h2>Abusive script</h2>
-		<p>This script was stopped while abusing our resources</p>
-	</div>
-<? break;
-	case 'verbose':
-?>
-	<div class="alert warning">
-		<h2>Verbose script</h2>
-		<p>This script was stopped because it was generating too much output</p>
-	</div>
-<? break;
-}
-
- */
-
-		$this->showTemplate('script');
+		parent::run();
 	}
 
 	public static function sortAnalyzeByLine(&$messages)

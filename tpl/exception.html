@@ -1,0 +1,15 @@
+<h1>3v4l.org<small> - Error {exception->code}</small></h1>
+<p>{exception->getMessage()}</p>
+<i>{exception->name}</i>
+
+{if ($this->exception->trace)}
+	<pre>{exception->trace}</pre>
+{/}
+
+{if ($this->exception->cause)}
+	<hr />
+	<h2>Caused by:</h2>
+
+	{$this->exception = $this->exception->cause;}
+	{$this->show('exception');}
+{/}

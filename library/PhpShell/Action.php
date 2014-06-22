@@ -7,8 +7,7 @@ class PhpShell_Action extends Basic_Action
 
 	public function init()
 	{
-		if (0)
-			$this->user = PhpShell_User::get('_sjon');
+//		$this->user = PhpShell_User::get('_sjon');
 
 		parent::init();
 	}

@@ -97,7 +97,7 @@ class PhpShell_Input extends PhpShell_Entity
 		touch(self::PATH. $this->short);
 
 		// Make sure state comes fresh from the db
-		unset(self::$_cache[ get_class($this) ][ $this->{static::$_primary} ]);
+//		unset(self::$_cache[ get_class($this) ][ $this->{static::$_primary} ]);
 
 		usleep(200 * 1000);
 	}
@@ -109,14 +109,14 @@ class PhpShell_Input extends PhpShell_Entity
 		$outputs = array();
 		foreach ($results as $result)
 		{
-			$output = $result->output->getRaw($result->input, $result->version);
+			$output = $result->output->getRaw($result->input, $result->version->name);
 
 			$hash = sha1($output.':'.$result->exitCode);
 			$slot =& $outputs[ $hash ];
 
 			if (!isset($slot))
-				$slot = array('min' => $result->version_name, 'versions' => [], 'order' => 0);
-			elseif ($hash != $prevHash || false !== strpos($result->version->name, '-') || false !== strpos($result->version_name, '@'))
+				$slot = array('min' => $result->version->name, 'versions' => [], 'order' => 0);
+			elseif ($hash != $prevHash || false !== strpos($result->version->name, '-') || false !== strpos($result->version->name, '@'))
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -124,15 +124,15 @@ class PhpShell_Input extends PhpShell_Entity
 				elseif (isset($slot['min']))
 					array_push($slot['versions'], $slot['min']);
 
-				$slot['min'] = $result->version;
+				$slot['min'] = $result->version->name;
 				unset($slot['max']);
 			}
 			elseif (!isset($slot['min']))
-				$slot['min'] = $result->version_name;
+				$slot['min'] = $result->version->name;
 			else
-				$slot['max'] = $result->version_name;
+				$slot['max'] = $result->version->name;
 
-			$slot['order'] = max($slot['order'], $result->order);
+			$slot['order'] = max($slot['order'], $result->version->order);
 			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
 
 			if ($result->exitCode > 0)
@@ -197,6 +197,10 @@ class PhpShell_Input extends PhpShell_Entity
 		return Basic::$database->query("SELECT MAX(created) FROM result WHERE input = ? AND run = ?", [$this->short, $this->run])->fetchArray('max')[0];
 	}
 
+	protected function _checkPermissions($action)
+	{
+		return ('load' == $action);
+	}
 
 	public function getSegfault()
 	{

@@ -319,7 +319,6 @@ func main() {
 		os.RemoveAll("/tmp/")
 
 		// Sometimes we lose /tmp. Test if we cause this by recreating it
-		// d-wxrw---x
 		syscall.Umask(0)
 		os.Mkdir("/tmp/", 0777|os.ModeSticky)
 	}()

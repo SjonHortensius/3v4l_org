@@ -15,6 +15,19 @@
 	{/}
 </form>
 
+{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
+	<div class="alert error">
+		<h2>Abusive script</h2>
+		<p>This script was stopped while abusing our resources</p>
+	</div>
+{/}
+{if ($this->input->state == 'verbose')}
+	<div class="alert warning">
+		<h2>Verbose script</h2>
+		<p>This script was stopped because it was generating too much output</p>
+	</div>
+{/}
+
 <ul id="tabs">
 {foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
 	<li

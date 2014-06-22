@@ -2,28 +2,29 @@
 
 class PhpShell_Action_New extends PhpShell_Action
 {
+	public $formSubmit = 'eval();';
 	protected $_userinputConfig = array(
 		'code' => [
 			'valueType' => 'scalar',
 			'inputType' => 'textarea',
 			'regexp' => '~<\?~',
+			'required' => true,
 		],
 	);
 
 	public function run()
 	{
-//		if (false === strpos($_POST['code'], '<?'))
-//			return $this->getError(400);
+		$code = PhpShell_Input::clean(Basic::$userinput['code']);
+		$hash = PhpShell_Input::getHash($code);
 
-		$code = Phpshell_Script::clean($_POST['code']);
-		$hash = Phpshell_Script::getHash($code);
+#throw new PhpShell_MaintenanceModeException('We are currently in maintenance, read-only mode', [], 503);
 
 		try
 		{
-			$input = Phpshell_Script::byHash($hash);
+			$input = PhpShell_Input::byHash($hash);
 
 			if ($input->state == "busy")
-				return $this->getError(403);
+				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
 
 			$input->trigger();
 		}
@@ -34,15 +35,12 @@ class PhpShell_Action_New extends PhpShell_Action
 			if (preg_match('~^https?://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
 				$source = $matches[1];
 
-			$input = Phpshell_Script::create($code, $source);
+			$input = PhpShell_Input::create($code, $source);
 		}
 
-		self::$db->preparedExec("WITH upsert AS (UPDATE submit SET updated = now(), count = count + 1 WHERE input = :short AND ip = :remote RETURNING *)
+		Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = now(), count = count + 1 WHERE input = :short AND ip = :remote RETURNING *)
 			INSERT INTO submit SELECT :short, :remote, now(), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
 			[':short' => $input->short, ':remote' => $_SERVER['REMOTE_ADDR']]);
-
-#maintenance mode
-#return $this->getError(501);
 
 		usleep(250 * 1000);
 		die(header('Location: /'. $input->short, 302));

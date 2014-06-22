@@ -6,6 +6,11 @@ textarea, .CodeMirror
 	width: 100%;
 }
 
+textarea.invalid, textarea.invalid + .CodeMirror
+{
+	border-color: red;
+}
+
 .CodeMirror
 {
 	background: #fff;
@@ -172,29 +177,29 @@ dd:hover, dt:target + dd, dd:only-of-type
 	transition: max-height 0.3s ease-in;
 }
 
-.perf #chart
+body.perf #chart
 {
 	width: 800px;
 	height: 450px
 }
 
-.perf .hhvm
+body.perf .hhvm
 {
 	float: right;
 }
 
-.perf #data table
+body.perf #data table
 {
 	width: 600px !important;
 }
 
-.rel td>div
+body.rel td>div
 {
 	width: 375px;
 	height: 200px;
 }
 
-.perf table td
+body.perf table td
 {
 	text-align: right;
 }
@@ -215,7 +220,8 @@ table td
 input
 {
 	background-color: #0074CC;
-	background-image: linear-gradient(top, #08C, #05C);
+	background-image: -moz-linear-gradient(top, #08C, #05C);
+	background-image: -webkit-linear-gradient(top, #08C, #05C);
 	background-repeat: repeat-x;
 	border: 1px solid #CCC;
 	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
@@ -234,7 +240,8 @@ input
 input.busy
 {
 	cursor: progress;
-	background-image: url(/s/load.gif), linear-gradient(top, #08C, #05C);
+	background-image: url(/s/load.gif), -moz-linear-gradient(top, #08C, #05C);
+	background-image: url(/s/load.gif), -webkit-linear-gradient(top, #08C, #05C);
 	background-repeat: no-repeat, repeat-x;
 	background-position: 62px center, left top;
 	padding: 9px 25px 9px 14px;
