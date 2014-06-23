@@ -4,7 +4,8 @@ class PhpShell_Input extends PhpShell_Entity
 {
 	protected static $_primary = 'short';
 	protected static $_relations = [
-		'user' => PhpShell_User
+		'user' => PhpShell_User,
+		'source' => PhpShell_Input,
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
@@ -38,7 +39,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
-	public static function create($code, PhpShell_Input $source)
+	public static function create($code, PhpShell_Input $source = null)
 	{
 		$hash = self::getHash($code);
 		$len = 5;
@@ -64,7 +65,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		try
 		{
-			$vld = PhpShell_Result::find('version = ? AND input = ? AND run = ? AND "exitCode" = 0', ['vld', $this->short, $this->run])->getSingle();
+			$vld = PhpShell_Result::find('version = ? AND input = ? AND run = ?', ['vld', $this->short, $this->run])->getSingle();
 		}
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
@@ -73,7 +74,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 		preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
-		$this->save(['operationCount' => count($operations)]);
+#		$this->save(['operationCount' => count($operations)]);
+		Basic::$database->query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", [count($operations), $this->short]);
 
 		foreach ($operations as $match)
 		{
@@ -104,7 +106,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->short, $this->run));
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->short, $this->run), ['version.order' => true]);
 
 		$outputs = array();
 		foreach ($results as $result)
@@ -213,7 +215,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getVld()
 	{
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 0', [
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
 			$this->short,
 			'vld',
 			$this->run,

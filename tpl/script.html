@@ -3,7 +3,7 @@
 	<textarea name="code">{print htmlspecialchars($action->code);}</textarea>
 
 	{if (isset($this->input->source))}
-		<a href="/{input->source}"><i class="icon-share-alt"></i>based on {input->source}</a>
+		<a href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
 	{/}
 
 	{if (isset($this->input->user))}

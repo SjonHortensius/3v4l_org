@@ -7,4 +7,9 @@ class PhpShell_Operation extends PhpShell_Entity
 		'input' => PhpShell_Input,
 	];
 	protected static $_numerical = ['count'];
+
+	public static function getTable()
+	{
+		return '"operations"';
+	}
 }

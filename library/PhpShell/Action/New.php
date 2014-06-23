@@ -35,6 +35,15 @@ class PhpShell_Action_New extends PhpShell_Action
 			if (preg_match('~^https?://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
 				$source = $matches[1];
 
+			try
+			{
+				$source = PhpShell_Input::get($source);
+			}
+			catch(Exception $e)
+			{
+				#care
+			}
+
 			$input = PhpShell_Input::create($code, $source);
 		}
 
