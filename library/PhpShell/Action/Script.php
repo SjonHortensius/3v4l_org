@@ -82,6 +82,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'analyze' => count($this->input->getAnalyze()) > 0,
 		];
 
+		if (false === $this->showTab[ Basic::$userinput['tab'] ])
+			throw new PhpShell_NothingFoundException('That tab contains no content', [], 404);
+
 		parent::run();
 	}
 

@@ -1,0 +1,6 @@
+<textarea
+	 class="{if ($this->input->required)}required {/}{state}"
+	 name="{input->source['key']}{if ('array' == $this->input->valueType)}[]{/}"
+	 id="{input->source['key']}"
+	 rows="5"
+	 cols="25">{input->rawValue}</textarea>

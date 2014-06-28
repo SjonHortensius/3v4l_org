@@ -74,23 +74,17 @@ class PhpShell_Input extends PhpShell_Entity
 
 		preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
+#FIXME: columns with capitals need to be escaped!
 #		$this->save(['operationCount' => count($operations)]);
 		Basic::$database->query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", [count($operations), $this->short]);
 
 		foreach ($operations as $match)
 		{
-			if (isset($match['operand']) && strlen($match['operand']) > 64)
-				continue;
-
-			try
-			{
-				PhpShell_Operation::create([
-					'input' => $this,
-					'operation' => $match['op'],
-					'operand' => isset($match['operand']) ? $match['operand'] : null,
-				]);
-			}
-			catch (Exception $e){}
+			PhpShell_Operation::create([
+				'input' => $this,
+				'operation' => $match['op'],
+				'operand' => isset($match['operand']) ? $match['operand'] : null,
+			]);
 		}
 	}
 
@@ -99,7 +93,7 @@ class PhpShell_Input extends PhpShell_Entity
 		touch(self::PATH. $this->short);
 
 		// Make sure state comes fresh from the db
-//		unset(self::$_cache[ get_class($this) ][ $this->{static::$_primary} ]);
+		$this->removeCached();
 
 		usleep(200 * 1000);
 	}

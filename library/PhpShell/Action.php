@@ -9,6 +9,9 @@ class PhpShell_Action extends Basic_Action
 	{
 //		$this->user = PhpShell_User::get('_sjon');
 
+		if (in_array($_SERVER['REMOTE_ADDR'], ['37.143.86.26']))
+			Basic::$config->PRODUCTION_MODE = false;
+
 		parent::init();
 	}
 

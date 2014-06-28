@@ -136,7 +136,6 @@ func (this *Input) execute(v *Version) {
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-//	cmd.Args[0] = "php" # hhvm doesn't like this...
 	cmd.Env = []string{
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
@@ -148,6 +147,11 @@ func (this *Input) execute(v *Version) {
 		"USERNAME=nobody",
 		"HOME=/",
 	}
+
+/*
+	cmd.SysProcAttr.Credential.Uid = 99// = &syscall.Credential{ 99, 99, []uint32{} }
+	cmd.SysProcAttr.Credential.Gid = 99
+*/
 
 	/*
 	 * Channels are meant to communicate between routines. We create a channel

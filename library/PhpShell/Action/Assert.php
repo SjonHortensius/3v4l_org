@@ -4,6 +4,7 @@ class PhpShell_Action_Assert extends PhpShell_Action
 {
 	public function run()
 	{
+throw new PhpShell_ActionNotAvailableException("You shouldn't be here", [], 404);
 		$result = self::$db->fetchObject("SELECT * FROM result INNER JOIN version ON version.name = result.version WHERE NOT version.\"isHelper\" AND input = ? AND version = ? AND run = ?", [$input, $version, $run]);
 
 		var_dump($result);die;

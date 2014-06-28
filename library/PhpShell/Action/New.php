@@ -16,7 +16,6 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
-
 #throw new PhpShell_MaintenanceModeException('We are currently in maintenance, read-only mode', [], 503);
 
 		try
@@ -28,18 +27,18 @@ class PhpShell_Action_New extends PhpShell_Action
 
 			$input->trigger();
 		}
-		catch (Exception $e)
+		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
 			// No results from ::byHash
 			$source = null;
-			if (preg_match('~^https?://3v4l.org/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
+			if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
 				$source = $matches[1];
 
 			try
 			{
 				$source = PhpShell_Input::get($source);
 			}
-			catch(Exception $e)
+			catch (Exception $e)
 			{
 				#care
 			}
@@ -47,9 +46,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			$input = PhpShell_Input::create($code, $source);
 		}
 
-		Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = now(), count = count + 1 WHERE input = :short AND ip = :remote RETURNING *)
-			INSERT INTO submit SELECT :short, :remote, now(), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
-			[':short' => $input->short, ':remote' => $_SERVER['REMOTE_ADDR']]);
+		PhpShell_Submit::create(['input' => $input->short, 'ip' => $_SERVER['REMOTE_ADDR']]);
 
 		usleep(250 * 1000);
 		die(header('Location: /'. $input->short, 302));
