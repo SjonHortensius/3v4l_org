@@ -1,25 +1,35 @@
 <?php
 
-class PhpShell_Action_Search extends PhpShell_Action_Script
+class PhpShell_Action_Search extends PhpShell_Action
 {
-	public function getSearch($operation, $operand = null)
-	{
-		$entries = self::$db->fetchObjects('
-			SELECT
-				short as input,
-				input."operationCount",
-				input.run run,
-				operations.operation
-				AVG("userTime") "userTime",
-				AVG("systemTime") "systemTime",
-				AVG("maxMemory") "maxMemory",
-				COUNT(DISTINCT output) * 100 / COUNT(output) variance
-			FROM input
-			JOIN result ON (result.input = input.short)
-			WHERE input IN (SELECT input FROM submit ORDER BY created DESC LIMIT 10)
-			GROUP BY input.short
-		');
+	protected $_userinputConfig = array(
+		'operation' => [
+			'valueType' => 'scalar',
+			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'required' => true,
+			'options' => ['minLength' => 2, 'maxLength' => 28],
+		],
+		'operand' => [
+			'valueType' => 'scalar',
+			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
+			'required' => false,
+			'options' => ['minLength' => 1, 'maxLength' => 32],
+		],
+		'page' => [
+			'valueType' => 'integer',
+			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 3],
+			'default' => 1,
+			'options' => ['minValue' => 1, 'maxValue' => 9],
+		],
+	);
 
-		TooBasic_Template::show('search', ['results' => $results]);
+	public function run()
+	{
+		if (isset(Basic::$userinput['operand']))
+			$opMatch = "AND operand = ?";
+
+		$this->entries = new PhpShell_ScriptsList(PhpShell_Input, "input IN (SELECT input FROM operations WHERE operation = ? ". $opMatch .")", [Basic::$userinput['operation'], Basic::$userinput['operand']]);
+
+		return parent::run();
 	}
 }

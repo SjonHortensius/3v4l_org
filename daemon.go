@@ -125,15 +125,6 @@ func (this *Input) execute(v *Version) {
 
 	log.SetPrefix("[" + this.short + ":" + v.name + "] ")
 
-	// FIXME Should not be necessary
-	if err := syscall.Setgid(99); err != nil {
-		log.Fatalf("Failed to setgid: %v", err)
-	}
-
-	if err := syscall.Setuid(99); err != nil {
-		log.Fatalf("Failed to setuid: %v", err)
-	}
-
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Env = []string{
@@ -147,11 +138,7 @@ func (this *Input) execute(v *Version) {
 		"USERNAME=nobody",
 		"HOME=/",
 	}
-
-/*
-	cmd.SysProcAttr.Credential.Uid = 99// = &syscall.Credential{ 99, 99, []uint32{} }
-	cmd.SysProcAttr.Credential.Gid = 99
-*/
+	cmd.SysProcAttr = &syscall.SysProcAttr{ Credential: &syscall.Credential{ 99, 99, []uint32{} } }
 
 	/*
 	 * Channels are meant to communicate between routines. We create a channel
@@ -301,14 +288,6 @@ func init() {
 		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value)*1.25)}); err != nil {
 			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
 		}
-	}
-
-	if err := syscall.Setgid(99); err != nil {
-		log.Fatalf("Failed to setgid: %v", err)
-	}
-
-	if err := syscall.Setuid(99); err != nil {
-		log.Fatalf("Failed to setuid: %v", err)
 	}
 }
 

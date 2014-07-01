@@ -1,12 +1,10 @@
-<body class="last">
-
 <form>
 	<h1>3v4l.org<small> - online PHP shell, test in SOMETHING+ different PHP versions!</small></h1>
 </form>
 
 <ul id="tabs">
-	<li class="active"><a>Latest submissions</a></li>
-	<li><a>Search results</a></li>
+	<li><a>Latest submissions</a></li>
+	<li class="active"><a>Search results</a></li>
 </ul>
 
 <div>
@@ -20,7 +18,7 @@
 	<th># operations</th>
 	<th>% variance</th>
 </tr>
-{foreach ($this->entries as $this->result)}
+{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
 	<tr>
 		<td><a href="/{result->short}">{result->short}</a></td>
 		<td>{print round($this->result->userTime, 2);} s</td>

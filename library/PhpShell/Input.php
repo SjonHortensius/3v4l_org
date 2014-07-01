@@ -56,6 +56,7 @@ class PhpShell_Input extends PhpShell_Entity
 		if (file_exists(self::PATH. $short))
 			throw new PhpShell_Input_DuplicateScriptException('Duplicate script, this shouldn\'t happen');
 
+		umask(0022);
 		file_put_contents(self::PATH. $short, $code);
 
 		return parent::create(['short' => $short, 'source' => $source, 'hash' => $hash]);
@@ -212,6 +213,15 @@ class PhpShell_Input extends PhpShell_Entity
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
 			$this->short,
 			'vld',
+			$this->run,
+		]);
+	}
+
+	public function getBytecode()
+	{
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
+			$this->short,
+			'hhvm-bytecode',
 			$this->run,
 		]);
 	}

@@ -1,6 +1,8 @@
+<body class="{userinput['tab']}">
+
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
-	<textarea name="code">{print htmlspecialchars($action->code);}</textarea>
+	<textarea name="code">{print htmlspecialchars(Basic::$action->code);}</textarea>
 
 	{if (isset($this->input->source))}
 		<a href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
@@ -30,16 +32,18 @@
 
 <ul id="tabs">
 {foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
-	<li
-		{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
-			 class="disabled" title="not available"
+	{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
+		<li class="disabled" title="not available"><a>
+	{:}
+		{if ($this->link == Basic::$userinput['tab'])}
+			<li class="active">
 		{:}
-			{if ($this->link == Basic::$userinput['tab'])}
-				 class="active"
-			{/}
+			<li>
 		{/}
-	>
-		<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">{name}</a>
+		<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">
+	{/}
+
+		{name}</a>
 	</li>
 {/}
 

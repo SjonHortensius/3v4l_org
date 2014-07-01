@@ -1,2 +1,3 @@
 User-agent: *
 Disallow:
+Sitemap: http://3v4l.org/sitemap.xml

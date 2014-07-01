@@ -1,6 +1,8 @@
+<body class="index">
+
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
-	<textarea name="code">{print htmlspecialchars($action->code);}</textarea>
+	<textarea name="code">{print htmlspecialchars(Basic::$action->code);}</textarea>
 
 	<input type="submit" value="eval();" class="new" title="shortcut: ctrl+enter" />
 </form>

@@ -1,7 +1,7 @@
 <form method="post" action="{formAction}" id="userinput"{if ($this->formContainsFile)} enctype="multipart/form-data"{/}{if ($this->hasBeenSubmitted)} class="submit-attempted"{/}>
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 
-	{foreach ($userinput as $this->input)}
+	{foreach (Basic::$userinput as $this->input)}
 		{input->getHtml()}
 	{/}
 

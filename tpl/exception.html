@@ -1,3 +1,12 @@
+<body class="exception">
+
+{if (!$this->exception instanceof Basic_Exception)}
+	<h1>3v4l.org<small> - Unexpected error</small></h1>
+	<p>{exception->getMessage()}</p>
+
+	{return;}
+{/}
+
 <h1>3v4l.org<small> - Error {exception->code}</small></h1>
 <p>{exception->getMessage()}</p>
 <i>{exception->name}</i>

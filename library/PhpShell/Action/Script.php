@@ -15,17 +15,17 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'default' => 'output',
 			'values' => [
 				'output' => 'Output',
-				'vld' => 'VLD opcodes',
 				'perf' => 'Performance',
+				'vld' => 'VLD opcodes',
 				'refs' => 'References',
 //				'rel' => 'Related',
 				'segfault' => 'Segmentation fault',
 				'analyze' => 'HHVM analyze',
+				'bytecode' => 'HHVM Bytecode',
 				'hhvm' => null, #legacy
 			]
 		],
 	);
-//	public $cacheLength = '5 minutes';
 	public $code;
 	public $input;
 	public $showTab = [];
@@ -44,7 +44,15 @@ class PhpShell_Action_Script extends PhpShell_Action
 		}
 		catch (Basic_Entity_NotFoundException $e)
 		{
-			$this->input = PhpShell_Input::find('alias = ?', [Basic::$userinput['script']])->getSingle();
+			try
+			{
+				$this->input = PhpShell_Input::find('alias = ?', [Basic::$userinput['script']])->getSingle();
+			}
+			catch (Basic_EntitySet_NoSingleResultException $e)
+			{
+				throw new PhpShell_NotFoundException('You requested a non-existing resource', [], 404);
+			}
+
 			Basic::$controller->redirect($this->input->short. ('output' != Basic::$userinput['tab'] ? '/'. Basic::$userinput['tab'] : ''), true);
 		}
 
@@ -54,7 +62,17 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		if (!isset($this->user))
 		{
-			$this->lastModified = $this->input->getLastModified();
+			if (in_array($this->input->state, ['busy', 'new']))
+			{
+				$this->lastModified = time();
+				$this->cacheLength = 0;
+			}
+			else
+			{
+				$this->lastModified = $this->input->getLastModified();
+				$this->cacheLength = '5 minutes';
+			}
+
 			parent::_handleLastModified();
 		}
 	}
@@ -80,10 +98,11 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'refs' => count($this->input->getRefs()) > 0,
 			'segfault' => count($this->input->getSegfault()) > 0,
 			'analyze' => count($this->input->getAnalyze()) > 0,
+			'bytecode' => count($this->input->getBytecode()) > 0,
 		];
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
-			throw new PhpShell_NothingFoundException('That tab contains no content', [], 404);
+			http_response_code(404);
 
 		parent::run();
 	}
