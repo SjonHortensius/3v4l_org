@@ -1,20 +1,52 @@
+<html><head>
 <script src="http://ajax.googleapis.com/ajax/libs/mootools/1.4.5/mootools-yui-compressed.js"></script>
 <script src="ext/shjs/sh_php.min.js"></script>
 <script src="ext/shjs/sh_main.min.js"></script>
-<link rel="stylesheet" type="text/css" href="ext/shjs/sh_style.css"/>
 <style type="text/css">
-.editable {
-	border: 1px solid #ddd;
-	padding: 10px;
-	margin: 10px;
-	min-height: 100px;
-	color: #333;
-}
-.editable .comment { color: gray; }
-.editable > .keyword { color: blue; }
-.editable > .variable { color: green; }
-.editable > .string { color: red; }
+		.sh_php
+		{
+			border: 1px solid #ddd;
+			margin: 10px;
+			min-height: 100px;
+			color: #333;
+			counter-reset: lineno;
+		}
+		.sh_php .sh_comment { color: #a50; }
+		.sh_php .sh_keyword { color: #708; }
+		.sh_php .sh_variable { color: #05a; }
+		.sh_php .sh_string { color: #a11; }
 
+		code
+		{
+			background: #f7f7f7;
+			white-space: pre;
+			display: block;
+		}
+
+		.line
+		{
+			counter-increment: lineno;
+			display: block;
+			margin-left: 2.5em;
+			clear: both;
+			border-left: 1px solid gray;
+			padding-left: 0.5em;
+			background: white;
+		}
+
+		.line::before
+		{
+			color: #aaa;
+			content: counter(lineno);
+			padding-right: 10px;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			display: block;
+			float: left;
+			margin-left: -3em;
+			text-align: right;
+			width: 2em;
+		}
 </style>
 <script type="text/javascript">
 
@@ -25,40 +57,105 @@ var phpEditor = new Class({
 		'final', 'finally', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'interface',
 		'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch',
 		'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'true', 'false', 'null'],
+	revisions: [],
+	undoIndex: null,
 
 	initialize: function(el)
 	{
 		this.element = el;
 
-		el.addEvent('keyup', this.onChange);
+		el.addEvent('keydown', this.onKeydown.bind(this));
+		el.addEvent('keyup', this.onKeyup.bind(this));
 
-		this.onChange();
+		this.highlight();
 	},
 
-	onChange: function (e)
+	stripHtml: function()
 	{
-		try
-		{
-			var sel = this.saveSelection();
-		}
-		catch (ex)
-		{
-			var sel = false;
-		}
-
-//		if ('enter' == e.key)
-//			return false;
-		
-//		this.element.innerHTML= this.element.innerHTML.replace(/<\/?div>/g, "\n");
-
 		while (this.element.innerHTML != (stripped = this.element.innerHTML.replace(/<span class=".*?">([\s\S]*?)<\/span>/g, "$1")))
 			this.element.innerHTML = stripped;
+	},
 
+	highlight: function()
+	{
+		this.element.innerHTML = '<span class="line">'+ this.element.innerHTML.replace(/\n/g, '\n</span><span class="line">') +'</span>';
+		sh_highlightElement(this.element, sh_languages['php']);
+	},
 
-		sh_highlightDocument()
+	onKeyup: function (e)
+	{
+		this.onChange(e);
+	},
 
-		if (sel)
-			this.restoreSelection(sel);
+	onKeydown: function (e)
+	{
+		if ('tab' == e.key && !e.shift && !e.alt)
+		{
+//FIXME: handle shift+tab
+			this.insertText(document.createTextNode("\t"));
+			e.preventDefault();
+			this.onChange(e, 1);
+		}
+		else if ('enter' == e.key)
+		{
+			this.insertText(document.createTextNode("\n"));
+			e.preventDefault();
+			this.onChange(e, 2);
+		}
+	},
+
+	onChange: function (e, incrPos)
+	{
+		var sel = this.saveSelection();
+
+		if (['up', 'down', 'left', 'right'].contains(e.key) || '%11' == escape(e.key))
+			return;
+		else if ('z' == e.key && e.control)
+		{
+			if (!this.undoIndex)
+				this.undoIndex = this.revisions.length-1;
+
+			this.undoIndex = Math.max(this.undoIndex-1, 0);
+		}
+		else if ('y' == e.key && e.control && this.undoIndex)
+		{
+			this.undoIndex = Math.min(this.undoIndex+1, this.revisions.length);
+		}
+		else if (this.undoIndex)
+		{
+			while (this.undoIndex < this.revisions.length)
+				this.revisions.pop()
+
+			this.undoIndex = null;
+		}
+
+		if (incrPos)
+		{
+			sel.start += incrPos;
+			sel.end += incrPos;
+		}
+
+		if (this.undoIndex)
+			this.element.innerHTML = this.revisions[ this.undoIndex ];
+		else
+		{
+			this.stripHtml();
+
+			this.revisions.push(this.element.innerHTML);
+			if (this.revisions.length > 30)
+				this.revisions.shift();
+		}
+
+		console.log("index: "+this.undoIndex, "undoLength: "+this.revisions.length, sel);
+
+		this.highlight();
+
+		this.restoreSelection(sel);
+	},
+
+	insertText: function(el)
+	{
+		window.getSelection().getRangeAt(0).insertNode(el);
 	},
 
 	traverseText: function(n, c)
@@ -91,6 +188,7 @@ var phpEditor = new Class({
 		}
 
 		var sel = window.getSelection(), range = sel.getRangeAt(0);
+
 		if (sel.rangeCount)
 		{
 			try
@@ -151,8 +249,8 @@ var phpEditor = new Class({
 
 window.addEvent('domready', function(){ new phpEditor($('c')); });
 </script>
-<pre class="sh_php" contentEditable="true" id="c">
-&lt;?php
+</head><body>
+<code class="sh_php" contentEditable="true" id="c">&lt;?php
 
 class Stuff
 {
@@ -163,9 +261,6 @@ class Stuff
 	{
 #		$return['Other'] = 0;
 
-		foreach ( $types as $type )
-			$return[$type] = 0;
-
 		foreach ( ( array ) $data as $obj ) {
 			$set = false;
 			array_walk( $types, function( $type ) use ( $obj, &amp;$return, &amp;$set )
@@ -175,9 +270,6 @@ class Stuff
 					$set = true;
 				}
 			} );
-
-			if ( !$set )
-				$return['Other']++;
 		}
 
 		return $return;
@@ -194,5 +286,5 @@ $honeyPot2-&gt;validator( new Validator( new EqualRule( 'This field was unexpect
 
 if( $form-&gt;isSubmitted() )
 	$form-&gt;validate(  );
-echo $form-&gt;render(  ); // outputs the form + elements
-</pre>
+echo $form-&gt;render(  ); // outputs the form + elements</code>
+</body></html>
