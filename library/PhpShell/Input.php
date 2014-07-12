@@ -191,7 +191,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getLastModified()
 	{
-		return Basic::$database->query("SELECT MAX(created) FROM result WHERE input = ? AND run = ?", [$this->short, $this->run])->fetchArray('max')[0];
+		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->short, $this->run])->fetchArray('max')[0];
 	}
 
 	protected function _checkPermissions($action)
