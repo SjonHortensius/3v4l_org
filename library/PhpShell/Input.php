@@ -59,7 +59,8 @@ class PhpShell_Input extends PhpShell_Entity
 		umask(0022);
 		file_put_contents(self::PATH. $short, $code);
 
-		return parent::create(['short' => $short, 'source' => $source, 'hash' => $hash]);
+		$extra = isset(Basic::$action->user) ? ['user' => Basic::$action->user] : [];
+		return parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
 	}
 
 	public function updateOperations()

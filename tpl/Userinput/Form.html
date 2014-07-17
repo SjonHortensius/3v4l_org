@@ -2,7 +2,13 @@
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 
 	{foreach (Basic::$userinput as $this->input)}
-		{input->getHtml()}
+		{$inputs .= $this->input->getHtml();}
+	{/}
+
+	{if (empty($inputs))}
+		{throw new Basic_Controller_MissingRequiredParametersException('Missing required parameters to execute this action', null, 404);}
+	{:}
+		{inputs}
 	{/}
 
 	<input type="submit" value="{formSubmit}" />

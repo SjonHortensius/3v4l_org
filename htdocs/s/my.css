@@ -11,6 +11,19 @@ textarea.invalid, textarea.invalid + .CodeMirror
 	border-color: red;
 }
 
+#auth
+{
+	background-image: linear-gradient(to bottom,#3c3c3c 0,#222 100%);
+	position: fixed;
+	right: 5em;
+	background-repeat: repeat-x;
+	color: white;
+	top: 0;
+	box-shadow: inset 1px 1px 1px rgba(0,0,0,0.1);
+	border-bottom: 1px solid #080808;
+	font-size: 16px;
+}
+
 .CodeMirror
 {
 	background: #fff;

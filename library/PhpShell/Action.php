@@ -7,7 +7,8 @@ class PhpShell_Action extends Basic_Action
 
 	public function init()
 	{
-//		$this->user = PhpShell_User::get('_sjon');
+		if (isset($_SESSION['userId']))
+			$this->user = PhpShell_User::get($_SESSION['userId']);
 
 		if (in_array($_SERVER['REMOTE_ADDR'], ['37.143.86.26']))
 		{

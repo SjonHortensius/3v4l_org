@@ -1,4 +1,9 @@
 <body class="index">
+	{if (isset($this->user))}
+		<div id="auth">
+			<p>Logged in as {user->name}</p>
+		</div>
+	{/}
 
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
@@ -18,7 +23,7 @@
 			<li>Contextual links to documentation and php sourcecode</li>
 			<li>HHVM Analyzer output</li>
 		</ul>
-		We're on Twitter <a class="twitter-timeline" data-dnt="true" href="https://twitter.com/3v4l_org" data-widget-id="386450309075050496">@3v4l_org</a> and <a href="https://www.gittip.com/3v4l.org/">Gittip</a>
+		We're also on Twitter <a class="twitter-timeline" data-dnt="true" href="https://twitter.com/3v4l_org" data-widget-id="386450309075050496">@3v4l_org</a> and <a href="https://www.gittip.com/3v4l.org/">Gittip</a>
 	</p>
 </div>
 <div class="col">
