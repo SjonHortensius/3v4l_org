@@ -7,7 +7,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'valueType' => 'scalar',
 			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 0],
 			'required' => true,
-			'options' => ['minLength' => 5, 'maxLength' => 5],
+			'options' => ['minLength' => 5, 'maxLength' => 6],
 		],
 		'tab' => [
 			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
@@ -40,9 +40,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		try
 		{
-			$this->input = PhpShell_Input::get(Basic::$userinput['script']);
+			$this->input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();
 		}
-		catch (Basic_Entity_NotFoundException $e)
+		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
 			try
 			{
@@ -59,6 +59,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		// legacy, redirect to /script
 		if ('hhvm' == Basic::$userinput['tab'])
 			Basic::$controller->redirect($this->input->short, true);
+
+#		if (!Basic::$cache->increment('hits::'. $this->input->short))
+#			Basic::$cache->set('hits::'. $this->input->short, 1));
 
 		if (!isset($this->user))
 		{
@@ -85,7 +88,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->trigger();
 
 			// Refresh state
-			$this->input = PhpShell_Input::get(Basic::$userinput['script']);
+			$this->input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();
 		}
 
 		$this->code = $this->input->getCode();

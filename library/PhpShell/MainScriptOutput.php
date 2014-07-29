@@ -12,7 +12,7 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 
 	protected function _processQuery($query)
 	{
-		return $query ." INNER JOIN output ON output.hash = result.output INNER JOIN version ON version.name = result.version";
+		return $query ." INNER JOIN output ON output.id = result.output INNER JOIN version ON version.id = result.version";
 	}
 
 	public function getIterator()

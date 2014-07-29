@@ -27,26 +27,26 @@ class PhpShell_Action_New extends PhpShell_Action
 
 			$input->trigger();
 		}
+		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
-			// No results from ::byHash
-			$source = null;
-			if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $matches))
-				$source = $matches[1];
+			if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
+				$match = $match[1];
 
 			try
 			{
-				$source = PhpShell_Input::get($source);
+				$source = PhpShell_Input::find("short = ?", [$match])->getSingle();
 			}
 			catch (Exception $e)
 			{
+				$source = null;
 				#care
 			}
 
 			$input = PhpShell_Input::create($code, $source);
 		}
 
-		PhpShell_Submit::create(['input' => $input->short, 'ip' => $_SERVER['REMOTE_ADDR']]);
+		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
 
 		usleep(250 * 1000);
 		die(header('Location: /'. $input->short, 302));

@@ -108,7 +108,7 @@ func (this *Result) store() {
 		log.Fatalf("Output: failed to store: %s", err)
 	}
 
-	r, err := db.Exec("INSERT INTO result VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+	r, err := db.Exec("INSERT INTO result VALUES( (SELECT id FROM input WHERE short = $1), (SELECT id FROM output WHERE hash = $2), (SELECT id FROM version WHERE name = $3), $4, $5, $6, $7, $8, $9)",
 		this.input.short, this.output.getHash(), this.version.name, this.exitCode,
 		this.created, this.userTime, this.systemTime, this.maxMemory, run,
 	)

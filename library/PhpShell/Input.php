@@ -2,7 +2,6 @@
 
 class PhpShell_Input extends PhpShell_Entity
 {
-	protected static $_primary = 'short';
 	protected static $_relations = [
 		'user' => PhpShell_User,
 		'source' => PhpShell_Input,
@@ -67,7 +66,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		try
 		{
-			$vld = PhpShell_Result::find('version = ? AND input = ? AND run = ?', ['vld', $this->short, $this->run])->getSingle();
+			$vld = $this->getVld()->getSingle();
 		}
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
@@ -102,7 +101,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->short, $this->run), ['version.order' => true]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->id, $this->run), ['version.order' => true]);
 
 		$outputs = array();
 		foreach ($results as $result)
@@ -166,12 +165,12 @@ class PhpShell_Input extends PhpShell_Entity
 				AVG(\"systemTime\") as system,
 				AVG(\"userTime\") as user,
 				AVG(\"maxMemory\") as memory,
-				version
+				max(version.name) as version
 			FROM result
-			INNER JOIN version ON version.name = result.version
+			INNER JOIN version ON version.id = result.version
 			WHERE result.input = ? AND NOT version.\"isHelper\"
 			GROUP BY result.version
-			ORDER BY MAX(version.order)", [$this->short]);
+			ORDER BY MAX(version.order)", [$this->id]);
 	}
 
 	public function getRefs()
@@ -187,12 +186,12 @@ class PhpShell_Input extends PhpShell_Entity
 			  FROM recRefs P
 			  INNER JOIN \"references\" C on P.id = C.parent
 			)
-			SELECT link, name FROM recRefs;", [$this->short]);
+			SELECT link, name FROM recRefs;", [$this->id]);
 	}
 
 	public function getLastModified()
 	{
-		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->short, $this->run])->fetchArray('max')[0];
+		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->id, $this->run])->fetchArray('max')[0];
 	}
 
 	protected function _checkPermissions($action)
@@ -203,37 +202,46 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getSegfault()
 	{
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 139', [
-			$this->short,
-			'segfault',
+			$this->id,
+			PhpShell_Version::byName('segfault'),
 			$this->run,
 		]);
 	}
 
 	public function getVld()
 	{
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
-			$this->short,
-			'vld',
+		$emptyOutput = Basic::$cache->get(__CLASS__.'::vldEmpty', function(){
+			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('', true))])->getSingle();
+		});
+
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND output != ?', [
+			$this->id,
+			PhpShell_Version::byName('vld'),
 			$this->run,
+			$emptyOutput,
 		]);
 	}
 
 	public function getBytecode()
 	{
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
-			$this->short,
-			'hhvm-bytecode',
+			$this->id,
+			PhpShell_Version::byName('hhvm-bytecode'),
 			$this->run,
 		]);
 	}
 
 	public function getAnalyze()
 	{
+		$emptyOutput = Basic::$cache->get(__CLASS__.'::analyzeEmpty', function(){
+			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('[]', true))])->getSingle();
+		});
+
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 0 AND output != ?', [
-			$this->short,
-			'hhvm-analyze',
+			$this->id,
+			PhpShell_Version::byName('hhvm-analyze'),
 			$this->run,
-			base64_encode(sha1("[]", true)),
+			$emptyOutput->id,
 		]);
 	}
 }
