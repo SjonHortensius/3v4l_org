@@ -1,7 +1,7 @@
 <?php
 class PhpShell_ScriptsList extends Basic_EntitySet
 {
-	protected function _query($fields = null, $groupBy = "input.short")
+	protected function _query($fields = null, $groupBy = "input.id")
 	{
 		if (!isset($fields))
 			$fields = 'input.*, AVG("userTime") "userTime",
@@ -14,6 +14,6 @@ class PhpShell_ScriptsList extends Basic_EntitySet
 
 	protected function _processQuery($query)
 	{
-		return $query ." JOIN result ON (result.input = input.short)";
+		return $query ." JOIN result ON (result.input = input.id) JOIN version ON (version.id = result.version)";
 	}
 }

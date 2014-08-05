@@ -5,11 +5,12 @@
 
 	<dt id="v{print str_replace('.', '', $this->id);}">
 		Output for {versions}
-<!--
-		<a class="inactive" title="Tag this output as correct" href="/assert/{input->short}/{id}/{input->run}">
-			<i class="icon-ok"></i>
-		</a>
--->
+
+		{if (isset($this->user))}
+			<a class="inactive" title="Tag this output as correct" href="/assert/{input->short}/{id}/{input->run}">
+				<i class="icon-ok"></i>
+			</a>
+		{/}
 	</dt>
 
 	<dd>

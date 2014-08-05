@@ -30,11 +30,15 @@ ALTER TABLE output ALTER COLUMN "id" SET NOT NULL;
 ALTER SEQUENCE output_id_seq OWNED BY output.id;
 ALTER TABLE output DROP CONSTRAINT output_pkey CASCADE, ADD PRIMARY KEY(id);
 
+select * from output order by id asc limit 3;
+
 CREATE SEQUENCE version_id_seq;
 ALTER TABLE version DROP CONSTRAINT version_pkey CASCADE, ADD COLUMN "id" smallint DEFAULT nextval('version_id_seq'::regclass), ADD PRIMARY KEY(id);
 ALTER SEQUENCE version_id_seq OWNED BY version.id;
 UPDATE version SET "id" = nextval('version_id_seq'::regclass);
 ALTER TABLE version ALTER COLUMN "id" SET NOT NULL;
+
+select * from version order by id asc limit 3;
 
 UPDATE submit SET input = (SELECT id FROM input WHERE short = input);
 ALTER TABLE submit ALTER COLUMN "input" TYPE integer USING CAST(input AS integer);

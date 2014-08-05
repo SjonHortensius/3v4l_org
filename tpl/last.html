@@ -1,36 +1,49 @@
-<body class="last">
+<body class="{userinput['action']}">
 
 <form>
 	<h1>3v4l.org<small> - online PHP shell, test in SOMETHING+ different PHP versions!</small></h1>
 </form>
 
 <ul id="tabs">
-	<li class="active"><a>Latest submissions</a></li>
-	<li><a>Search results</a></li>
+	<li{if (Basic::$userinput['action']=='last')} class="active"{/}><a href="/last">Latest submissions</a></li>
+	<li{if (Basic::$userinput['action']=='search')} class="active"{/}><a href="/search">Search results</a></li>
 </ul>
 
+{$this->count = current($this->entries->getCount('input.id', true));}
+{$this->pageSize = 25;}
+{$this->pageCount = ceil($this->count / $this->pageSize);}
 <div>
 <table>
-<tr>
-	<th>name</th>
-	<th>~ userTime</th>
-	<th>~ systemTime</th>
-	<th>~ maxMemory</th>
-	<th># runs</th>
-	<th># operations</th>
-	<th>% variance</th>
-</tr>
-{foreach ($this->entries as $this->result)}
+	<thead>
 	<tr>
-		<td><a href="/{result->short}">{result->short}</a></td>
-		<td>{print round($this->result->userTime, 2);} s</td>
-		<td>{print round($this->result->systemTime, 2);} s</td>
-		<td>{print round($this->result->maxMemory/1024);} MiB</td>
-		<td>{result->run}</td>
-		<td>{result->operationCount}</td>
-		<td>{result->variance}</td>
+		<th>name</th>
+		<th>~ userTime</th>
+		<th>~ systemTime</th>
+		<th>~ maxMemory</th>
+		<th># runs</th>
+		<th># operations</th>
+		<th>% variance</th>
 	</tr>
-{/}
+	</thead>
+
+	<tbody>
+	{foreach ($this->entries->getPage(Basic::$userinput['page'], $this->pageSize) as $this->result)}
+		<tr>
+			<td><a href="/{result->short}">{result->short} {result->title}</a></td>
+			<td>{print round($this->result->userTime, 2);} s</td>
+			<td>{print round($this->result->systemTime, 2);} s</td>
+			<td>{print round($this->result->maxMemory/1024);} MiB</td>
+			<td>{result->run}</td>
+			<td>{result->operationCount}</td>
+			<td>{result->variance}</td>
+		</tr>
+	{/}
+	</tbody>
+
+	{if ($this->pageCount != Basic::$userinput['page'])}
+		<tfoot><tr><td colspan="5">p{userinput['page']} / {pageCount}</td></tr></tfoot>
+	{/}
+
 </table>
 
 </div>

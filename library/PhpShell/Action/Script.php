@@ -38,6 +38,10 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ('new' == Basic::$userinput['script'])
 			throw new PhpShell_RateLimitingReachedException('Please refrain from hammering this service. You are limited to 5 POST requests per minute', [], 503);
 
+		// Retards hammering
+		if (false != strpos($_SERVER['REQUEST_URI'], '?a%5B'))
+			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
+
 		try
 		{
 			$this->input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();

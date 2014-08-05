@@ -3,11 +3,15 @@ set -e
 
 cd `dirname $0`
 
-cat ../ext/CodeMirror/lib/codemirror.css ./my.css ../ext/glyphicons-halflings.css | php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Static.php');echo Basic_Static::prefixCss3(Basic_Static::cssStrip(file_get_contents('php://stdin')));" > c.css
-cat ../ext/CodeMirror/lib/codemirror.js ../ext/CodeMirror/mode/*/*.js ./my.js > c.js
+cat ../ext/LRTEditor/src/style.css ./my.css ../ext/glyphicons-halflings.css | php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Static.php');echo Basic_Static::prefixCss3(Basic_Static::cssStrip(file_get_contents('php://stdin')));" > c.css
 
-cat c.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c2.js
-mv c2.js c.js
+cat ../ext/LRTEditor/shjs/lang/sh_php.js \
+	../ext/LRTEditor/shjs/sh_main.min.js \
+	../ext/LRTEditor/src/LRTEditor.js \
+	../ext/LRTEditor/src/LRTEditor.MinimalPlugin.js \
+	../ext/LRTEditor/src/LRTEditor.UndoPlugin.js \
+	../ext/LRTEditor/src/LRTEditor.FormPlugin.js \
+	./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c.js
 
 [[ $1 == 'q' ]] && exit 0
 mv c.js c2.js

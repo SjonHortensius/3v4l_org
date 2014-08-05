@@ -65,21 +65,17 @@ var evalOrg = new Class({
 		if ($$('textarea').length == 0)
 			return;
 
-		CodeMirror.fromTextArea($$('textarea')[0],{
-			autoClearEmptyLines: true,
-			indentUnit: 4,
-			lineNumbers: true,
-			lineWrapping: true,
-			matchBrackets: true,
-			mode: 'application/x-httpd-php',
-			autofocus: true,
-		});
+		LRTEditor.initialize(
+			document.getElementsByTagName('textarea')[0],
+			['FormPlugin', 'MinimalPlugin', 'UndoPlugin'],
+			function(el){ sh_highlightElement(el, sh_languages['php']); }
+		);
 
-		$$('.CodeMirror').each(function (el){
-			el.addEvent('keydown', function(ev){
-				if (event.ctrlKey && event.keyIdentifier == 'Enter')
-					$$('input[type=submit]')[0].click();
-			})
+		$$('code')[0].focus();
+
+		$$('code')[0].addEvent('keydown', function(ev){
+			if (event.ctrlKey && event.keyIdentifier == 'Enter')
+				$$('input[type=submit]')[0].click();
 		});
 	},
 

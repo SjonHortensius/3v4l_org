@@ -1,10 +1,10 @@
 <body class="{userinput['tab']}">
 
-	{if (isset($this->user))}
-		<div id="auth">
-			<p>Logged in as {user->name}</p>
-		</div>
-	{/}
+{if (isset($this->user))}
+	<div id="auth">
+		<p>Logged in as {user->name}</p>
+	</div>
+{/}
 
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>

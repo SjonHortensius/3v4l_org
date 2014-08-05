@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
 	"strings"
 	"syscall"
 	"time"
@@ -64,8 +63,14 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-func (this *Input) newRun() int {
-	if r, err := db.Exec("UPDATE input SET run = run + 1, state = $1 WHERE short = $2", "busy", this.short); err != nil {
+func (this *Input) setBusy(newRun bool) int {
+	incRun := 0
+
+	if newRun {
+		incRun = 1
+	}
+
+	if r, err := db.Exec("UPDATE input SET run = run + $2, state = 'busy' WHERE short = $1", this.short, incRun); err != nil {
 		log.Fatalf("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		log.Fatalf("Input: failed to update run+state; %d rows affected, %s", a, err)
@@ -73,7 +78,7 @@ func (this *Input) newRun() int {
 
 	var run int
 	if err := db.QueryRow("SELECT run FROM input WHERE short = $1", this.short).Scan(&run); err != nil {
-		log.Fatalf("Input: failed to query run: %s", err)
+		log.Fatalf("Input: failed to fetch run: %s", err)
 	}
 	return run
 }
@@ -293,7 +298,7 @@ func init() {
 
 func main() {
 	log.SetPrefix("[" + input.short + "] ")
-	run = input.newRun()
+	run = input.setBusy(len(os.Args) == 1)
 
 	defer func() {
 		syscall.Setgid(99);
@@ -306,7 +311,14 @@ func main() {
 		os.Mkdir("/tmp/", 0777|os.ModeSticky)
 	}()
 
-	rs, err := db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
+	var rs *sql.Rows
+	var err error
+
+	if len(os.Args) == 2 {
+		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version WHERE name = $1 ORDER BY \"order\" DESC", os.Args[2])
+	} else {
+		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
+	}
 
 	if err != nil {
 		log.Fatal("No versions found to execute: %s", err)
@@ -322,18 +334,6 @@ func main() {
 
 		versions = append(versions, v)
 	}
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c)
-
-	go func() {
-		for {
-			s := <-c
-			if s.String() != "child exited" {
-				log.Println("Got signal:", s)
-			}
-		}
-	}()
 
 	for _, v := range versions {
 		input.execute(&v)

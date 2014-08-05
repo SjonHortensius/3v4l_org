@@ -1,41 +1,30 @@
-textarea, .CodeMirror
+@import url('/ext/LRTEditor/src/style.css');
+@import url('/ext/glyphicons-halflings.css');
+
+.sh_comment { color: #a50; }
+.sh_keyword { color: #708; }
+.sh_variable { color: #05a; }
+.sh_string { color: #a11; }
+.sh_symbol { color: #555; }
+
+.sh_sourceCode
 {
 	overflow-x: auto;
 	border: 0 solid black;
 	border-width: 1px 0;
 	width: 100%;
+	tab-size: 4;
 }
 
-textarea.invalid, textarea.invalid + .CodeMirror
+.sh_sourceCode:focus
+{
+	outline: none;
+}
+
+textarea.invalid,
+code.invalid
 {
 	border-color: red;
-}
-
-#auth
-{
-	background-image: linear-gradient(to bottom,#3c3c3c 0,#222 100%);
-	position: fixed;
-	right: 5em;
-	background-repeat: repeat-x;
-	color: white;
-	top: 0;
-	box-shadow: inset 1px 1px 1px rgba(0,0,0,0.1);
-	border-bottom: 1px solid #080808;
-	font-size: 16px;
-}
-
-.CodeMirror
-{
-	background: #fff;
-	clear: both;
-}
-
-.CodeMirror-scroll
-{
-	height: auto;
-	overflow-y: hidden;
-	overflow-x: auto;
-	width: 100%;
 }
 
 body
@@ -149,15 +138,18 @@ dt
 	cursor: pointer;
 }
 
-dt a {
+dt a
+{
 	float: right;
 }
 
-a.inactive [class^="icon-"] {
+a.inactive [class^="icon-"]
+{
 	opacity: 0.3;
 }
 
-a.inactive:hover [class^="icon-"] {
+a.inactive:hover [class^="icon-"]
+{
 	opacity: 1;
 }
 
@@ -190,6 +182,13 @@ dd:hover, dt:target + dd, dd:only-of-type
 	transition: max-height 0.3s ease-in;
 }
 
+
+body.rel td>div
+{
+	width: 375px;
+	height: 200px;
+}
+
 body.perf #chart
 {
 	width: 800px;
@@ -206,16 +205,11 @@ body.perf #data table
 	width: 600px !important;
 }
 
-body.rel td>div
-{
-	width: 375px;
-	height: 200px;
-}
-
 body.perf table td
 {
 	text-align: right;
 }
+
 
 table
 {
@@ -291,7 +285,8 @@ body > a
 	box-shadow: 0 0 30px red;
 }
 
-div.col {
+div.col
+{
 	padding: 0 2em;
 	width: 50%;
 	box-sizing: border-box;
