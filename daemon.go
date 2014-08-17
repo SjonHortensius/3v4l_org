@@ -298,7 +298,7 @@ func init() {
 
 func main() {
 	log.SetPrefix("[" + input.short + "] ")
-	run = input.setBusy(len(os.Args) == 1)
+	run = input.setBusy(len(os.Args) == 2)
 
 	defer func() {
 		syscall.Setgid(99);
@@ -314,7 +314,7 @@ func main() {
 	var rs *sql.Rows
 	var err error
 
-	if len(os.Args) == 2 {
+	if len(os.Args) == 3 {
 		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version WHERE name = $1 ORDER BY \"order\" DESC", os.Args[2])
 	} else {
 		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")

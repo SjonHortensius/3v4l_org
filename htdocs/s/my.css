@@ -1,32 +1,6 @@
 @import url('/ext/LRTEditor/src/style.css');
 @import url('/ext/glyphicons-halflings.css');
 
-.sh_comment { color: #a50; }
-.sh_keyword { color: #708; }
-.sh_variable { color: #05a; }
-.sh_string { color: #a11; }
-.sh_symbol { color: #555; }
-
-.sh_sourceCode
-{
-	overflow-x: auto;
-	border: 0 solid black;
-	border-width: 1px 0;
-	width: 100%;
-	tab-size: 4;
-}
-
-.sh_sourceCode:focus
-{
-	outline: none;
-}
-
-textarea.invalid,
-code.invalid
-{
-	border-color: red;
-}
-
 body
 {
 	max-width: 1250px;
@@ -121,6 +95,27 @@ h1:not(:only-child)
 	cursor: pointer;
 	margin-top: 0;
 }
+
+code
+{
+	overflow-x: auto;
+	border: 0 solid black;
+	border-width: 1px 0;
+	width: 100%;
+	tab-size: 4;
+}
+
+textarea.invalid,
+code.invalid
+{
+	border-color: red;
+}
+
+code .sh_comment { color: #a50; }
+code .sh_keyword { color: #708; }
+code .sh_variable { color: #05a; }
+code .sh_string { color: #a11; }
+code .sh_symbol { color: #555; }
 
 small
 {

@@ -8,10 +8,16 @@ cat ../ext/LRTEditor/src/style.css ./my.css ../ext/glyphicons-halflings.css | ph
 cat ../ext/LRTEditor/shjs/lang/sh_php.js \
 	../ext/LRTEditor/shjs/sh_main.min.js \
 	../ext/LRTEditor/src/LRTEditor.js \
+	../ext/LRTEditor/src/LRTEditor.HighlightPlugin.js \
 	../ext/LRTEditor/src/LRTEditor.MinimalPlugin.js \
 	../ext/LRTEditor/src/LRTEditor.UndoPlugin.js \
 	../ext/LRTEditor/src/LRTEditor.FormPlugin.js \
-	./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c.js
+	./my.js >c.js
+
+[[ $1 == 'd' ]] && exit 0
+
+mv c.js c2.js
+cat c2.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c.js
 
 [[ $1 == 'q' ]] && exit 0
 mv c.js c2.js

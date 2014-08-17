@@ -8,78 +8,131 @@ _gaq.push(['_trackPageview']);
 	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
 
-var evalOrg = new Class({
-	refreshTimer: null,
-	refreshCount: 0,
+HTMLCollection.prototype.forEach = function(cb) {
+	for (var i = 0; i < this.length; i++) {
+		cb(this.item(i));
+	}
+}
 
-	initialize: function()
+var evalOrg = {};
+(function()
+{
+	"use strict"
+
+	var self = this,
+		refreshTimer,
+		refreshCount = 0;
+
+	this.initialize = function()
 	{
 		this.richEditor();
 		this.showFeedbackButton();
-		this.externalLinks();
 
-		$$('h1').addEvent('click', function(){ window.location = '/'; });
-		$$('dd, dt').addEvent('click', this._clickDt);
+		document.querySelector('h1').addEventListener('click', function(e){ window.location = '/'; });
 
-		if ($$('input[type=submit]').length == 1 && $$('input[type=submit]')[0].hasClass('busy'))
-			this.refreshTimer = setInterval(this.refresh.bind(this), 1000);
+		if ('output' == document.body.className)
+			this.handleScriptOutput();
 
-		events.each(function(ev){ ev.bind(this)(); }, this);
-	},
+		if (document.querySelector('input[type=submit].busy'))
+			refreshTimer = setInterval(this.refresh, 1000);
 
-	refresh: function()
+		// externalLinks; iterate by casting to Array
+		Array.prototype.slice.call(document.querySelectorAll('a[href^="http://"]')).forEach(function (el){
+			el.setAttribute('target', '_blank');
+		});
+
+		if ('undefined' != typeof perfData)
+			this.drawPerformanceGraphs(perfData, document.getElementById('chart'), document.getElementById('data'));
+	};
+
+	this.richEditor = function()
 	{
-		this.refreshCount++;
+		var textarea = document.getElementsByTagName('textarea')[0];
 
-		new Request.HTML({
-			url: window.location.pathname,
-			method: 'GET',
-			onSuccess: this._refresh.bind(this),
-			filter: 'dl > *',
-			update: $$('dl')[0],
-		}).send();
-	},
-
-	_refresh: function(tree, elements, html)
-	{
-		$$('dd, dt').addEvent('click', this._clickDt);
-
-		if (!html.match(/class="busy"/) || this.refreshCount>99)
-		{
-			clearInterval(this.refreshTimer);
-			$$('input[type=submit]')[0].removeClass('busy');
-		}
-	},
-
-	_clickDt: function(e)
-	{
-		var dt = ('DT' == e.target.tagName) ? e.target : ('DD' == e.target.tagName ? e.target.getPrevious('dt') : e.target.getParent('dd').getPrevious('dt'));
-
-		// Fix Firefox, will detect selecting text as click and this hash update removes the selection
-		if (window.location.hash != '#'+dt.id)
-			window.location.hash = '#'+dt.id;
-	},
-
-	richEditor: function()
-	{
-		if ($$('textarea').length == 0)
+		if (!textarea)
 			return;
 
 		LRTEditor.initialize(
-			document.getElementsByTagName('textarea')[0],
-			['FormPlugin', 'MinimalPlugin', 'UndoPlugin'],
+			textarea,
+			['HighlightPlugin', 'FormPlugin', 'MinimalPlugin', 'UndoPlugin'],
 			function(el){ sh_highlightElement(el, sh_languages['php']); }
 		);
 
-		$$('code')[0].focus();
+		if (!LRTEditor.element)
+			return;
 
-		$$('code')[0].addEvent('keydown', function(ev){
-			if (event.ctrlKey && event.keyIdentifier == 'Enter')
-				$$('input[type=submit]')[0].click();
+		LRTEditor.element.focus();
+
+		LRTEditor.element.addEventListener('keydown', function(e){
+			if (13 == e.keyCode && e.ctrlKey)
+				document.forms[0].submit();
 		});
-	},
+	};
 
-	drawPerformanceGraphs: function(data, chart, table)
+	this.showFeedbackButton = function()
+	{
+		var UserVoice = window.UserVoice || [];
+		UserVoice.push(['showTab', 'classic_widget', {
+			mode: 'full',
+			primary_color: '#cc6d00',
+			link_color: '#007dbf',
+			default_mode: 'support',
+			forum_id: 219058,
+			support_tab_name: 'Report Bug',
+			feedback_tab_name: 'Request Feature',
+			tab_label: 'Bugs & Features',
+			tab_color: '#cc6d00',
+			tab_position: 'middle-right',
+			tab_inverted: false
+		}]);
+	};
+
+	this.handleScriptOutput = function()
+	{
+		document.getElementsByTagName('dt').forEach(function(el){
+			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
+		});
+
+		document.getElementsByTagName('dd').forEach(function(el){
+			el.addEventListener('click', function(e){
+				var node = e.target;
+				while (node && node.tagName != 'DD')
+					node = node.parentNode;
+
+				if (node)
+					window.location.hash = '#'+ node.previousSibling.id;
+			});
+		});
+	};
+
+	this.refresh = function()
+	{
+		refreshCount++;
+
+		var xhr = new XMLHttpRequest();
+		xhr.onload = _refresh;
+		xhr.open('get', window.location.pathname);
+		xhr.send();
+	}
+
+	var _refresh = function()
+	{
+		var r = this.responseText.match(/<div id="tab">([\s\S]*?)<\/div>/);
+		if (!r)
+			window.location.reload();
+
+		document.getElementById('tab').innerHTML = r[1];
+
+		self.handleScriptOutput();
+
+		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
+		{
+			clearInterval(refreshTimer);
+			document.querySelector('input[type=submit].busy').classList.remove('busy');
+		}
+	};
+
+	this.drawPerformanceGraphs = function(data, chart, table)
 	{
 		data.unshift(['Version', 'System time', 'User time', 'Max. memory usage']);
 		var options =
@@ -116,32 +169,7 @@ var evalOrg = new Class({
 				perfData.sort([{column: event.column, desc: !event.ascending}]);
 				chart.draw(perfData, options);
 			});
-	},
+	};
+}).apply(evalOrg);
 
-	externalLinks: function()
-	{
-		$$('a[rel=external]').each(function (el){
-			el.setAttribute('target', '_blank');
-		});
-	},
-
-	showFeedbackButton: function()
-	{
-		UserVoice = window.UserVoice || [];
-		UserVoice.push(['showTab', 'classic_widget', {
-			mode: 'full',
-			primary_color: '#cc6d00',
-			link_color: '#007dbf',
-			default_mode: 'support',
-			forum_id: 219058,
-			support_tab_name: 'Get Help',
-			feedback_tab_name: 'Submit Ideas',
-			tab_label: 'Feedback & Support',
-			tab_color: '#cc6d00',
-			tab_position: 'middle-right',
-			tab_inverted: false
-		}]);
-	}
-});
-
-window.addEvent('domready', function(){ new evalOrg; });
+window.addEventListener('load', function(){ evalOrg.initialize(); });
