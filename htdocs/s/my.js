@@ -54,7 +54,7 @@ var evalOrg = {};
 
 		LRTEditor.initialize(
 			textarea,
-			['HighlightPlugin', 'FormPlugin', 'MinimalPlugin', 'UndoPlugin'],
+			['FormPlugin', 'HighlightPlugin', 'MinimalPlugin', 'UndoPlugin'],
 			function(el){ sh_highlightElement(el, sh_languages['php']); }
 		);
 
