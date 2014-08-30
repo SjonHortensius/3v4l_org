@@ -1,6 +1,6 @@
 <dl>
 {foreach ($this->input->getOutput() as $this->versions => $this->output)}
-	{$this->versions = str_replace('5.7@', 'ng@', $this->versions);}
+	{$this->versions = str_replace('7@', 'php7@', $this->versions);}
 	{$this->id = @array_shift(explode(' ', str_replace(',', ' ', $this->versions)));}
 
 	<dt id="v{print str_replace('.', '', $this->id);}">

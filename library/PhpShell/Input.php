@@ -111,13 +111,23 @@ class PhpShell_Input extends PhpShell_Entity
 			$hash = sha1($output.':'.$result->exitCode);
 			$slot =& $outputs[ $hash ];
 
+			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
+			$isNg = (false !== strpos($result->version->name, '@201'));
+
 			if (!isset($slot))
 				$slot = array('min' => $result->version->name, 'versions' => [], 'order' => 0);
-			elseif ($hash != $prevHash || false !== strpos($result->version->name, '-') || false !== strpos($result->version->name, '@'))
+			elseif ($hash != $prevHash || ($isNg && !$prevNg) || ($isHhvm && !$prevHhvm))
 			{
 				// Close previous slot
 				if (isset($slot['max']))
+				{
+					if ($prevHhvm)
+						$slot['max'] = substr($slot['max'], strlen('hhvm-'));
+					elseif ($prevNg)
+						$slot['max'] = substr($slot['max'], strlen('7@'));
+
 					array_push($slot['versions'], $slot['min'] .' - '. $slot['max']);
+				}
 				elseif (isset($slot['min']))
 					array_push($slot['versions'], $slot['min']);
 
@@ -139,6 +149,8 @@ class PhpShell_Input extends PhpShell_Entity
 			}
 
 			$prevHash = $hash;
+			$prevHhvm = $isHhvm;
+			$prevNg = $isNg;
 		}
 
 		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
@@ -148,7 +160,14 @@ class PhpShell_Input extends PhpShell_Entity
 		{
 			// Process unclosed slots
 			if (isset($output['max']))
+			{
+				if ($prevHhvm)
+					$output['max'] = substr($output['max'], strlen('hhvm-'));
+				elseif ($prevNg)
+					$slot['max'] = substr($slot['max'], strlen('7@'));
+
 				array_push($output['versions'], $output['min'] .' - '. $output['max']);
+			}
 			elseif (isset($output['min']))
 				array_push($output['versions'], $output['min']);
 
