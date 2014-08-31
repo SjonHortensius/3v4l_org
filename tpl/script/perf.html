@@ -4,7 +4,7 @@
 {$perf = iterator_to_array($this->input->getPerf());}
 
 {foreach ($perf as $r)}
-	{if ($r['exit_sum']>0)}
+	{if ("hhvm-" != substr($r['version'], 0, 5) && $r['exit_sum']==0)}
 		{$hasSuccess = true;}
 	{/}
 {/}
