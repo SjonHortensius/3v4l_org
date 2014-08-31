@@ -177,34 +177,81 @@ dd:hover, dt:target + dd, dd:only-of-type
 	transition: max-height 0.3s ease-in;
 }
 
+body.perf table i
+{
+	/* icon-plus */
+	background-position: -408px -96px;
+	margin-right: 5px;
+}
+
+body.perf table tr.open i
+{
+	/* icon-min */
+	background-position: -433px -96px;
+}
+
+body.perf table
+{
+	width: 650px;
+}
+
+body.perf table th:first-child,
+body.perf table td:first-child
+{
+	width: 100px;
+}
+
+body.perf table tr
+{
+	cursor: pointer;
+}
+
+body.perf table td
+{
+	padding-right: 60px;
+}
+
+body.perf table td:first-child
+{
+	padding-right: 30px;
+}
+
+body.perf meter
+{
+	float: right;
+}
+
+body.perf table th
+{
+	text-align: left;
+}
+
+body.perf tr[data-unsuccessful]
+{
+	color: gray;
+}
+
+body.perf table tr.header
+{
+}
+
+body.perf tr.header ~ tr:not(.header) {
+	display: none;
+}
+
+tr.hack {
+	display: table-row !important;
+}
+
+tr.hack td:first-child {
+	padding-left: 20px;
+}
 
 body.rel td>div
 {
 	width: 375px;
 	height: 200px;
 }
-
-body.perf #chart
-{
-	width: 800px;
-	height: 450px
-}
-
-body.perf .hhvm
-{
-	float: right;
-}
-
-body.perf #data table
-{
-	width: 600px !important;
-}
-
-body.perf table td
-{
-	text-align: right;
-}
-
 
 table
 {

@@ -1,35 +1,52 @@
-<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-<script type="text/javascript">google.load('visualization', '1', {packages: ['corechart', 'table']});</script>
+{$this->max = ['system'=>-1, 'user'=>-1, 'memory'=>-1];}
+{$this->sum = ['system'=>0, 'user'=>0, 'memory'=>0];}
+{$this->count = 0;}
 
-<script type="text/javascript">
-var perfData = [
-	{$hhvm = [];}
-	{foreach ($this->input->getPerf() as $this->result)}
-		{if (substr($this->result['version'], 0, 5) == 'hhvm-')}
-			{if ($this->result['version'] != 'hhvm-analyze')}
-				{array_push($hhvm, $this->result);}
-			{/}
-		{:}
-			{if (preg_match('~^(\d\.\d\.)(\d)$~', $this->result['version'], $m))}
-				{$this->result['version'] = $m[1].'0'.$m[2];}
-			{/}
-			[
-				'{result['version']}',
-				{print round($this->result['system'], 3);},
-				{print round($this->result['user'], 3);},
-				{print round($this->result['memory']/1024, 3);},
-			],
-		{/}
+{foreach ($this->input->getPerf() as $r)}
+	{if ("hhvm-" == substr($r['version'], 0, 5) || $r['exit_sum']>0)}
+		{continue;}
 	{/}
-];
-</script>
-{foreach ($hhvm as $this->result)}
-	<ul class="hhvm">
-		<li>{result['version']} statistics:</li>
-		<li>System time: <b>{print round($this->result['system'], 3);} s</b></li>
-		<li>User time: <b>{print round($this->result['user'], 3);} s</b></li>
-		<li>Memory: <b>{print round($this->result['memory']/1024, 3);} MiB</b></li>
-	</ul>
+
+	{$this->count++;}
+	{$this->max['system'] = max($this->max['system'], $r['system']);}
+	{$this->max['user']   = max($this->max['user'],   $r['user']);}
+	{$this->max['memory'] = max($this->max['memory'], $r['memory']);}
+	{$this->sum['system'] += $r['system'];}
+	{$this->sum['user']   += $r['user'];}
+	{$this->sum['memory'] += $r['memory'];}
 {/}
-<div id="chart"></div>
-<div id="data"></div>
+
+{$this->avg = [
+	'system' => round($this->sum['system'] / $this->count, 3),
+	'user'   => round($this->sum['user']   / $this->count, 3),
+	'memory' => round($this->sum['memory'] / $this->count, 3),
+];}
+
+<script>
+	var perfAggregates = {
+		system: { max: {max['system']}, low: {avg['system']}, high: {print ($this->max['system'] + $this->avg['system']) / 2;}},
+		user: { max: {max['user']}, low: {avg['user']}, high: {print ($this->max['user'] + $this->avg['user']) / 2;}},
+		memory: { max: {max['memory']}, low: {avg['memory']}, high: {print ($this->max['memory'] + $this->avg['memory']) / 2;}}
+	};
+</script>
+
+
+<table>
+	<thead>
+		<th>Version</th>
+		<th>System time</th>
+		<th>User time</th>
+		<th>Memory</th>
+	</thead>
+
+	<tbody>
+		{foreach ($this->input->getPerf() as $this->r)}
+			<tr{if ($this->r['exit_sum']>0)} data-unsuccessful="1"{/}>
+				<td>{r['version']}</td>
+				<td>{r['system']}</td>
+				<td>{r['user']}</td>
+				<td>{r['memory']}</td>
+			</tr>
+		{/}
+	</tbody>
+</table>

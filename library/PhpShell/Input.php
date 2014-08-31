@@ -103,6 +103,19 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->id, $this->run), ['version.order' => true]);
 
+		$abbrMax = function($name)
+		{
+			$isHhvm = (false !== strpos($name, 'hhvm-'));
+			$isNg = (false !== strpos($name, '@201'));
+
+			if ($isHhvm)
+				return substr($name, strlen('hhvm-'));
+			elseif ($isNg)
+				return substr($name, strlen('7@'));
+			else
+				return $name;
+		};
+
 		$outputs = array();
 		foreach ($results as $result)
 		{
@@ -120,14 +133,7 @@ class PhpShell_Input extends PhpShell_Entity
 			{
 				// Close previous slot
 				if (isset($slot['max']))
-				{
-					if ($prevHhvm)
-						$slot['max'] = substr($slot['max'], strlen('hhvm-'));
-					elseif ($prevNg)
-						$slot['max'] = substr($slot['max'], strlen('7@'));
-
-					array_push($slot['versions'], $slot['min'] .' - '. $slot['max']);
-				}
+					array_push($slot['versions'], $slot['min'] .' - '. $abbrMax($slot['max']));
 				elseif (isset($slot['min']))
 					array_push($slot['versions'], $slot['min']);
 
@@ -160,14 +166,7 @@ class PhpShell_Input extends PhpShell_Entity
 		{
 			// Process unclosed slots
 			if (isset($output['max']))
-			{
-				if ($prevHhvm)
-					$output['max'] = substr($output['max'], strlen('hhvm-'));
-				elseif ($prevNg)
-					$slot['max'] = substr($slot['max'], strlen('7@'));
-
-				array_push($output['versions'], $output['min'] .' - '. $output['max']);
-			}
+				array_push($output['versions'], $output['min'] .' - '. $abbrMax($output['max']));
 			elseif (isset($output['min']))
 				array_push($output['versions'], $output['min']);
 
@@ -181,15 +180,16 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		return Basic::$database->query("
 			SELECT
-				AVG(\"systemTime\") as system,
-				AVG(\"userTime\") as user,
-				AVG(\"maxMemory\") as memory,
-				max(version.name) as version
+				ROUND(AVG(\"systemTime\")::numeric, 3) as system,
+				ROUND(AVG(\"userTime\")::numeric, 3) as user,
+				ROUND(AVG(\"maxMemory\")/1024, 2) as memory,
+				MAX(version.name) as version,
+				SUM(result.\"exitCode\") as exit_sum
 			FROM result
 			INNER JOIN version ON version.id = result.version
 			WHERE result.input = ? AND NOT version.\"isHelper\"
 			GROUP BY result.version
-			ORDER BY MAX(version.order)", [$this->id]);
+			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
 
 	public function getRefs()

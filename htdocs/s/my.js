@@ -8,7 +8,7 @@ _gaq.push(['_trackPageview']);
 	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
 })();
 
-HTMLCollection.prototype.forEach = function(cb) {
+NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function(cb) {
 	for (var i = 0; i < this.length; i++) {
 		cb(this.item(i));
 	}
@@ -41,8 +41,9 @@ var evalOrg = {};
 			el.setAttribute('target', '_blank');
 		});
 
-		if ('undefined' != typeof perfData)
-			this.drawPerformanceGraphs(perfData, document.getElementById('chart'), document.getElementById('data'));
+		var pageHandler = 'handle'+ document.body.className[0].toUpperCase()+document.body.className.substr(1);
+		if ('function' == typeof this[ pageHandler ])
+			this[ pageHandler ]();
 	};
 
 	this.richEditor = function()
@@ -132,43 +133,92 @@ var evalOrg = {};
 		}
 	};
 
-	this.drawPerformanceGraphs = function(data, chart, table)
+	var perfAddHeader = function(el, name, sum)
 	{
-		data.unshift(['Version', 'System time', 'User time', 'Max. memory usage']);
-		var options =
-		{
-			seriesType: 'steppedArea',
-			isStacked: true,
-			series: {2: {type: 'line', targetAxisIndex: 1}},
-			chartArea: {width: '75%', height: '75%'},
-			vAxes: [
-				{minValue: 0, format: '#.### s'},
-				{minValue: 0, format: '#.### MiB'},
-			],
-			colors: ['#36c', '#3c6', '#f90']
-		}, perfData = google.visualization.arrayToDataTable(data);
+		var m, td, i = document.createElement('i');
 
-		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 1);
-		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' s'}).format(perfData, 2);
-		new google.visualization.NumberFormat({fractionDigits: 3, suffix: ' MiB', groupingSymbol: '.'}).format(perfData, 3);
+		i.className = 'icon-';
 
-		var view = new google.visualization.DataView(perfData);
+		el.addEventListener('click', function(e){
+			el.classList.toggle('open');
+			var row = el;
 
-		var chart = new google.visualization.ComboChart(chart);
-		chart.draw(perfData, options);
-
-		if (!table)
-			return;
-
-		var table = new google.visualization.Table(table);
-		table.draw(view, {sortColumn: 0});
-
-		google.visualization.events.addListener(table, 'sort',
-			function(event)
+			while (row = row.nextSibling)
 			{
-				perfData.sort([{column: event.column, desc: !event.ascending}]);
-				chart.draw(perfData, options);
+				if (row.classList.contains('header'))
+					break;
+
+				row.classList.toggle('hack');
+			}
+		});
+
+		el.className = 'header';
+		el.appendChild(td = document.createElement('td')); td.textContent = name; td.insertBefore(i, td.firstChild);
+		el.appendChild(td = document.createElement('td')); td.appendChild(document.createTextNode((sum.system / sum.count).toFixed(3)));
+		el.appendChild(td = document.createElement('td')); td.appendChild(document.createTextNode((sum.user / sum.count).toFixed(3)));
+		el.appendChild(td = document.createElement('td')); td.appendChild(document.createTextNode((sum.memory / sum.count).toFixed(2)));
+
+		if (!sum.success)
+			el.setAttribute('data-unsuccessful', '1');
+
+		['system', 'user', 'memory'].forEach(function(type, index){
+			m = document.createElement('meter');
+			m.setAttribute('value', el.childNodes[1+index].textContent);
+
+			for (var k in perfAggregates[type])
+				m.setAttribute(k, perfAggregates[type][k]);
+
+			el.childNodes[1+index].appendChild(m);
+		});
+	};
+
+	this.handlePerf = function()
+	{
+		if (!perfAggregates)
+			return setTimeout('this.handlePerf', 100);
+
+		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0}, nextIsHeader = false;
+		document.querySelector('#tab table tbody').childNodes.forEach(function (tr){
+			if (nextIsHeader)
+			{
+				nextIsHeader = false;
+				return;
+			}
+			version = tr.firstChild.textContent.substr(0,4).replace(/\.$/, '');
+
+			sum.count++;
+			sum.system += parseFloat(tr.childNodes[1].textContent);
+			sum.user   += parseFloat(tr.childNodes[2].textContent);
+			sum.memory += parseFloat(tr.childNodes[3].textContent);
+			sum.success = sum.success || !tr.hasAttribute('data-unsuccessful');
+
+			if (version != previous)
+			{
+				if (previous)
+				{
+					perfAddHeader(header, previous, sum);
+					sum = {count:0, system: 0, user: 0, memory: 0, success: 0};
+				}
+
+				header = tr.parentNode.insertBefore(document.createElement('tr'), tr);
+				nextIsHeader = true;
+			}
+
+			['system', 'user', 'memory'].forEach(function(type, index){
+				var m = document.createElement('meter');
+				m.setAttribute('value', tr.childNodes[1+index].textContent);
+
+				for (var k in perfAggregates[type])
+					m.setAttribute(k, perfAggregates[type][k]);
+
+				tr.childNodes[1+index].appendChild(m);
 			});
+
+			previous = version;
+		});
+
+		// Process last entry
+		perfAddHeader(header, previous, sum);
 	};
 }).apply(evalOrg);
 
