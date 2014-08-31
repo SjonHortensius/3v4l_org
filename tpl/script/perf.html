@@ -1,9 +1,16 @@
 {$this->max = ['system'=>-1, 'user'=>-1, 'memory'=>-1];}
 {$this->sum = ['system'=>0, 'user'=>0, 'memory'=>0];}
 {$this->count = 0;}
+{$perf = iterator_to_array($this->input->getPerf());}
 
-{foreach ($this->input->getPerf() as $r)}
-	{if ("hhvm-" == substr($r['version'], 0, 5) || $r['exit_sum']>0)}
+{foreach ($perf as $r)}
+	{if ($r['exit_sum']>0)}
+		{$hasSuccess = true;}
+	{/}
+{/}
+
+{foreach ($perf as $r)}
+	{if ("hhvm-" == substr($r['version'], 0, 5) || ($hasSuccess && $r['exit_sum']>0))}
 		{continue;}
 	{/}
 
@@ -34,13 +41,13 @@
 <table>
 	<thead>
 		<th>Version</th>
-		<th>System time</th>
-		<th>User time</th>
-		<th>Memory</th>
+		<th>System time (s)</th>
+		<th>User time (s)</th>
+		<th>Memory (MiB)</th>
 	</thead>
 
 	<tbody>
-		{foreach ($this->input->getPerf() as $this->r)}
+		{foreach ($perf as $this->r)}
 			<tr{if ($this->r['exit_sum']>0)} data-unsuccessful="1"{/}>
 				<td>{r['version']}</td>
 				<td>{r['system']}</td>

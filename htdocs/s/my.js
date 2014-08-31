@@ -163,7 +163,7 @@ var evalOrg = {};
 
 		['system', 'user', 'memory'].forEach(function(type, index){
 			m = document.createElement('meter');
-			m.setAttribute('value', el.childNodes[1+index].textContent);
+			m.setAttribute('value', sum[type] / sum.count);
 
 			for (var k in perfAggregates[type])
 				m.setAttribute(k, perfAggregates[type][k]);
@@ -177,20 +177,13 @@ var evalOrg = {};
 		if (!perfAggregates)
 			return setTimeout('this.handlePerf', 100);
 
-		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0}, nextIsHeader = false;
+		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
 		document.querySelector('#tab table tbody').childNodes.forEach(function (tr){
-			if (nextIsHeader)
-			{
-				nextIsHeader = false;
+			// We modify the Node we traverse, not so smart...
+			if (tr.querySelector('meter'))
 				return;
-			}
-			version = tr.firstChild.textContent.substr(0,4).replace(/\.$/, '');
 
-			sum.count++;
-			sum.system += parseFloat(tr.childNodes[1].textContent);
-			sum.user   += parseFloat(tr.childNodes[2].textContent);
-			sum.memory += parseFloat(tr.childNodes[3].textContent);
-			sum.success = sum.success || !tr.hasAttribute('data-unsuccessful');
+			version = tr.firstChild.textContent.substr(0,4).replace(/\.$/, '');
 
 			if (version != previous)
 			{
@@ -201,8 +194,13 @@ var evalOrg = {};
 				}
 
 				header = tr.parentNode.insertBefore(document.createElement('tr'), tr);
-				nextIsHeader = true;
 			}
+
+			sum.count++;
+			sum.system += parseFloat(tr.childNodes[1].textContent);
+			sum.user   += parseFloat(tr.childNodes[2].textContent);
+			sum.memory += parseFloat(tr.childNodes[3].textContent);
+			sum.success = sum.success || !tr.hasAttribute('data-unsuccessful');
 
 			['system', 'user', 'memory'].forEach(function(type, index){
 				var m = document.createElement('meter');
