@@ -29,7 +29,7 @@ class PhpShell_Action_OAuthCallback extends PhpShell_Action
 		{
 			if (empty($result['applicationUserId']))
 			{
-				$user = PhpShell_User::create(['name' => $result['profile']['user_name'], 'created' => date('r'), 'last_login' => date('r'), 'id' => dechex(mt_rand())]);
+				$user = PhpShell_User::create(['name' => $result['profile']['user_name'], 'created' => date('r'), 'last_login' => date('r')]);
 				$this->_client->OAuthServer->tokenSetUserId($user->id, $_SESSION['reactOAuthSession']);
 				$user->login();
 

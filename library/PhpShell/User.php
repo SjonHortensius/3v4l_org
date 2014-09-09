@@ -2,11 +2,9 @@
 
 class PhpShell_User extends PhpShell_Entity
 {
-	protected static $_primary = 'id';
-
 	public function login()
 	{
-		Basic::$database->query("UPDATE ". self::getTable() ." SET login_count = login_count + 1 WHERE name = ?", [$this->name]);
+		Basic::$database->query("UPDATE ". Basic_Database::escapeTable(self::getTable()) ." SET login_count = login_count + 1, last_login = now() WHERE id = ?", [$this->id]);
 		$_SESSION['userId'] = $this->id;
 		session_regenerate_id();
 	}

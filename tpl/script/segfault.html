@@ -1,7 +1,7 @@
 {$r = $this->input->getSegfault();}
 
 {if (0 == count($r))}
-	No segfault occured (in php version 5.5.4)
+	No segfault occured (in php version 5.6.0)
 {:}
 	{$output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
 	{$banner = '*** Segmentation fault';}

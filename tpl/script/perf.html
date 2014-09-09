@@ -23,6 +23,11 @@
 	{$this->sum['memory'] += $r['memory'];}
 {/}
 
+{if ($this->count == 0)}
+	No results found
+	{return;}
+{/}
+
 {$this->avg = [
 	'system' => round($this->sum['system'] / $this->count, 3),
 	'user'   => round($this->sum['user']   / $this->count, 3),
@@ -36,7 +41,6 @@
 		memory: { max: {max['memory']}, low: {avg['memory']}, high: {print ($this->max['memory'] + $this->avg['memory']) / 2;}}
 	};
 </script>
-
 
 <table>
 	<thead>

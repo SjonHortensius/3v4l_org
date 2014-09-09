@@ -111,7 +111,7 @@ class PhpShell_Input extends PhpShell_Entity
 			if ($isHhvm)
 				return substr($name, strlen('hhvm-'));
 			elseif ($isNg)
-				return substr($name, strlen('7@'));
+				return substr($name, strlen('php7@'));
 			else
 				return $name;
 		};
