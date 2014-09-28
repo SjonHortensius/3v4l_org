@@ -14,6 +14,10 @@ NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function(cb) {
 	}
 }
 
+String.prototype.ucFirst = function(){
+	return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 var evalOrg = {};
 (function()
 {
@@ -30,9 +34,6 @@ var evalOrg = {};
 
 		document.querySelector('h1').addEventListener('click', function(e){ window.location = '/'; });
 
-		if ('output' == document.body.className)
-			this.handleScriptOutput();
-
 		if (document.querySelector('input[type=submit].busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
@@ -41,7 +42,7 @@ var evalOrg = {};
 			el.setAttribute('target', '_blank');
 		});
 
-		var pageHandler = 'handle'+ document.body.className[0].toUpperCase()+document.body.className.substr(1);
+		var pageHandler = 'handle'+ document.body.className.ucFirst();
 		if ('function' == typeof this[ pageHandler ])
 			this[ pageHandler ]();
 	};
@@ -88,7 +89,7 @@ var evalOrg = {};
 		}]);
 	};
 
-	this.handleScriptOutput = function()
+	this.handleOutput = function()
 	{
 		document.getElementsByTagName('dt').forEach(function(el){
 			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
@@ -124,7 +125,9 @@ var evalOrg = {};
 
 		document.getElementById('tab').innerHTML = r[1];
 
-		self.handleScriptOutput();
+		var pageHandler = 'handle'+ document.body.className.ucFirst();
+		if ('function' == typeof this[ pageHandler ])
+			this[ pageHandler ]();
 
 		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
 		{
@@ -217,6 +220,11 @@ var evalOrg = {};
 
 		// Process last entry
 		perfAddHeader(header, previous, sum);
+	};
+
+	var btcAmountReceived = function()
+	{
+		//https://blockchain.info/q/getreceivedbyaddress/3DJhjy98RiQRc7751B4PPugMkG3BGVogrX / 100000000
 	};
 }).apply(evalOrg);
 

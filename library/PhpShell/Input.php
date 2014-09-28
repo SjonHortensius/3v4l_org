@@ -40,6 +40,9 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public static function create($code, PhpShell_Input $source = null)
 	{
+		if (false !== strpos($code, 'pcntl_fork('))
+			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
+
 		$hash = self::getHash($code);
 		$len = 5;
 

@@ -4,7 +4,7 @@ class PhpShell_Action_Index extends PhpShell_Action_Script
 {
 	public function init()
 	{
-		PhpShell_Action::init();
+		parent::init();
 		Basic::$userinput->script->required = false;
 	}
 

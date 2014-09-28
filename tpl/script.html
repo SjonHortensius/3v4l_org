@@ -1,5 +1,6 @@
 <body class="{userinput['tab']}">
 
+{if (isset($this->user))}
 <style>
 nav
 {
@@ -16,8 +17,6 @@ nav li {
 	float: left;
 }
 </style>
-
-{if (isset($this->user))}
 	<nav>
 		<ul>
 			<li><a href="/me">Logged in as {user->name}</a></li>

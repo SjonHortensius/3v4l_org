@@ -1,0 +1,15 @@
+"script": {
+	{if (isset($this->input->source))}
+		"source": "{input->source->short}",
+	{/}
+
+	{if (isset($this->input->user))}
+		"author": "{print json_encode($this->input->user->name);}",
+	{/}
+
+	"state": "{input->state}",
+	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done', 'busy')));},
+	"code": {print json_encode(Basic::$action->code);}
+},
+
+{$this->show('script/'.Basic::$userinput['tab']);}

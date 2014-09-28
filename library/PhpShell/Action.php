@@ -19,6 +19,9 @@ class PhpShell_Action extends Basic_Action
 				Basic::$log->start(get_class(Basic::$action) .'::init');
 		}
 
+		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
+			$this->contentType = 'application/json';
+
 		parent::init();
 	}
 

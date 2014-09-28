@@ -32,16 +32,15 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 	public function init()
 	{
-		parent::init();
-
-		// Bug? A hammering user will GET /new which doesn't exist and results in 404 instead of 503
-		if ('new' == Basic::$userinput['script'])
-			throw new PhpShell_RateLimitingReachedException('Please refrain from hammering this service. You are limited to 5 POST requests per minute', [], 503);
-
 		// Retards hammering
 		if (false != strpos($_SERVER['REQUEST_URI'], '?a%5B'))
 			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
 
+		parent::init();
+	}
+
+	public function run()
+	{
 		try
 		{
 			$this->input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();
@@ -64,9 +63,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ('hhvm' == Basic::$userinput['tab'])
 			Basic::$controller->redirect($this->input->short, true);
 
-#		if (!Basic::$cache->increment('hits::'. $this->input->short))
-#			Basic::$cache->set('hits::'. $this->input->short, 1));
-
 		if (!isset($this->user))
 		{
 			if (in_array($this->input->state, ['busy', 'new']))
@@ -82,10 +78,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 			parent::_handleLastModified();
 		}
-	}
 
-	public function run()
-	{
 		if ($this->input->state == 'new')
 		{
 			// Attempt to retrigger the daemon
