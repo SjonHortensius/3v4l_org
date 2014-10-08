@@ -7,7 +7,11 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'valueType' => 'scalar',
 			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 0],
 			'required' => true,
-			'options' => ['minLength' => 5, 'maxLength' => 6],
+			/* Don't check for lengths here; /randomstring will be invalid; leading to
+			 * generic 400-'unknown action' instead of 404-'unknown script' error. This is
+			 * caused by us interpreting everything as a script in PhpShell_Action::resolve
+			 */
+//			'options' => ['minLength' => 5, 'maxLength' => 6],
 		],
 		'tab' => [
 			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],

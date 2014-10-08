@@ -7,6 +7,7 @@ class PhpShell_Action extends Basic_Action
 
 	public function init()
 	{
+//		$_SESSION['userId']=1;
 		if (isset($_SESSION['userId']))
 			$this->user = PhpShell_User::get($_SESSION['userId']);
 

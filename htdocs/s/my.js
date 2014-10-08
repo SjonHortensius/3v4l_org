@@ -101,7 +101,7 @@ var evalOrg = {};
 				while (node && node.tagName != 'DD')
 					node = node.parentNode;
 
-				if (node)
+				if (node && window.location.hash != '#'+ node.previousSibling.id)
 					window.location.hash = '#'+ node.previousSibling.id;
 			});
 		});
@@ -126,8 +126,8 @@ var evalOrg = {};
 		document.getElementById('tab').innerHTML = r[1];
 
 		var pageHandler = 'handle'+ document.body.className.ucFirst();
-		if ('function' == typeof this[ pageHandler ])
-			this[ pageHandler ]();
+		if ('function' == typeof self[ pageHandler ])
+			self[ pageHandler ]();
 
 		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
 		{

@@ -6,7 +6,7 @@
 	{/}
 
 	{if (empty($this->inputs))}
-		{throw new Basic_Controller_MissingRequiredParametersException('Missing required parameters to execute this action', null, 404);}
+		{throw new PhpShell_MissingInputException('Missing parameters', null, 404);}
 	{:}
 		{inputs}
 	{/}

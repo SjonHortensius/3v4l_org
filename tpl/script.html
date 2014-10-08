@@ -1,31 +1,5 @@
 <body class="{userinput['tab']}">
 
-{if (isset($this->user))}
-<style>
-nav
-{
-	background-color: #222;
-	border-color: #080808;
-	border-radius: 4px;
-	position: relative;
-min-height: 50px;
-margin-bottom: 20px;
-border: 1px solid transparent;
-}
-
-nav li {
-	float: left;
-}
-</style>
-	<nav>
-		<ul>
-			<li><a href="/me">Logged in as {user->name}</a></li>
-			<li><a href="/last">New</a></li>
-			<li><a href="/logout">Logout</a></li>
-		</ul>
-	</nav>
-{/}
-
 <form method="POST" action="/new">
 	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 	<textarea name="code">{print htmlspecialchars(Basic::$action->code);}</textarea>

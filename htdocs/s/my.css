@@ -18,7 +18,7 @@ form
 	box-shadow: inset 1px 1px 1px rgba(0,0,0, 0.1);
 }
 
-form a
+form > a
 {
 	float: right;
 	margin-left: 1em;
@@ -103,6 +103,10 @@ code
 	border-width: 1px 0;
 	width: 100%;
 	tab-size: 4;
+}
+
+code pre {
+	margin: 0;
 }
 
 textarea.invalid,

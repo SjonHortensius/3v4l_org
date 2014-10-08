@@ -9,3 +9,45 @@
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 	<link rel="stylesheet" href="/s/c.css"/>
 </head>
+
+{if (isset($this->user))}
+	<style>
+	nav
+	{
+		background-color: #222;
+		color: white;
+		border-color: #080808;
+		border-radius: 4px;
+		min-height: 40px;
+		margin-bottom: 20px;
+		border: 1px solid transparent;
+	}
+
+	nav ul {
+		list-style: none;
+		padding: 0 5px;
+	}
+
+	nav li {
+		float: left;
+		padding: 0 10px;
+		border-left: 1px solid gray;
+	}
+
+	nav li:first-child {
+		border-left: none;
+	}
+
+	nav a {
+		color: white;
+	}
+	</style>
+	<nav>
+		<ul>
+			<li><a href="/">3v4l.org</a> - online php shell</li>
+			<li>logged in as <i><a href="/me">{user->name}</a></i></li>
+			<li><a href="/last">/last</a></li>
+			<li><a href="/logout">/logout</a></li>
+		</ul>
+	</nav>
+{/}
