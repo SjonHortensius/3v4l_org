@@ -4,6 +4,13 @@ class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
 	protected $_userinputConfig = array(
+		'title' => [
+			'valueType' => 'scalar',
+			'options' => [
+				'maxLength' => 64,
+				'minLength' => 8
+			],
+		],
 		'code' => [
 			'valueType' => 'scalar',
 			'inputType' => 'textarea',
@@ -47,6 +54,9 @@ class PhpShell_Action_New extends PhpShell_Action
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
+
+		if (isset(Basic::$userinput['title'], $this->user))
+			$input->save(['title' => Basic::$userinput['title']]);
 
 		usleep(250 * 1000);
 		die(header('Location: /'. $input->short, 302));

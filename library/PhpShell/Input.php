@@ -216,11 +216,6 @@ class PhpShell_Input extends PhpShell_Entity
 		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->id, $this->run])->fetchArray('max')[0];
 	}
 
-	protected function _checkPermissions($action)
-	{
-		return ('load' == $action);
-	}
-
 	public function getSegfault()
 	{
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 139', [
@@ -265,5 +260,13 @@ class PhpShell_Input extends PhpShell_Entity
 			$this->run,
 			$emptyOutput->id,
 		]);
+	}
+
+	protected function _checkPermissions($action)
+	{
+		if ($action == 'save' && $this->title !== $this->_dbData->title && $this->user->id !== Basic::$action->user->id)
+			throw new PhpShell_Input_TitleChangeNotAllowedException('Permission denied, only the owner can update the title', [], 403);
+
+		return true;
 	}
 }

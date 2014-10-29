@@ -2,6 +2,8 @@
 
 class PhpShell_Action_Last extends PhpShell_Action
 {
+	public $bodyClass = 'last';
+
 	protected $_userinputConfig = array(
 		'page' => [
 			'valueType' => 'integer',

@@ -84,6 +84,8 @@ func (this *Input) setBusy(newRun bool) int {
 }
 
 func (this *Output) process(result *Result) bool {
+	this.raw = strings.Replace(this.raw, "\x06", "\\\x06", -1)
+	this.raw = strings.Replace(this.raw, "\x07", "\\\x07", -1)
 	this.raw = strings.Replace(this.raw, result.version.name, "\x06", -1)
 	this.raw = strings.Replace(this.raw, result.input.short, "\x07", -1)
 

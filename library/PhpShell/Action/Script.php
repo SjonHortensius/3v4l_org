@@ -40,6 +40,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (false != strpos($_SERVER['REQUEST_URI'], '?a%5B'))
 			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
 
+		if (!isset($this->bodyClass) && isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
+			$this->bodyClass = $GLOBALS['_MULTIVIEW'][1];
+
 		parent::init();
 	}
 

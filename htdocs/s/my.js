@@ -37,8 +37,7 @@ var evalOrg = {};
 		if (document.querySelector('input[type=submit].busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
-		// externalLinks; iterate by casting to Array
-		Array.prototype.slice.call(document.querySelectorAll('a[href^="http://"]')).forEach(function (el){
+		document.querySelectorAll('a[href^="http://"]').forEach(function (el){
 			el.setAttribute('target', '_blank');
 		});
 
@@ -103,6 +102,13 @@ var evalOrg = {};
 
 				if (node && window.location.hash != '#'+ node.previousSibling.id)
 					window.location.hash = '#'+ node.previousSibling.id;
+			});
+		});
+
+		document.querySelectorAll('a[href^="/assert"][data-hash]').forEach(function (el){
+			el.addEventListener('click', function(e){
+				//FIXME xhr submit
+				e.preventDefault();
 			});
 		});
 	};

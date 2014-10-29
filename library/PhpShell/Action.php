@@ -4,6 +4,7 @@ class PhpShell_Action extends Basic_Action
 {
 	public $encoding = 'UTF-8';
 	public $user;
+	public $bodyClass;
 
 	public function init()
 	{
@@ -22,6 +23,10 @@ class PhpShell_Action extends Basic_Action
 
 		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'application/json';
+
+		// Since we resolve everything to 'script'; prevent random strings in bodyClass
+		if (! Basic::$action instanceof PhpShell_Action_Script)
+			$this->bodyClass = Basic::$userinput['action'];
 
 		parent::init();
 	}
