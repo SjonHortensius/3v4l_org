@@ -55,8 +55,6 @@ var evalOrg = {};
 
 		var code = document.createElement('code');
 		code.textContent = textarea.textContent;
-		code.className = textarea.className;
-
 		textarea.parentNode.insertBefore(code, textarea);
 		textarea.style.display = 'none';
 

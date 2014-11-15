@@ -114,6 +114,11 @@ code.invalid
 	border-color: red;
 }
 
+code
+{
+	display: block;
+}
+
 form .ace-chrome {
 	font-size: inherit;
 	color: #555;
