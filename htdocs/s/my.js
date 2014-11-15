@@ -53,6 +53,34 @@ var evalOrg = {};
 		if (!textarea)
 			return;
 
+		var code = document.createElement('code');
+		code.textContent = textarea.textContent;
+		code.className = textarea.className;
+
+		textarea.parentNode.insertBefore(code, textarea);
+		textarea.style.display = 'none';
+
+		var editor = ace.edit(code);
+
+		editor.setTheme("ace/theme/chrome");
+		editor.getSession().setMode("ace/mode/php");
+		editor.getSession().setUseWrapMode(true);
+		editor.session.setOption("useWorker", false);
+		editor.setHighlightActiveLine(false);
+		editor.setShowPrintMargin(false);
+		editor.gotoLine(editor.session.getLength());
+		editor.on('blur', function(){
+			editor.setOptions({
+				maxLines: 25
+			});
+		});
+		editor.on('focus', function(){
+			editor.setOptions({
+				maxLines: Infinity
+			});
+		});
+		editor.focus();
+/*
 		LRTEditor.initialize(
 			textarea,
 			['FormPlugin', 'HighlightPlugin', 'MinimalPlugin', 'UndoPlugin'],
@@ -63,8 +91,12 @@ var evalOrg = {};
 			return;
 
 		LRTEditor.element.focus();
+*/
+		document.forms[0].addEventListener('submit', function(e){
+			textarea.value = editor.getValue();
+		});
 
-		LRTEditor.element.addEventListener('keydown', function(e){
+		code.addEventListener('keydown', function(e){
 			if (13 == e.keyCode && e.ctrlKey)
 				document.forms[0].submit();
 		});

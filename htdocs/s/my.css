@@ -1,4 +1,3 @@
-@import url('/ext/LRTEditor/src/style.css');
 @import url('/ext/glyphicons-halflings.css');
 
 body
@@ -115,12 +114,23 @@ code.invalid
 	border-color: red;
 }
 
+form .ace-chrome {
+	font-size: inherit;
+	color: #555;
+}
+
+form .ace-chrome .ace_gutter {
+	background-color: #f7f7f7;
+	color: #aaa;
+}
+
+/*
 code .sh_comment { color: #a50; }
 code .sh_keyword { color: #708; }
 code .sh_variable { color: #05a; }
 code .sh_string { color: #a11; }
 code .sh_symbol { color: #555; }
-
+*/
 small
 {
 	color: #999;
@@ -270,7 +280,7 @@ table td
 	border-top: 1px solid #ddd;
 }
 
-input
+input[type=submit]
 {
 	background-color: #0074CC;
 	background-image: -moz-linear-gradient(top, #08C, #05C);
