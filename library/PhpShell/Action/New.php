@@ -4,7 +4,7 @@ class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
 	protected $_userinputConfig = array(
-/*		'title' => [
+		'title' => [
 			'valueType' => 'scalar',
 			'inputType' => 'hidden',
 			'options' => [
@@ -12,7 +12,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				'minLength' => 8
 			],
 		],
-*/		'code' => [
+		'code' => [
 			'valueType' => 'scalar',
 			'inputType' => 'textarea',
 			'regexp' => '~<\?~',
