@@ -59,25 +59,26 @@ var evalOrg = {};
 		textarea.style.display = 'none';
 
 		var editor = ace.edit(code);
-
 		editor.setTheme("ace/theme/chrome");
-		editor.getSession().setMode("ace/mode/php");
-		editor.getSession().setUseWrapMode(true);
+		editor.session.setMode("ace/mode/php");
+		editor.session.setUseWrapMode(true);
 		editor.session.setOption("useWorker", false);
-		editor.setHighlightActiveLine(false);
 		editor.setShowPrintMargin(false);
-		editor.gotoLine(editor.session.getLength());
+		editor.setOption("maxLines", 25);
+
 		editor.on('blur', function(){
-			editor.setOptions({
-				maxLines: 25
-			});
+			editor.setOption("maxLines", 25);
 		});
+
 		editor.on('focus', function(){
-			editor.setOptions({
-				maxLines: Infinity
-			});
+			editor.setOption("maxLines", Infinity);
 		});
-		editor.focus();
+
+		if (document.body.classList.contains('index'))
+		{
+			editor.focus();
+			editor.gotoLine(editor.session.getLength());
+		}
 /*
 		LRTEditor.initialize(
 			textarea,
