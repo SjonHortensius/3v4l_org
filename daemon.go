@@ -15,28 +15,24 @@ import (
 )
 
 type Version struct {
-	id int
-	name string
-	command string
-	isHelper bool
+	id			int
+	name		string
+	command		string
+	isHelper	bool
 }
 
 type Input struct {
-	id int
-	short string
-	uniqueOutput map [string]bool
-	penalty	int
-	run int
+	id				int
+	short			string
+	uniqueOutput	map[string]bool
+	penalty			int
+	run				int
 }
 
 type Output struct {
-	id int64
-	raw string
-}
-
-type Work struct {
-	input string
-	version string
+	id			int
+	raw			string
+	hash		string
 }
 
 type Result struct {
@@ -54,22 +50,10 @@ func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 
 	if p < 1 {
-		return;
+		return
 	}
 
-	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $1) / run WHERE short = $2", this.penalty, this.short); err != nil {
-		log.Fatalf("Input: failed to set penalty to `%d`: %s", p, err)
-	}
-
-	log.Printf("Penalized %d for: %s", p, r)
-
-	if this.penalty > 256 {
-		if _, err := db.Exec("UPDATE input SET state = 'abusive' WHERE short = $1 AND state = 'busy'", this.short); err != nil {
-			log.Printf("Input: failed to update state to `abusive`: %s", err)
-		}
-
-		log.Fatalf("Penalty limit reached: aborting")
-	}
+	//	log.Printf("Penalized %d for: %s", p, r)
 }
 
 func (this *Input) setBusy(newRun bool) {
@@ -92,50 +76,84 @@ func (this *Input) setBusy(newRun bool) {
 }
 
 func (this *Input) setDone() {
-	log.SetPrefix("")
-
-	if _, err := db.Exec("UPDATE input SET state = 'done' WHERE short = $1 AND state = 'busy'", this.short); err != nil {
-		log.Fatalf("Input: failed to update state to `done`: %s", err)
+	state := "done"
+	if this.penalty > 256 {
+		state = "abusive"
 	}
 
+	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $2) / run, state = $3 WHERE short = $1 AND state = 'busy'", this.short, this.penalty, state); err != nil {
+		log.Fatalf("Input: failed to update: %s", err)
+	}
+
+	log.Printf("done, penalty = %d (%s)", this.penalty, state)
+
+	log.SetPrefix("")
 	os.RemoveAll("/tmp/")
 }
 
-func (this *Output) process(result *Result) bool {
-	this.raw = strings.Replace(this.raw, "\x06", "\\\x06", -1)
-	this.raw = strings.Replace(this.raw, "\x07", "\\\x07", -1)
-	this.raw = strings.Replace(this.raw, result.version.name, "\x06", -1)
-	this.raw = strings.Replace(this.raw, result.input.short, "\x07", -1)
+func newOutput(raw string, i *Input, v *Version) *Output {
+	raw = strings.Replace(raw, "\x06", "\\\x06", -1)
+	raw = strings.Replace(raw, "\x07", "\\\x07", -1)
+	raw = strings.Replace(raw, v.name, "\x06", -1)
+	raw = strings.Replace(raw, i.short, "\x07", -1)
 
-	return true
-}
-
-func (this *Output) getHash() string {
 	h := sha1.New()
-	io.WriteString(h, this.raw)
-	return base64.StdEncoding.EncodeToString(h.Sum(nil))
-}
+	io.WriteString(h, raw)
 
-//FIXME: implement newResult instead
-func (this *Result) store() {
-	this.output.process(this)
+	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
-	hash := this.output.getHash()
+	if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
+		if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", o.hash, o.raw); err != nil {
+			log.Fatalf("Output: failed to store: %s", err)
+		}
 
-	if false == this.input.uniqueOutput[hash] {
-		this.input.uniqueOutput[hash] = true;
-
-		if !this.version.isHelper {
-			this.input.penalize("Excessive total output", len(this.output.raw)/2048)
+		// LastInsertId doesn't work
+		if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
+			log.Fatalf("Output: failed to retrieve after storing: %s", err)
 		}
 	}
 
-	if rs, err := db.Exec("INSERT INTO output VALUES ($1, $2)", hash, this.output.raw); err != nil {
-		log.Fatalf("Output: failed to store: %s", err)
-	} else {
-		this.output.id, _ = rs.LastInsertId()
+	if false == i.uniqueOutput[o.hash] {
+		i.uniqueOutput[o.hash] = true
+
+		if !v.isHelper {
+			i.penalize("Excessive total output", len(o.raw)/2048)
+		}
 	}
 
+	return o
+}
+
+func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
+	waitStatus := s.Sys().(syscall.WaitStatus)
+	usage := s.SysUsage().(*syscall.Rusage)
+
+	var exitCode int
+	if waitStatus.Exited() {
+		exitCode = waitStatus.ExitStatus()
+	} else {
+		exitCode = 128 + int(waitStatus.Signal())
+	}
+
+	r := &Result{
+		input:		i,
+		output:		newOutput(raw, i, v),
+		version:	v,
+		exitCode:	exitCode,
+		created:	time.Now(),
+		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
+		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
+		maxMemory:	usage.Maxrss,
+	}
+
+	i.penalize("Total runtime", int(usage.Utime.Sec) + int(usage.Stime.Sec))
+
+	r.store()
+
+	return r
+}
+
+func (this *Result) store() {
 	r, err := db.Exec("INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)",
 		this.input.id, this.output.id, this.version.id, this.exitCode, this.created,
 		this.userTime, this.systemTime, this.maxMemory, this.input.run,
@@ -148,7 +166,7 @@ func (this *Result) store() {
 	}
 }
 
-func (this *Input) execute(v *Version) {
+func (this *Input) execute(v *Version) *Result {
 	cmdArgs := strings.Split(v.command, " ")
 
 	log.SetPrefix("[" + this.short + ":" + v.name + "] ")
@@ -166,7 +184,7 @@ func (this *Input) execute(v *Version) {
 		"USERNAME=nobody",
 		"HOME=/",
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{ Credential: &syscall.Credential{ 99, 99, []uint32{} } }
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{99, 99, []uint32{}}}
 
 	/*
 	 * Channels are meant to communicate between routines. We create a channel
@@ -185,7 +203,7 @@ func (this *Input) execute(v *Version) {
 
 	if err := cmd.Start(); err != nil {
 		log.Printf("While starting: %s", err)
-		return
+		return &Result{}
 	}
 
 	go func(c *exec.Cmd, r io.Reader) {
@@ -200,13 +218,13 @@ func (this *Input) execute(v *Version) {
 			buffer = buffer[:n]
 
 			// 32 KiB is the length of phpinfo() output
-			if len(output) < 32 * 1024 || (v.isHelper && len(output) < 256*1024) {
+			if len(output) < 32*1024 || (v.isHelper && len(output) < 256*1024) {
 				output = append(output, buffer...)
 				continue
 			}
 
-			if err := cmd.Process.Kill(); (err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process") {
-				this.penalize("Didn't stop: "+ err.Error(), 256)
+			if err := cmd.Process.Kill(); err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process" {
+				this.penalize("Didn't stop: "+err.Error(), 256)
 			}
 		}
 
@@ -233,7 +251,7 @@ func (this *Input) execute(v *Version) {
 	select {
 	case <-time.After(2500 * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
-			log.Printf("FYI kill after timeout resulted in : %s", err)
+			log.Printf("Kill after timeout resulted in : %s", err)
 
 			if err.Error() != "os: process already finished" && err.Error() != "no such process" {
 				this.penalize("Failed to kill after timeout", 256)
@@ -248,34 +266,11 @@ func (this *Input) execute(v *Version) {
 		output = <-procOut
 	}
 
-	waitStatus := state.Sys().(syscall.WaitStatus)
-	usage := state.SysUsage().(*syscall.Rusage)
-
-	var exitCode int
-	if waitStatus.Exited() {
-		exitCode = waitStatus.ExitStatus()
-	} else {
-		exitCode = 128 + int(waitStatus.Signal())
-	}
-
-	r := Result{
-		input:		this,
-		output:		&Output{0, output},
-		version:	v,
-		exitCode:	exitCode,
-		created:	time.Now(),
-		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
-		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
-		maxMemory:	usage.Maxrss,
-	}
-	r.store()
+	return newResult(this, v, output, state)
 }
 
 func refreshVersions() {
-	log.Printf("Refreshing versions")
-
 	versions = []*Version{}
-	versionIndex = map[string]int{}
 
 	rs, err := db.Query("SELECT id, name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
 
@@ -290,7 +285,6 @@ func refreshVersions() {
 			log.Fatalf("Error fetching version: %s", err)
 		}
 
-		versionIndex[v.name] = len(versions)
 		versions = append(versions, &v)
 	}
 }
@@ -305,9 +299,9 @@ func doWork() {
 	for rs.Next() {
 		input := &Input{}
 		input.uniqueOutput = map[string]bool{}
-		var v sql.NullString
+		var qVersion sql.NullString
 
-		if err := rs.Scan(&input.short, &v); err != nil {
+		if err := rs.Scan(&input.short, &qVersion); err != nil {
 			log.Fatalf("doWork: error fetching work: %s", err)
 		}
 
@@ -315,23 +309,18 @@ func doWork() {
 			log.Fatalf("doWork: error verifying input: %s", err)
 		}
 
-		input.setBusy(!v.Valid)
+		input.setBusy(!qVersion.Valid)
 
-		if v.Valid {
-			input.execute(versions[ versionIndex[v.String] ])
-		} else {
-			for _, v := range versions {
+		for _, v := range versions {
+			if !qVersion.Valid || qVersion.String == v.name {
 				input.execute(v)
 			}
 		}
 
 		input.setDone()
-	}
-}
 
-func errorReport(ev pq.ListenerEventType, err error) {
-	if err != nil {
-		log.Printf("Daemon.report: %s", err)
+		//FIXME: make dependant on /proc/loadavg
+		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -339,7 +328,6 @@ var (
 	db *sql.DB
 	l *pq.Listener
 	versions []*Version
-	versionIndex map[string]int
 )
 
 const (
@@ -359,7 +347,11 @@ func init() {
 		log.Fatalf("Failed to ping db: %s", err)
 	}
 
-	l = pq.NewListener(DSN, 1 * time.Second, time.Minute, errorReport)
+	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			log.Printf("Daemon.report: %s", err)
+		}
+	})
 
 	if err := l.Listen("daemon"); err != nil {
 		log.Fatalf("Could not setup Listener %s", err)
@@ -369,7 +361,7 @@ func init() {
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:		2,
-		syscall.RLIMIT_DATA:	256 * 1024 * 1024,
+		syscall.RLIMIT_DATA:	128 * 1024 * 1024,
 //		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:	0,
@@ -378,28 +370,28 @@ func init() {
 	}
 
 	for key, value := range limits {
-		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value)*1.25)}); err != nil {
+		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value) * 1.25)}); err != nil {
 			log.Fatalf("Failed to set resourceLimit: %d to %d: %s", key, value, err)
 		}
 	}
 }
 
 func main() {
+	log.Printf("daemon started")
+
 	// Process pending work first
 	doWork()
 
 	for {
 		select {
-			case <-l.Notify:
-				log.Printf("Notification received, checking for work")
-				doWork()
+		case <-l.Notify:
+			go doWork()
 
-			case <-time.After(5 * time.Minute):
-				refreshVersions()
+		case <-time.After(5 * time.Minute):
+			refreshVersions()
 
-			case <-time.After(90 * time.Second):
-				log.Printf("Proactively finding work")
-				doWork()
+		case <-time.After(90 * time.Second):
+			doWork()
 		}
 	}
 }
