@@ -3,6 +3,7 @@
 class PhpShell_Version extends PhpShell_Entity
 {
 	protected static $_nameCache;
+	protected static $_order = ['released' => false];
 
 	public static function byName($name)
 	{

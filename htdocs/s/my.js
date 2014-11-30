@@ -188,7 +188,7 @@ var evalOrg = {};
 				if (row.classList.contains('header'))
 					break;
 
-				row.classList.toggle('hack');
+				row.classList.toggle('open');
 			}
 		});
 

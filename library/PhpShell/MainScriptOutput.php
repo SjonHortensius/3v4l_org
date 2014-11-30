@@ -1,5 +1,5 @@
 <?php
-
+/* Optimized EntitySet which fetches partial related entities in a single query */
 class PhpShell_MainScriptOutput extends Basic_EntitySet
 {
 	protected function _query($fields = null, $groupBy = null)

@@ -247,8 +247,24 @@ body.perf tr[data-unsuccessful]
 	color: gray;
 }
 
-body.perf tr.header ~ tr:not(.header) {
+/*
+body.perf tr.header.open ~ tr:not(.header){			display: table-row;	}
+body.perf tr.header:not(.open) ~ tr:not(.header){	display: none;		}
+*/
+
+body.perf tr:not(.header).open
+{
+	display: table-row !important;
+}
+
+body.perf tr.header:not(.open) ~ tr:not(.header)
+{
 	display: none;
+}
+
+body.perf tr:not(.header) td:first-child
+{
+	padding-left: 20px;
 }
 
 input[type=submit]

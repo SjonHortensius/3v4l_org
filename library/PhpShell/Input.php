@@ -62,7 +62,11 @@ class PhpShell_Input extends PhpShell_Entity
 		file_put_contents(self::PATH. $short, $code);
 
 		$extra = isset(Basic::$action->user) ? ['user' => Basic::$action->user] : [];
-		return parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
+		$input = parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
+
+		$input->trigger();
+
+		return $input;
 	}
 
 	public function updateOperations()
@@ -94,7 +98,10 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger()
 	{
-		touch(self::PATH. $this->short);
+		Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
+		Basic::$database->query("NOTIFY daemon");
+
+//		touch(self::PATH. $this->short);
 
 		// Make sure state comes fresh from the db
 		$this->removeCached();

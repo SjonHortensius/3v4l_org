@@ -4,7 +4,7 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"io"
 	"log"
 	"os"
@@ -15,19 +15,28 @@ import (
 )
 
 type Version struct {
+	id int
 	name string
 	command string
 	isHelper bool
 }
 
 type Input struct {
+	id int
 	short string
 	uniqueOutput map [string]bool
 	penalty	int
+	run int
 }
 
 type Output struct {
+	id int64
 	raw string
+}
+
+type Work struct {
+	input string
+	version string
 }
 
 type Result struct {
@@ -55,7 +64,7 @@ func (this *Input) penalize(r string, p int) {
 	log.Printf("Penalized %d for: %s", p, r)
 
 	if this.penalty > 256 {
-		if _, err := db.Exec("UPDATE input SET state = 'abusive' WHERE short = $1 AND state = 'busy'", input.short); err != nil {
+		if _, err := db.Exec("UPDATE input SET state = 'abusive' WHERE short = $1 AND state = 'busy'", this.short); err != nil {
 			log.Printf("Input: failed to update state to `abusive`: %s", err)
 		}
 
@@ -63,9 +72,10 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-func (this *Input) setBusy(newRun bool) int {
-	incRun := 0
+func (this *Input) setBusy(newRun bool) {
+	log.SetPrefix("[" + this.short + "] ")
 
+	incRun := 0
 	if newRun {
 		incRun = 1
 	}
@@ -76,11 +86,19 @@ func (this *Input) setBusy(newRun bool) int {
 		log.Fatalf("Input: failed to update run+state; %d rows affected, %s", a, err)
 	}
 
-	var run int
-	if err := db.QueryRow("SELECT run FROM input WHERE short = $1", this.short).Scan(&run); err != nil {
+	if err := db.QueryRow("SELECT id, run FROM input WHERE short = $1", this.short).Scan(&this.id, &this.run); err != nil {
 		log.Fatalf("Input: failed to fetch run: %s", err)
 	}
-	return run
+}
+
+func (this *Input) setDone() {
+	log.SetPrefix("")
+
+	if _, err := db.Exec("UPDATE input SET state = 'done' WHERE short = $1 AND state = 'busy'", this.short); err != nil {
+		log.Fatalf("Input: failed to update state to `done`: %s", err)
+	}
+
+	os.RemoveAll("/tmp/")
 }
 
 func (this *Output) process(result *Result) bool {
@@ -98,6 +116,7 @@ func (this *Output) getHash() string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
+//FIXME: implement newResult instead
 func (this *Result) store() {
 	this.output.process(this)
 
@@ -111,13 +130,15 @@ func (this *Result) store() {
 		}
 	}
 
-	if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", this.output.getHash(), this.output.raw); err != nil {
+	if rs, err := db.Exec("INSERT INTO output VALUES ($1, $2)", hash, this.output.raw); err != nil {
 		log.Fatalf("Output: failed to store: %s", err)
+	} else {
+		this.output.id, _ = rs.LastInsertId()
 	}
 
-	r, err := db.Exec("INSERT INTO result VALUES( (SELECT id FROM input WHERE short = $1), (SELECT id FROM output WHERE hash = $2), (SELECT id FROM version WHERE name = $3), $4, $5, $6, $7, $8, $9)",
-		this.input.short, this.output.getHash(), this.version.name, this.exitCode,
-		this.created, this.userTime, this.systemTime, this.maxMemory, run,
+	r, err := db.Exec("INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		this.input.id, this.output.id, this.version.id, this.exitCode, this.created,
+		this.userTime, this.systemTime, this.maxMemory, this.input.run,
 	)
 
 	if err != nil {
@@ -239,7 +260,7 @@ func (this *Input) execute(v *Version) {
 
 	r := Result{
 		input:		this,
-		output:		&Output{output},
+		output:		&Output{0, output},
 		version:	v,
 		exitCode:	exitCode,
 		created:	time.Now(),
@@ -250,39 +271,104 @@ func (this *Input) execute(v *Version) {
 	r.store()
 }
 
+func refreshVersions() {
+	log.Printf("Refreshing versions")
+
+	versions = []*Version{}
+	versionIndex = map[string]int{}
+
+	rs, err := db.Query("SELECT id, name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
+
+	if err != nil {
+		log.Fatalf("Could not populate versions: %s", err)
+	}
+
+	for rs.Next() {
+		v := Version{}
+
+		if err := rs.Scan(&v.id, &v.name, &v.command, &v.isHelper); err != nil {
+			log.Fatalf("Error fetching version: %s", err)
+		}
+
+		versionIndex[v.name] = len(versions)
+		versions = append(versions, &v)
+	}
+}
+
+func doWork() {
+	rs, err := db.Query("DELETE FROM queue RETURNING input, version")
+
+	if err != nil {
+		log.Fatalf("doWork: error in DELETE query: %s", err)
+	}
+
+	for rs.Next() {
+		input := &Input{}
+		input.uniqueOutput = map[string]bool{}
+		var v sql.NullString
+
+		if err := rs.Scan(&input.short, &v); err != nil {
+			log.Fatalf("doWork: error fetching work: %s", err)
+		}
+
+		if err := db.QueryRow("SELECT id FROM input WHERE short = $1", input.short).Scan(&input.id); err != nil {
+			log.Fatalf("doWork: error verifying input: %s", err)
+		}
+
+		input.setBusy(!v.Valid)
+
+		if v.Valid {
+			input.execute(versions[ versionIndex[v.String] ])
+		} else {
+			for _, v := range versions {
+				input.execute(v)
+			}
+		}
+
+		input.setDone()
+	}
+}
+
+func errorReport(ev pq.ListenerEventType, err error) {
+	if err != nil {
+		log.Printf("Daemon.report: %s", err)
+	}
+}
+
 var (
 	db *sql.DB
-	input *Input
-	run int
+	l *pq.Listener
+	versions []*Version
+	versionIndex map[string]int
 )
 
-const RLIMIT_NPROC = 0x6
+const (
+	RLIMIT_NPROC = 0x6
+	DSN = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
+)
 
 func init() {
-	if len(os.Args) < 2 {
-		log.Fatal("Missing input: script")
-	}
-
-	if script, err := os.Stat(os.Args[1]); err != nil || script.IsDir() {
-		log.Fatalf("First argument is not a valid file: %s", err)
-	} else {
-		input = &Input{script.Name(), make(map[string]bool), 0}
-	}
-
 	var err error
-	db, err = sql.Open("postgres", "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable")
+	db, err = sql.Open("postgres", DSN)
 
 	if err != nil {
 		log.Fatalf("Failed connect to db: %s", err)
 	}
 
-	// Ping to establish connection so we can drop privileges
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed ping db: %s", err)
+		log.Fatalf("Failed to ping db: %s", err)
 	}
 
+	l = pq.NewListener(DSN, 1 * time.Second, time.Minute, errorReport)
+
+	if err := l.Listen("daemon"); err != nil {
+		log.Fatalf("Could not setup Listener %s", err)
+	}
+
+	refreshVersions()
+
 	var limits = map[int]int{
-		syscall.RLIMIT_CPU:		2,
+//		syscall.RLIMIT_CPU:		2,
 		syscall.RLIMIT_DATA:	256 * 1024 * 1024,
 //		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
@@ -293,57 +379,27 @@ func init() {
 
 	for key, value := range limits {
 		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value)*1.25)}); err != nil {
-			log.Fatalf("Failed to set resourcelimit: %d to %d: %s", key, value, err)
+			log.Fatalf("Failed to set resourceLimit: %d to %d: %s", key, value, err)
 		}
 	}
 }
 
 func main() {
-	log.SetPrefix("[" + input.short + "] ")
-	run = input.setBusy(len(os.Args) == 2)
+	// Process pending work first
+	doWork()
 
-	defer func() {
-		syscall.Setgid(99);
-		syscall.Setuid(99);
+	for {
+		select {
+			case <-l.Notify:
+				log.Printf("Notification received, checking for work")
+				doWork()
 
-		os.RemoveAll("/tmp/")
+			case <-time.After(5 * time.Minute):
+				refreshVersions()
 
-		// Sometimes we lose /tmp. Test if we cause this by recreating it
-		syscall.Umask(0)
-		os.Mkdir("/tmp/", 0777|os.ModeSticky)
-	}()
-
-	var rs *sql.Rows
-	var err error
-
-	if len(os.Args) == 3 {
-		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version WHERE name = $1 ORDER BY \"order\" DESC", os.Args[2])
-	} else {
-		rs, err = db.Query("SELECT name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
-	}
-
-	if err != nil {
-		log.Fatal("No versions found to execute: %s", err)
-	}
-
-	var versions []Version
-	for rs.Next() {
-		v := Version{}
-
-		if err := rs.Scan(&v.name, &v.command, &v.isHelper); err != nil {
-			log.Fatal("Error fetching version: %s", err)
+			case <-time.After(90 * time.Second):
+				log.Printf("Proactively finding work")
+				doWork()
 		}
-
-		versions = append(versions, v)
 	}
-
-	for _, v := range versions {
-		input.execute(&v)
-	}
-
-	if _, err := db.Exec("UPDATE input SET state = 'done' WHERE short = $1 AND state = 'busy'", input.short); err != nil {
-		log.Printf("Input: failed to update state to `done`: %s", err)
-	}
-
-	db.Close()
 }
