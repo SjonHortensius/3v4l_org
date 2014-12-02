@@ -99,9 +99,6 @@ class PhpShell_Input extends PhpShell_Entity
 	public function trigger()
 	{
 		Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
-		Basic::$database->query("NOTIFY daemon");
-
-//		touch(self::PATH. $this->short);
 
 		// Make sure state comes fresh from the db
 		$this->removeCached();
