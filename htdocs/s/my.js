@@ -48,14 +48,14 @@ var evalOrg = {};
 
 	this.richEditor = function()
 	{
-		var textarea = document.getElementsByTagName('textarea')[0];
+		var code = document.getElementsByTagName('code')[0];
 
-		if (!textarea)
+		if (!code)
 			return;
 
-		var code = document.createElement('code');
-		code.textContent = textarea.textContent;
-		textarea.parentNode.insertBefore(code, textarea);
+		var textarea = document.createElement('textarea');
+		textarea.name = 'code';
+		code.parentNode.insertBefore(textarea, code);
 		textarea.style.display = 'none';
 
 		var editor = ace.edit(code);
@@ -79,18 +79,7 @@ var evalOrg = {};
 			editor.focus();
 			editor.gotoLine(editor.session.getLength());
 		}
-/*
-		LRTEditor.initialize(
-			textarea,
-			['FormPlugin', 'HighlightPlugin', 'MinimalPlugin', 'UndoPlugin'],
-			{highlightCallback: function(el){ sh_highlightElement(el, sh_languages['php']); } }
-		);
 
-		if (!LRTEditor.element)
-			return;
-
-		LRTEditor.element.focus();
-*/
 		document.forms[0].addEventListener('submit', function(e){
 			textarea.value = editor.getValue();
 		});

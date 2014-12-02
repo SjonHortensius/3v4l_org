@@ -105,6 +105,15 @@ code
 	width: 100%;
 	tab-size: 4;
 	display: block;
+	/* for users without js */
+	white-space: pre;
+	background: white;
+}
+
+/* code after js has run */
+textarea + code {
+	white-space: normal;
+	background: none;
 }
 
 textarea.invalid,

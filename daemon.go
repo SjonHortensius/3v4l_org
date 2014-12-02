@@ -53,7 +53,7 @@ func (this *Input) penalize(r string, p int) {
 		return
 	}
 
-	//	log.Printf("Penalized %d for: %s", p, r)
+//	log.Printf("Penalized %d for: %s", p, r)
 }
 
 func (this *Input) setBusy(newRun bool) {
@@ -270,7 +270,7 @@ func (this *Input) execute(v *Version) *Result {
 }
 
 func refreshVersions() {
-	versions = []*Version{}
+	newVersions := []*Version{}
 
 	rs, err := db.Query("SELECT id, name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
 
@@ -285,8 +285,10 @@ func refreshVersions() {
 			log.Fatalf("Error fetching version: %s", err)
 		}
 
-		versions = append(versions, &v)
+		newVersions = append(newVersions, &v)
 	}
+
+	versions = newVersions
 }
 
 func doWork() {
@@ -361,7 +363,7 @@ func init() {
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:		2,
-		syscall.RLIMIT_DATA:	128 * 1024 * 1024,
+		syscall.RLIMIT_DATA:	256 * 1024 * 1024,
 //		syscall.RLIMIT_FSIZE:	64 * 1024,
 		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:	0,
@@ -377,7 +379,7 @@ func init() {
 }
 
 func main() {
-	log.Printf("daemon started")
+	log.Printf("Daemon started")
 
 	// Process pending work first
 	doWork()
@@ -390,8 +392,8 @@ func main() {
 		case <-time.After(5 * time.Minute):
 			refreshVersions()
 
-		case <-time.After(90 * time.Second):
-			doWork()
+//		case <-time.After(90 * time.Second):
+//			doWork()
 		}
 	}
 }
