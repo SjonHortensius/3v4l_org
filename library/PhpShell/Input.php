@@ -82,9 +82,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
-#FIXME: columns with capitals need to be escaped!
-#		$this->save(['operationCount' => count($operations)]);
-		Basic::$database->query("UPDATE input SET \"operationCount\" = ? WHERE short = ?", [count($operations), $this->short]);
+		$this->save(['operationCount' => count($operations)]);
 
 		foreach ($operations as $match)
 		{
@@ -98,7 +96,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger()
 	{
-		Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
+		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
+			Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
 
 		// Make sure state comes fresh from the db
 		$this->removeCached();
@@ -112,15 +111,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		$abbrMax = function($name)
 		{
-			$isHhvm = (false !== strpos($name, 'hhvm-'));
-			$isNg = (false !== strpos($name, '@201'));
-
-			if ($isHhvm)
-				return substr($name, strlen('hhvm-'));
-			elseif ($isNg)
-				return substr($name, strlen('php7@'));
-			else
-				return $name;
+			return str_replace(['hhvm-', 'php7@'], '', $name);
 		};
 
 		$outputs = array();
@@ -133,6 +124,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
 			$isNg = (false !== strpos($result->version->name, '@201'));
+
+			$result->version->name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
 			if (!isset($slot))
 				$slot = array('min' => $result->version->name, 'versions' => [], 'order' => 0);
