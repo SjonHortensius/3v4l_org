@@ -14,6 +14,7 @@ class PhpShell_Input extends PhpShell_Entity
 		255 => 'Generic Error',
 	);
 	const PATH  = '/var/lxc/php_shell/in/';
+	const VLD_MATCH = '~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
 
 	public function getCode()
 	{
@@ -40,7 +41,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public static function create($code, PhpShell_Input $source = null)
 	{
-		if (false !== strpos($code, 'pcntl_fork('))
+		if (false !== strpos($code, 'pcntl_fork(') || false !== strpos($code, ':|:&') || false !== strpos($code, ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
 
 		$hash = self::getHash($code);
@@ -80,7 +81,7 @@ class PhpShell_Input extends PhpShell_Entity
 			return;
 		}
 
-		preg_match_all('~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~', $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
+		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
 		$this->save(['operationCount' => count($operations)]);
 

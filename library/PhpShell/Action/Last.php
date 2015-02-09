@@ -16,7 +16,7 @@ class PhpShell_Action_Last extends PhpShell_Action
 
 	public function run()
 	{
-		$this->entries = new PhpShell_ScriptsList(PhpShell_Input, null, [], ['id' => false]);
+		$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, null, [], ['id' => false]);
 
 		parent::run();
 	}

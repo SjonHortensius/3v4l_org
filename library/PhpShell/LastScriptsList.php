@@ -1,5 +1,5 @@
 <?php
-class PhpShell_ScriptsList extends Basic_EntitySet
+class PhpShell_LastScriptsList extends Basic_EntitySet
 {
 	protected function _query($fields = null, $groupBy = "input.id")
 	{
@@ -14,6 +14,6 @@ class PhpShell_ScriptsList extends Basic_EntitySet
 
 	protected function _processQuery($query)
 	{
-		return $query ." JOIN result ON (result.input = input.id) JOIN version ON (version.id = result.version)";
+		return $query ."\nJOIN result ON (result.input = input.id)\n";
 	}
 }

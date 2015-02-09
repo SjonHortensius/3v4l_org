@@ -26,6 +26,40 @@ form, dd
 	border-radius: 0.5em;
 }
 
+body.search label
+{
+	font-weight: bold;
+	margin: 0 10px;
+}
+
+body.search input[type=text], select
+{
+	height: 34px;
+	padding: 0 6px;
+	color: #555;
+	background-color: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	vertical-align: middle;
+}
+
+body.search option
+{
+	text-align: right;
+}
+
+body.search input[type=submit]
+{
+	display: block;
+}
+
+textarea:focus, input:focus, select:focus
+{
+	border-color: rgba(126, 239, 104, 0.8);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6);
+	outline: 0 none;
+}
+
 ul#tabs
 {
 	margin-bottom: -1px;
@@ -191,9 +225,19 @@ dd:hover, dt:target + dd, dd:only-of-type
 
 table
 {
-	width: 800px;
+	width: 75%;
 	border-collapse: collapse;
 	border-spacing: 0;
+}
+
+table tbody tr:not(.header):nth-child(odd)
+{
+	background-color:#eee;
+}
+
+table td:not(:first-child)
+{
+	text-align: right;
 }
 
 table td
@@ -213,11 +257,6 @@ body.perf table tr.open i
 {
 	/* icon-min */
 	background-position: -433px -96px;
-}
-
-body.perf table
-{
-	width: 650px;
 }
 
 body.perf table th:first-child,

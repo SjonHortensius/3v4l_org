@@ -1,5 +1,5 @@
 <form>
-	<h1>3v4l.org<small> - online PHP shell, test in SOMETHING+ different PHP versions!</small></h1>
+	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
 </form>
 
 <ul id="tabs">
@@ -8,6 +8,14 @@
 </ul>
 
 <div>
+{if (Basic::$controller->action == 'search')}
+	<h2>
+		Search results for opcode '{userinput['operation']}'
+		{if (!empty(Basic::$userinput['operand']))}
+			 with operand {print htmlspecialchars(Basic::$userinput['operand']);}
+		{/}
+	</h2>
+{/}
 	<table>
 		<thead>
 		<tr>
@@ -18,20 +26,31 @@
 			<th># runs</th>
 			<th># operations</th>
 			<th>% variance</th>
+{if (Basic::$controller->action == 'search')}
+			<th># occurences</th>
+{/}
 		</tr>
 		</thead>
 
 		<tbody>
-		{foreach ($this->entries->getPage(1, 25) as $this->result)}
+		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
 			<tr>
-				<td><a href="/{result->short}">{result->short} {result->title}</a></td>
+				<td>
+						{if ($this->prevResult->source->id === $this->result->id)}<i class="icon icon-share-alt" title="{prevResult->short} was based on this"></i> {/}
+						<a href="/{result->short}">{result->short} {result->title}</a>
+				</td>
 				<td>{print round($this->result->userTime, 2);} s</td>
 				<td>{print round($this->result->systemTime, 2);} s</td>
 				<td>{print round($this->result->maxMemory/1024);} MiB</td>
 				<td>{result->run}</td>
 				<td>{result->operationCount}</td>
 				<td>{result->variance}</td>
+{if (Basic::$controller->action == 'search')}
+				<td>{result->count}</td>
+{/}
 			</tr>
+
+			{$this->prevResult = $this->result;}
 		{/}
 		</tbody>
 	</table>

@@ -67,7 +67,8 @@ var evalOrg = {};
 		editor.setOption("maxLines", 25);
 
 		editor.on('blur', function(){
-			editor.setOption("maxLines", 25);
+			// The timeout prevents a click on submit from being ignored due to the button jumping
+			setTimeout(function(){ editor.setOption("maxLines", 25); }, 150);
 		});
 
 		editor.on('focus', function(){
@@ -247,6 +248,18 @@ var evalOrg = {};
 		// Process last entry
 		perfAddHeader(header, previous, sum);
 	};
+
+	this.handleSearch = function()
+	{
+		document.forms[0].addEventListener('submit', function(e){
+			e.preventDefault();
+
+			var url = '/search/'+ document.getElementById('operation').value;
+			if (document.getElementById('operand').value.length > 0)
+				url += '/'+ document.getElementById('operand').value;
+			window.location.href = url;
+		});
+	}
 
 	var btcAmountReceived = function()
 	{

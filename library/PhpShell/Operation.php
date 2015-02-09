@@ -26,6 +26,6 @@ class PhpShell_Operation extends PhpShell_Entity
 
 	public static function getTable()
 	{
-		return '"operations"';
+		return 'operations';
 	}
 }
