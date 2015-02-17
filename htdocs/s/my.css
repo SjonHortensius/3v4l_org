@@ -132,7 +132,7 @@ h1 small
 	color: #999;
 }
 
-code
+code, textarea
 {
 	border: 0 solid black;
 	border-width: 1px 0;
@@ -142,6 +142,13 @@ code
 	/* for users without js */
 	white-space: pre;
 	background: white;
+}
+
+/* for touch-devices */
+textarea
+{
+	height: 150px;
+	overflow: auto;
 }
 
 /* code after js has run */

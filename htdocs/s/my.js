@@ -55,7 +55,16 @@ var evalOrg = {};
 
 		var textarea = document.createElement('textarea');
 		textarea.name = 'code';
+		textarea.value = code.innerText;
 		code.parentNode.insertBefore(textarea, code);
+
+		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
+		if ("ontouchstart" in window)
+		{
+			code.style.display = 'none';
+			return;
+		}
+
 		textarea.style.display = 'none';
 
 		var editor = ace.edit(code);
