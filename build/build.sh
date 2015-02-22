@@ -25,8 +25,8 @@ make -j8 &>build-make.log
 ./sapi/cli/php -i >/dev/null
 
 strip ./sapi/cli/php && upx -qq ./sapi/cli/php
-mv ./sapi/cli/php `dirname $0`/php-$version
-cd `dirname $0`
+mv -v ./sapi/cli/php ../../out/php-$version
+cd ../..
 rm -R root/php-$version/
 
 echo -e "Done...      \r"

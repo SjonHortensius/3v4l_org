@@ -324,9 +324,8 @@ body.perf tr:not(.header) td:first-child
 
 input[type=submit]
 {
+	background: linear-gradient(180deg, #08C, #05C);
 	background-color: #0074CC;
-	background-image: -moz-linear-gradient(top, #08C, #05C);
-	background-image: -webkit-linear-gradient(top, #08C, #05C);
 	background-repeat: repeat-x;
 	border: 1px solid #CCC;
 	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
@@ -345,11 +344,14 @@ input[type=submit]
 input.busy
 {
 	cursor: progress;
-	background-image: url(/s/load.gif), -moz-linear-gradient(top, #08C, #05C);
-	background-image: url(/s/load.gif), -webkit-linear-gradient(top, #08C, #05C);
-	background-repeat: no-repeat, repeat-x;
-	background-position: 62px center, left top;
-	padding: 9px 25px 9px 14px;
+}
+
+#tabs.busy li.active a
+{
+	background-image: url(/s/loading.gif);
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	padding-right: 35px;
 }
 
 .alert
@@ -380,4 +382,24 @@ div.col
 	width: 50%;
 	box-sizing: border-box;
 	float: left;
+}
+
+#uvTab
+{
+	border: 1px solid rgb(255, 255, 255);
+	border-right-width: 0;
+	border-radius: 4px 0px 0px 4px;
+	box-shadow: rgba(255, 255, 255, 0.247059) 1px 1px 1px inset, rgba(0, 0, 0, 0.498039) 0px 1px 2px;
+	position: fixed;
+	right: 0px;
+	top: 50%;
+	z-index: 9999;
+	margin-top: -86px;
+	background: url(/ext/uvBg.png) 50% 0px no-repeat rgb(204, 109, 0);
+}
+
+#uvTab a
+{
+	display: block;
+	padding: 39px 5px 10px 5px;
 }

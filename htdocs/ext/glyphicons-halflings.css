@@ -12,7 +12,7 @@ http://getbootstrap.com/2.3.2/assets/css/bootstrap.css
   *margin-right: .3em;
   line-height: 14px;
   vertical-align: text-top;
-  background-image: url("../ext/glyphicons-halflings.png");
+  background-image: url(/ext/glyphicons-halflings.png);
   background-position: 14px 14px;
   background-repeat: no-repeat;
 }

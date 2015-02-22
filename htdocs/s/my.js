@@ -30,7 +30,7 @@ var evalOrg = {};
 	this.initialize = function()
 	{
 		this.richEditor();
-		this.showFeedbackButton();
+//		this.showFeedbackButton();
 
 		document.querySelector('h1').addEventListener('click', function(e){ window.location = '/'; });
 
@@ -69,11 +69,11 @@ var evalOrg = {};
 
 		var editor = ace.edit(code);
 		editor.setTheme("ace/theme/chrome");
-		editor.session.setMode("ace/mode/php");
-		editor.session.setUseWrapMode(true);
-		editor.session.setOption("useWorker", false);
 		editor.setShowPrintMargin(false);
 		editor.setOption("maxLines", 25);
+//		editor.session.setOption("useWorker", false);
+		editor.session.setMode("ace/mode/php");
+		editor.session.setUseWrapMode(true);
 
 		editor.on('blur', function(){
 			// The timeout prevents a click on submit from being ignored due to the button jumping
@@ -100,8 +100,11 @@ var evalOrg = {};
 		});
 	};
 
+/*
 	this.showFeedbackButton = function()
 	{
+		<script src="http://widget.uservoice.com/BTnh9yuv0Uphlcf09sRNoA.js" async></script>
+
 		var UserVoice = window.UserVoice || [];
 		UserVoice.push(['showTab', 'classic_widget', {
 			mode: 'full',
@@ -117,6 +120,7 @@ var evalOrg = {};
 			tab_inverted: false
 		}]);
 	};
+*/
 
 	this.handleOutput = function()
 	{
@@ -169,6 +173,7 @@ var evalOrg = {};
 		{
 			clearInterval(refreshTimer);
 			document.querySelector('input[type=submit].busy').classList.remove('busy');
+			document.querySelector('#tabs.busy').classList.remove('busy');
 		}
 	};
 
