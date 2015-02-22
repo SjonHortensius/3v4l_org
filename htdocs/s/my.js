@@ -96,7 +96,10 @@ var evalOrg = {};
 
 		code.addEventListener('keydown', function(e){
 			if (13 == e.keyCode && e.ctrlKey)
+			{
+				textarea.value = editor.getValue();
 				document.forms[0].submit();
+			}
 		});
 	};
 

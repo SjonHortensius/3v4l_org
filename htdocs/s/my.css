@@ -395,7 +395,7 @@ div.col
 	top: 50%;
 	z-index: 9999;
 	margin-top: -86px;
-	background: url(/ext/uvBg.png) 50% 0px no-repeat rgb(204, 109, 0);
+	background: #cc6d00 url(/ext/uvBg.png) 50% 0px no-repeat;
 }
 
 #uvTab a
