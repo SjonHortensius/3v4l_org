@@ -125,6 +125,11 @@ var evalOrg = {};
 	};
 */
 
+	this.handleRfc = function()
+	{
+		return this.handleOutput();
+	},
+
 	this.handleOutput = function()
 	{
 		document.getElementsByTagName('dt').forEach(function(el){

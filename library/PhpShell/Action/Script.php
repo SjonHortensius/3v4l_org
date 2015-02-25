@@ -27,6 +27,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 				'analyze' => 'HHVM analyze',
 				'bytecode' => 'HHVM Bytecode',
 				'hhvm' => null, #legacy
+				'rfc' => 'RFC branches',
 			]
 		],
 	);
@@ -107,6 +108,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'segfault' => count($this->input->getSegfault()) > 0,
 			'analyze' => count($this->input->getAnalyze()) > 0,
 			'bytecode' => count($this->input->getBytecode()) > 0,
+			'rfc' => count($this->input->getLastVersionResult('rfc-scalar_type_hints_v5')) > 0,
 		];
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])

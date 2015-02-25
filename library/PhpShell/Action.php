@@ -23,6 +23,8 @@ class PhpShell_Action extends Basic_Action
 
 		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'application/json';
+		elseif ('text/plain' == $_SERVER['HTTP_ACCEPT'])
+			$this->contentType = 'text/plain';
 
 		// Since we resolve everything to 'script'; prevent random strings in bodyClass
 		if (! Basic::$action instanceof PhpShell_Action_Script)

@@ -1,0 +1,10 @@
+<h3>Shows output from various features-branches currently under review from the php developers</h3>
+
+{$r = $this->input->getLastVersionResult('rfc-scalar_type_hints_v5');}
+{if (1 == count($r))}
+	<dt id="rfc-scalar_type_hints_v5">Output for rfc-scalar_type_hints_v5 | <a href="http://wiki.php.net/rfc/scalar_type_hints_v5">rfc</a></dt>
+
+	<dd>
+		{print $r->getSingle()->output->getRaw($this->input, 'rfc-scalar_type_hints_v5');}
+	</dd>
+{/}

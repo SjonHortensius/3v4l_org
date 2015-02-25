@@ -196,7 +196,7 @@ dt
 	cursor: pointer;
 }
 
-dt a
+body.output dt a
 {
 	float: right;
 }

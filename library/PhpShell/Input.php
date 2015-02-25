@@ -237,6 +237,15 @@ class PhpShell_Input extends PhpShell_Entity
 		]);
 	}
 
+	public function getLastVersionResult($version)
+	{
+		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
+			$this->id,
+			PhpShell_Version::byName($version),
+			$this->run,
+		]);
+	}
+
 	public function getBytecode()
 	{
 		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
