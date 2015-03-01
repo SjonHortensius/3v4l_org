@@ -1,7 +1,0 @@
-{unset($this->validate);}
-
-<input class="{state}" type="{input->inputType}" name="{input->source['key']}" id="{input->source['key']}"
-	{if ($this->input->options['maxLength'])} size="{input->options['maxLength']}" maxlength="{input->options['maxLength']}"{/}
-	{if ($this->rawValue)} value="{rawValue}"{/}
-	placeholder="optional"
-	/>

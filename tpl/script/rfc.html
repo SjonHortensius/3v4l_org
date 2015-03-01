@@ -8,3 +8,12 @@
 		{print $r->getSingle()->output->getRaw($this->input, 'rfc-scalar_type_hints_v5');}
 	</dd>
 {/}
+
+{$r = $this->input->getLastVersionResult('rfc-anonymous_classes');}
+{if (1 == count($r))}
+	<dt id="rfc-anonymous_classes">Output for rfc-anonymous_classes | <a href="http://wiki.php.net/rfc/anonymous_classes">rfc</a></dt>
+
+	<dd>
+		{print $r->getSingle()->output->getRaw($this->input, 'rfc-anonymous_classes');}
+	</dd>
+{/}

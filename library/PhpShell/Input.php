@@ -39,7 +39,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
-	public static function create($code, PhpShell_Input $source = null)
+	public static function create($code, PhpShell_Input $source = null, $title = null)
 	{
 		if (false !== strpos($code, 'pcntl_fork(') || false !== strpos($code, ':|:&') || false !== strpos($code, ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
@@ -62,7 +62,8 @@ class PhpShell_Input extends PhpShell_Entity
 		umask(0022);
 		file_put_contents(self::PATH. $short, $code);
 
-		$extra = isset(Basic::$action->user) ? ['user' => Basic::$action->user] : [];
+		$extra  = isset(Basic::$action->user) ? ['user' => Basic::$action->user] : [];
+		$extra += isset($title) ? ['title' => $title] : [];
 		$input = parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
 
 		$input->trigger();
@@ -271,8 +272,11 @@ class PhpShell_Input extends PhpShell_Entity
 
 	protected function _checkPermissions($action)
 	{
-		if ($action == 'save' && $this->title !== $this->_dbData->title && $this->user->id !== Basic::$action->user->id)
-			throw new PhpShell_Input_TitleChangeNotAllowedException('Permission denied, only the owner can update the title', [], 403);
+		if ($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title)
+		{
+			if (!isset($this->user) || $this->user->id !== Basic::$action->user->id)
+				throw new PhpShell_Input_TitleChangeNotAllowedException('Permission denied, only the owner can update the title', [], 403);
+		}
 
 		return true;
 	}

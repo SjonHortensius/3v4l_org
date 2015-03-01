@@ -1,1 +1,7 @@
-<code class="{if ($this->input->required)}required {/}{state}">{input->rawValue}</code>
+<code class="{if ($this->input->required)}required {/}{state}">
+	{if (isset($this->input->rawValue))}
+		{print htmlspecialchars($this->input->rawValue);}
+	{:}
+		{print htmlspecialchars($this->input->default);}
+	{/}
+</code>

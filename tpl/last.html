@@ -1,21 +1,8 @@
-<form>
-	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
-</form>
-
 <ul id="tabs">
-	<li{if (Basic::$userinput['action']=='last')} class="active"{/}><a href="/last">Latest submissions</a></li>
-	<li{if (Basic::$userinput['action']=='search')} class="active"{/}><a href="/search">Search results</a></li>
+	<li class="active"><a href="/last">Recent submissions</a></li>
 </ul>
 
 <div>
-{if (Basic::$controller->action == 'search')}
-	<h2>
-		Search results for opcode '{userinput['operation']}'
-		{if (!empty(Basic::$userinput['operand']))}
-			 with operand {print htmlspecialchars(Basic::$userinput['operand']);}
-		{/}
-	</h2>
-{/}
 	<table>
 		<thead>
 		<tr>
@@ -26,9 +13,6 @@
 			<th># runs</th>
 			<th># operations</th>
 			<th>% variance</th>
-{if (Basic::$controller->action == 'search')}
-			<th># occurences</th>
-{/}
 		</tr>
 		</thead>
 
@@ -36,8 +20,14 @@
 		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
 			<tr>
 				<td>
-						{if ($this->prevResult->source->id === $this->result->id)}<i class="icon icon-share-alt" title="{prevResult->short} was based on this"></i> {/}
-						<a href="/{result->short}">{result->short} {result->title}</a>
+					{if ($this->prevResult->source->id === $this->result->id)}
+						<i class="icon icon-edit" title="this script was a template for {prevResult->short}"></i>
+					{:}
+						{!-- for offset only --}
+						<i class="icon icon-"></i>
+					{/}
+
+					 <a href="/{result->short}">{result->short} {result->title}</a>
 				</td>
 				<td>{print round($this->result->userTime, 2);} s</td>
 				<td>{print round($this->result->systemTime, 2);} s</td>
@@ -45,9 +35,6 @@
 				<td>{result->run}</td>
 				<td>{result->operationCount}</td>
 				<td>{result->variance}</td>
-{if (Basic::$controller->action == 'search')}
-				<td>{result->count}</td>
-{/}
 			</tr>
 
 			{$this->prevResult = $this->result;}

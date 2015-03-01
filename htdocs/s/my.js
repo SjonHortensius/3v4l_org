@@ -30,9 +30,6 @@ var evalOrg = {};
 	this.initialize = function()
 	{
 		this.richEditor();
-//		this.showFeedbackButton();
-
-		document.querySelector('h1').addEventListener('click', function(e){ window.location = '/'; });
 
 		if (document.querySelector('input[type=submit].busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
@@ -102,28 +99,6 @@ var evalOrg = {};
 			}
 		});
 	};
-
-/*
-	this.showFeedbackButton = function()
-	{
-		<script src="http://widget.uservoice.com/BTnh9yuv0Uphlcf09sRNoA.js" async></script>
-
-		var UserVoice = window.UserVoice || [];
-		UserVoice.push(['showTab', 'classic_widget', {
-			mode: 'full',
-			primary_color: '#cc6d00',
-			link_color: '#007dbf',
-			default_mode: 'support',
-			forum_id: 219058,
-			support_tab_name: 'Report Bug',
-			feedback_tab_name: 'Request Feature',
-			tab_label: 'Bugs & Features',
-			tab_color: '#cc6d00',
-			tab_position: 'middle-right',
-			tab_inverted: false
-		}]);
-	};
-*/
 
 	this.handleRfc = function()
 	{
@@ -285,7 +260,7 @@ var evalOrg = {};
 
 	var btcAmountReceived = function()
 	{
-		//https://blockchain.info/q/getreceivedbyaddress/3DJhjy98RiQRc7751B4PPugMkG3BGVogrX / 100000000
+		// https://blockchain.info/q/getreceivedbyaddress/3DJhjy98RiQRc7751B4PPugMkG3BGVogrX / 100000000
 	};
 }).apply(evalOrg);
 

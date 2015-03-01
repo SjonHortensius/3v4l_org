@@ -1,7 +1,7 @@
 body
 {
 	max-width: 1250px;
-	margin:  2em auto;
+	margin:  1em auto;
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	color: #333;
 	font-size: 13px;
@@ -15,6 +15,11 @@ form
 	box-shadow: inset 1px 1px 1px rgba(0,0,0, 0.1);
 }
 
+form h1
+{
+	margin-top: 0;
+}
+
 form > a
 {
 	float: right;
@@ -26,13 +31,31 @@ form, dd
 	border-radius: 0.5em;
 }
 
-body.search label
+form label
 {
 	font-weight: bold;
 	margin: 0 10px;
+	display: inline-block;
+	width: 10em;
 }
 
-body.search input[type=text], select
+form > div
+{
+	margin: 0.5em 0;
+}
+
+form input[type=submit]
+{
+	margin-left: 10em;
+}
+
+form code + input[type=submit]
+{
+	margin-left: 0;
+}
+
+form input[type=text],
+form select
 {
 	height: 34px;
 	padding: 0 6px;
@@ -41,16 +64,6 @@ body.search input[type=text], select
 	border: 1px solid #ccc;
 	border-radius: 4px;
 	vertical-align: middle;
-}
-
-body.search option
-{
-	text-align: right;
-}
-
-body.search input[type=submit]
-{
-	display: block;
 }
 
 textarea:focus, input:focus, select:focus
@@ -113,23 +126,12 @@ ul#tabs li.active a
 	cursor: default;
 }
 
-ul + div
+ul#tabs + div
 {
 	overflow: hidden;
 	margin: 0;
 	padding: 1.5em 2em;
 	border: 1px solid #ddd;
-}
-
-h1:not(:only-child)
-{
-	cursor: pointer;
-	margin-top: 0;
-}
-
-h1 small
-{
-	color: #999;
 }
 
 code, textarea
@@ -376,7 +378,7 @@ input.busy
 	box-shadow: 0 0 30px red;
 }
 
-div.col
+div.column
 {
 	padding: 0 2em;
 	width: 50%;
@@ -402,4 +404,58 @@ div.col
 {
 	display: block;
 	padding: 39px 5px 10px 5px;
+}
+
+nav
+{
+	background-color: #222;
+	color: white;
+	border-color: #080808;
+	border-radius: 4px;
+	margin-bottom: 20px;
+	border: 1px solid transparent;
+	padding: 1em 1.5em;
+}
+
+nav header {
+	margin: 0;
+	font-size: 13px;
+	cursor: pointer;
+	display: inline;
+	font-weight: bold;
+}
+
+small
+{
+	color: #999;
+}
+
+nav ul {
+	list-style: none;
+	float: right;
+	margin: 0;
+}
+
+nav li {
+	float: left;
+	padding: 0 10px;
+	border-left: 1px solid gray;
+}
+
+nav li:first-child {
+	border-left: none;
+}
+
+nav li:last-child {
+	padding-right: 0;
+}
+
+nav a {
+	color: white;
+}
+
+body.about pre
+{
+	background-color: #ddd;
+	overflow: auto;
 }

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html dir="ltr" lang="en-US">
 <head>
-	<title>3v4l: {title}Online PHP &amp; HHVM shell (100+ versions)</title>
+	<title>{title}Online PHP &amp; HHVM shell (150+ versions)</title>
 	<meta name="keywords" content="php,test,run,execute,online,interactive,shell,console,codepad,fiddle,xdebug,vld,performance,hhvm"/>
 	<meta name="description" content="Execute your php code; get performance statistics and compare output from all versions"/>
-	<meta name="author" content="Sjon Hortensius - sjon@hortensius.net"/>
+	<meta name="author" content="Sjon Hortensius - root@3v4l.org"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
@@ -12,50 +12,22 @@
 </head>
 
 <body{if (isset(Basic::$action->bodyClass))} class="{action->bodyClass}"{/}>
-{if (isset($this->user))}
-	<style>
-	nav
-	{
-		background-color: #222;
-		color: white;
-		border-color: #080808;
-		border-radius: 4px;
-		min-height: 40px;
-		margin-bottom: 20px;
-		border: 1px solid transparent;
-	}
-
-	nav ul {
-		list-style: none;
-		padding: 0 5px;
-	}
-
-	nav li {
-		float: left;
-		padding: 0 10px;
-		border-left: 1px solid gray;
-	}
-
-	nav li:first-child {
-		border-left: none;
-	}
-
-	nav a {
-		color: white;
-	}
-	</style>
 	<nav>
+		<a href="/"><header>3v4l.org - <small>run code in 150+ php &amp; hhvm versions</small></header></a>
+
 		<ul>
-			<li><a href="/">3v4l.org</a> - online php shell</li>
+			<li><a href="/search">search</a></li>
+			<li><a href="/last">recent</a></li>
+			<li><a href="/about">about</a></li>
+{if (isset($this->user))}
 			<li>logged in as <i><a href="/me">{user->name}</a></i></li>
-			<li><a href="/last">/last</a></li>
 			<li><a href="/logout">/logout</a></li>
+{/}
 		</ul>
 	</nav>
-{/}
 
-<div id="uvTab">
-	<a href="http://3v4l.uservoice.com/forums/219058-general">
-		<img src="/ext/uvTab.png" alt="Bugs &amp; Features">
-	</a>
-</div>
+	<div id="uvTab">
+		<a href="http://3v4l.uservoice.com/forums/219058-general">
+			<img src="/ext/uvTab.png" alt="Bugs &amp; Features">
+		</a>
+	</div>

@@ -1,5 +1,5 @@
-<form method="POST" action="/new">
-	<h1>3v4l.org<small> - online PHP & HHVM shell, execute code in 100+ different versions!</small></h1>
+<form method="post" action="/new">
+	<h1>results for {input->short} <small>{input->title}</small></h1>
 	<code>{print htmlspecialchars(Basic::$action->code);}</code>
 
 	{if (isset($this->input->source))}

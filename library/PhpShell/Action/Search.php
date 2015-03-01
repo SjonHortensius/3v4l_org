@@ -3,6 +3,7 @@
 class PhpShell_Action_Search extends PhpShell_Action
 {
 	public $formSubmit = 'array_search();';
+	public $formTitle = '3v4l.org<small> - search our database for scripts, based on their <a href="http://php.net/manual/en/internals2.opcodes.list.php">opcodes</a></small>';
 	protected $_userinputConfig = array(
 		'operation' => [
 			'valueType' => 'scalar',
@@ -15,7 +16,11 @@ class PhpShell_Action_Search extends PhpShell_Action
 			'valueType' => 'scalar',
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
 			'required' => false,
-			'options' => ['minLength' => 1, 'maxLength' => 32],
+			'options' => [
+				'minLength' => 1,
+				'maxLength' => 32,
+				'placeholder' => 'optional',
+			],
 		],
 		'page' => [
 			'valueType' => 'integer',
@@ -37,7 +42,7 @@ class PhpShell_Action_Search extends PhpShell_Action
 		$opCount = Basic::$cache->get(__CLASS__.'::counts', function(){
 			$opCount = [];
 			foreach (PhpShell_Operation::find()->getCount('operation') as $op => $count)
-				$opCount[$op] = $op .' ('. $count .' occurrences)';
+				$opCount[$op] = $op .' ('. number_format($count) .' occurrences)';
 			return $opCount;
 		});
 

@@ -3,19 +3,21 @@
 class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
+	public $formTitle = '3v4l.org<small> - online PHP & HHVM shell, run code in 150+ different versions!</small>';
 	protected $_userinputConfig = array(
 		'title' => [
 			'valueType' => 'scalar',
-			'inputType' => 'hidden',
 			'options' => [
 				'maxLength' => 64,
-				'minLength' => 8
+//				'minLength' => 0,
+				'placeholder' => 'Untitled',
 			],
 		],
 		'code' => [
 			'valueType' => 'scalar',
 			'inputType' => 'textarea',
 			'regexp' => '~<\?~',
+			'default' => "<?php\n\n",
 			'required' => true,
 		],
 	);
@@ -51,13 +53,10 @@ class PhpShell_Action_New extends PhpShell_Action
 				#care
 			}
 
-			$input = PhpShell_Input::create($code, $source);
+			$input = PhpShell_Input::create($code, $source, Basic::$userinput['title']);
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
-
-		if (isset(Basic::$userinput['title'], $this->user))
-			$input->save(['title' => Basic::$userinput['title']]);
 
 		usleep(250 * 1000);
 		die(header('Location: /'. $input->short, 302));

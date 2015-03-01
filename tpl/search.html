@@ -1,1 +1,43 @@
-{$this->show('last');}
+{$this->show('Userinput/Form');}
+
+<ul id="tabs">
+	<li class="active"><a href="/search">Search results</a></li>
+</ul>
+
+<div>
+	<table>
+		<thead>
+		<tr>
+			<th>name</th>
+			<th>~ userTime</th>
+			<th>~ systemTime</th>
+			<th>~ maxMemory</th>
+			<th># runs</th>
+			<th># operations</th>
+			<th>% variance</th>
+			<th># occurences</th>
+		</tr>
+		</thead>
+
+		<tbody>
+		{foreach ($this->entries->getPage(Basic::$userinput['page'], 20) as $this->result)}
+			<tr>
+				<td>
+					<a href="/{result->short}">{result->short} {result->title}</a>
+				</td>
+				<td>{print round($this->result->userTime, 2);} s</td>
+				<td>{print round($this->result->systemTime, 2);} s</td>
+				<td>{print round($this->result->maxMemory/1024);} MiB</td>
+				<td>{result->run}</td>
+				<td>{result->operationCount}</td>
+				<td>{result->variance}</td>
+				<td>{result->count}</td>
+			</tr>
+
+			{$this->prevResult = $this->result;}
+		{/}
+		</tbody>
+	</table>
+
+	<p><i>only the first 20 results are shown</i></p>
+</div>

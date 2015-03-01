@@ -1,0 +1,117 @@
+<ul id="tabs">
+	<li class="active"><a href="/about">About</a></li>
+</ul>
+
+<div>
+	<div class="column">
+		<h2>Introduction</h2>
+		<p>I have been programming in PHP since 2002, and as <a href="https://duckduckgo.com/?q=site%3Abugs.php.net+sjon">me</a> and <a href="https://duckduckgo.com/?q=site%3Abugs.php.net+%22react+dot%22">my collegues</a>
+		 used more advanced features we noticed PHP's behaviour would sometimes change without any reference in the changelog. An example of this was <a href="https://bugs.php.net/bug.php?id=63512">this parse_ini bug</a>,
+		 which was an example where we needed to demonstrate the variation of results over time and <i>3v4l.org</i> showed a clear advantage.</p>
+
+		<p>Since 2012 I have provided vanilla PHP binaries that make it simpler to demonstrate issues that would otherwise be harder to reproduce, and cumbersome to compare to
+		 previous version. Traffic has steadily been growing as more developers found this site to be a helpful daily tool, as the following sessions-graph shows:
+		<br/>
+		<br/>
+		<img src="/s/ga-sessions.png" width="170" height="18" /> - we served 250,000 sessions for 150,000 users.</p>
+
+		<h2>Statistics</h2>
+		<p>We started in april 2012 and have been adding features ever since. If you like numbers, here are a some from our database: </p>
+		<ul>
+			<li>Versions (including helpers):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
+			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
+			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
+			<li>Opcodes performed by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'operations';")->fetchColumn());}</b></li>
+			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'result';")->fetchColumn());}</b></li>
+			<li>Registered users:				 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
+		</ul>
+
+		<h2>Historic events</h2>
+		<p>I have been adding features since we started. Here is a list with some major changes I made over the years</p>
+
+		<ul>
+			<li><b>Apr 2012</b> - launch</li>
+			<li><b>Oct 2012</b> - the site got some great exposure, including <a href="https://twitter.com/i0n1c/status/258688195158487040">one of my favorite replies</a>.</li>
+			<li><b>Nov 2012</b> - added vld support and better layout, plus I also added the performance overview</li>
+			<li><b>May 2013</b> - added links to manual and php-source-code</li>
+			<li><b>Jul 2013</b> - moved from c+sqlite to go+postgresql</li>
+			<li><b>May 2014</b> - added HHVM. This was actually a huge change, the chroot went from ~ 250 MiB to ~ 1.5 GiB due to the number of dependencies. It fortunately turned out to be a popular feature</li>
+			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a>.</li>
+			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE, which we use to this date.</li>
+		</ul>
+
+		<h2>Pro-tricks</h2>
+		<p>We have a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:
+			<pre>$ curl -H Accept:text/plain http://3v4l.org/nPpE7</pre>
+
+			Did you ever complain we have no API? Well, REST is an API too, and we offer json output for most pages:
+			<pre>$ curl -H Accept:application/json http://3v4l.org/nPpE7</pre>
+		</p>
+
+		<h2>Links</h2>
+		<ul>
+			<li><a href="https://gratipay.com/3v4l.org/">Gratipay</a> for financial support.</li>
+			<li><a href="https://twitter.com/3v4l_org">Twitter</a> for announcements.</li>
+			<li><a href="http://3v4l.uservoice.com/forums/219058-general">Uservoice</a> for bugs &amp; features.</li>
+			<li><a href="mailto:root@3v4l.org">E-mail</a> if the above channels don't suffice.</li>
+		</ul>
+	</div>
+
+	<div class="column">
+		<h2>Technology</h2>
+
+		<h3>Backend</h3>
+		<p>This site started out on a server with just 256 MiB, which was enough to run some one script at the time, as well as the site itself. However, when I added HHVM,
+		 it needed a lot more memory, so I upgraded to a 1 GiB machine. Because of dropping prices, we are currently on a 4 GiB machine.</p>
+
+		<p>We use a setup where scripts are executed in a small virtual machine. For security reasons this machine has no network and only a minimal filesystem.
+		 Scripts are executed by a daemon (written in <a href="http://golang.org/">Golang</a>) and results as well as statistics are reported to
+		 a <a href="http://www.postgresql.org/">PostgreSQL</a> database. All results are stored and used to provide averages for the performance overview.</p>
+
+		<p>All binaries are compiled using the same settings; are stripped and then compiled with <a href="http://upx.sourceforge.net/">upx</a> to keep their filesize down.</p>
+
+		<p>We use the following php.ini settings for the scripts:</p>
+		<pre>
+			{phpIni}
+		</pre>
+
+		<p>When we started in 2012, this site was nothing more then a small bash script that looped through all installed PHP binaries and stored the output in <i>/out/</i>.
+		For fun; here is the source-code of the script that I started with:</p>
+
+		<pre>
+#!/bin/bash<br/>
+ulimit -f 64 -m 64 -t 2 -u 128<br/>
+<br/>
+[[ ! -d /out/$1/ ]] && mkdir /out/$1/ || chmod u+w /out/$1/<br/>
+<br/>
+for bin in /bin/php-*<br/>
+do<br/>
+       echo $bin - $1<br/>
+       nice -n 15 sudo -u nobody $bin -c /etc/ -q "/in/$1" &>/out/$1/${bin##*-} & PID=$!<br/>
+       ( sleep 3.1; kill -9 $PID 2>/dev/null ) &<br/>
+       wait $PID<br/>
+       ex=$?<br/>
+<br/>
+       sf=/out/$1/${bin##*-}-exit<br/>
+       [[ $ex -eq 0 && -f $sf ]] && rm $sf<br/>
+       [[ $ex -ne 0 ]] && echo -n $ex > $sf<br/>
+done<br/>
+<br/>
+chmod u-w /out/$1/
+		</pre>
+
+		<p>Because of the amount of files this generated (which did not play well with the average filesystem block-size) I replaced this with a SQLite based database with an inotify-based script that picked up changes in /out/ and imported them into the database.</p>
+		<p>For simplified connectivity to the database I replaced this with a C-based binary in 2013; and that was replaced by a Go-based program that's still in use today.</p>
+
+		<h3>Frontend</h3>
+		<p>As for the website you are currently looking at, this was originally based on the <a href="https://github.com/SjonHortensius/TooBasic">TooBasic framework</a> I build specifically for <i>3v4l.org</i>. As the number of features increased I eventually migrated to another
+		 framework (which is not open-source, but it's called the <i>Basic Framework</i>) with an actual Model and Template-parser.</p>
+
+		<p>For performance reasons we strip the HTML, CSS and javascripts; but there have been a few invisible upgrades here as well. Originally I used <a href="http://mootools.net/">MooTools</a>
+		 but that has been replaced by <a href="http://vanilla-js.com/">Vanilla JS</a>. If you'd like, you can find a <a href="/s/my.js">human-readable version here</a>.</p>
+
+		<p>The layout has taken a few cues from Bootstrap but given the verboseness of both the HTML and the CSS I don't actually use that.
+		 The initial layout allowed for only the input and output to be visible, which was why I did an update where I added the tabs allowing for various helpers to be included.
+		 You're currently looking at our third layout iteration, which was done specifically to allow for some global contextual links to be visible and allow for various other features.</p>
+	</div>
+</div>
