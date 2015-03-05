@@ -6,7 +6,9 @@ class PhpShell_Action_About extends PhpShell_Action
 
 	public function run()
 	{
-		$this->phpIni = file_get_contents(PhpShell_Input::PATH.'../etc/php.ini');
+		#avoid open_basedir @production
+		$base = PhpShell_Input::PATH;
+		$this->phpIni = `cat $base/../etc/php.ini`;
 
 		return parent::run();
 	}

@@ -1,0 +1,12 @@
+{$r = $this->input->getSegfault();}
+
+{if (0 == count($r))}
+	"segfault": null
+{:}
+	{$output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
+	{$banner = '*** Segmentation fault';}
+	{$offset = strrpos($output, $banner) + strlen($banner);}
+	{$output = substr($output, $offset);}
+
+	"segfault": {print json_encode($output);}
+{/}

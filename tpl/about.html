@@ -16,7 +16,7 @@
 		<img src="/s/ga-sessions.png" width="170" height="18" /> - we served 250,000 sessions for 150,000 users.</p>
 
 		<h2>Statistics</h2>
-		<p>We started in april 2012 and have been adding features ever since. If you like numbers, here are a some from our database: </p>
+		<p>I started in april 2012 and have been adding features ever since. If you like numbers, here are a some from our database: </p>
 		<ul>
 			<li>Versions (including helpers):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
 			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
@@ -27,7 +27,7 @@
 		</ul>
 
 		<h2>Historic events</h2>
-		<p>I have been adding features since we started. Here is a list with some major changes I made over the years</p>
+		<p>I have been adding features ever since I started. Here is a list with some major changes I made over the years</p>
 
 		<ul>
 			<li><b>Apr 2012</b> - launch</li>
@@ -37,14 +37,14 @@
 			<li><b>Jul 2013</b> - moved from c+sqlite to go+postgresql</li>
 			<li><b>May 2014</b> - added HHVM. This was actually a huge change, the chroot went from ~ 250 MiB to ~ 1.5 GiB due to the number of dependencies. It fortunately turned out to be a popular feature</li>
 			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a>.</li>
-			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE, which we use to this date.</li>
+			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE, which I use to this date.</li>
 		</ul>
 
 		<h2>Pro-tricks</h2>
-		<p>We have a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:
+		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:
 			<pre>$ curl -H Accept:text/plain http://3v4l.org/nPpE7</pre>
 
-			Did you ever complain we have no API? Well, REST is an API too, and we offer json output for most pages:
+			Did you ever complain there is no API? Well, REST is an API too, and I offer json output for most pages:
 			<pre>$ curl -H Accept:application/json http://3v4l.org/nPpE7</pre>
 		</p>
 
@@ -62,21 +62,21 @@
 
 		<h3>Backend</h3>
 		<p>This site started out on a server with just 256 MiB, which was enough to run some one script at the time, as well as the site itself. However, when I added HHVM,
-		 it needed a lot more memory, so I upgraded to a 1 GiB machine. Because of dropping prices, we are currently on a 4 GiB machine.</p>
+		 it needed a lot more memory, so I upgraded to a 1 GiB machine. Because of dropping prices, the site current runs on a 4 GiB machine.</p>
 
-		<p>We use a setup where scripts are executed in a small virtual machine. For security reasons this machine has no network and only a minimal filesystem.
+		<p>I use a setup where scripts are executed in a small virtual machine. For security reasons this machine has no network and only a minimal filesystem.
 		 Scripts are executed by a daemon (written in <a href="http://golang.org/">Golang</a>) and results as well as statistics are reported to
 		 a <a href="http://www.postgresql.org/">PostgreSQL</a> database. All results are stored and used to provide averages for the performance overview.</p>
 
 		<p>All binaries are compiled using the same settings; are stripped and then compiled with <a href="http://upx.sourceforge.net/">upx</a> to keep their filesize down.</p>
 
-		<p>We use the following php.ini settings for the scripts:</p>
+		<p>I use the following php.ini settings for the scripts:</p>
 		<pre>
 			{phpIni}
 		</pre>
 
-		<p>When we started in 2012, this site was nothing more then a small bash script that looped through all installed PHP binaries and stored the output in <i>/out/</i>.
-		For fun; here is the source-code of the script that I started with:</p>
+		<p>When I started in 2012, this site was nothing more then a small bash script that looped through all installed PHP binaries and stored the output in <i>/out/</i>.
+		 For fun; here is the source-code of the script that I started with:</p>
 
 		<pre>
 #!/bin/bash<br/>
@@ -107,10 +107,10 @@ chmod u-w /out/$1/
 		<p>As for the website you are currently looking at, this was originally based on the <a href="https://github.com/SjonHortensius/TooBasic">TooBasic framework</a> I build specifically for <i>3v4l.org</i>. As the number of features increased I eventually migrated to another
 		 framework (which is not open-source, but it's called the <i>Basic Framework</i>) with an actual Model and Template-parser.</p>
 
-		<p>For performance reasons we strip the HTML, CSS and javascripts; but there have been a few invisible upgrades here as well. Originally I used <a href="http://mootools.net/">MooTools</a>
+		<p>For performance reasons I strip the HTML, CSS and javascripts; but there have been a few invisible upgrades here as well. Originally I used <a href="http://mootools.net/">MooTools</a>
 		 but that has been replaced by <a href="http://vanilla-js.com/">Vanilla JS</a>. If you'd like, you can find a <a href="/s/my.js">human-readable version here</a>.</p>
 
-		<p>The layout has taken a few cues from Bootstrap but given the verboseness of both the HTML and the CSS I don't actually use that.
+		<p>The layout has taken a few cues from Bootstrap but given the verboseness of both its HTML and CSS I don't actually use that.
 		 The initial layout allowed for only the input and output to be visible, which was why I did an update where I added the tabs allowing for various helpers to be included.
 		 You're currently looking at our third layout iteration, which was done specifically to allow for some global contextual links to be visible and allow for various other features.</p>
 	</div>

@@ -418,11 +418,12 @@ nav
 }
 
 nav header {
-	margin: 0;
-	font-size: 13px;
-	cursor: pointer;
 	display: inline;
 	font-weight: bold;
+}
+
+nav header a {
+	text-decoration: none;
 }
 
 small
