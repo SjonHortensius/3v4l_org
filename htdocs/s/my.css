@@ -39,6 +39,11 @@ form label
 	width: 10em;
 }
 
+body.index label[for=code]
+{
+	display: none;
+}
+
 form > div
 {
 	margin: 0.5em 0;
