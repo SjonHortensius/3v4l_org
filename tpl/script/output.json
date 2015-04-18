@@ -1,6 +1,6 @@
 {$results = [];}
 {foreach ($this->input->getOutput() as $versions => $output)}
-	{array_push($results, (object)['versions' => $versions, 'output' => $output]);}
+	{array_push($results, (object)['versions' => strip_tags($versions), 'output' => $output]);}
 {/}
 
 "output": [{echo json_encode($results);}]

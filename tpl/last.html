@@ -7,6 +7,7 @@
 		<thead>
 		<tr>
 			<th>name</th>
+			<th>created</th>
 			<th>~ userTime</th>
 			<th>~ systemTime</th>
 			<th>~ maxMemory</th>
@@ -27,8 +28,9 @@
 						<i class="icon icon-"></i>
 					{/}
 
-					 <a href="/{result->short}">{result->short} {result->title}</a>
+					&nbsp;<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
 				</td>
+				<td>{print substr($this->result->created, 0, 19);}</td>
 				<td>{print round($this->result->userTime, 2);} s</td>
 				<td>{print round($this->result->systemTime, 2);} s</td>
 				<td>{print round($this->result->maxMemory/1024);} MiB</td>

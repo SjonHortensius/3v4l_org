@@ -34,7 +34,7 @@ var evalOrg = {};
 		if (document.querySelector('input[type=submit].busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
-		document.querySelectorAll('a[href^="http://"]').forEach(function (el){
+		document.querySelectorAll('a[href^="http"]').forEach(function (el){
 			el.setAttribute('target', '_blank');
 		});
 
@@ -65,20 +65,21 @@ var evalOrg = {};
 		textarea.style.display = 'none';
 
 		var editor = ace.edit(code);
-		editor.setTheme("ace/theme/chrome");
+		editor.setTheme('ace/theme/chrome');
 		editor.setShowPrintMargin(false);
-		editor.setOption("maxLines", 25);
+		editor.setOption('maxLines', 25);
 //		editor.session.setOption("useWorker", false);
-		editor.session.setMode("ace/mode/php");
+		editor.session.setMode('ace/mode/php');
 		editor.session.setUseWrapMode(true);
+		editor.setOption("workerPath", '/');
 
 		editor.on('blur', function(){
 			// The timeout prevents a click on submit from being ignored due to the button jumping
-			setTimeout(function(){ editor.setOption("maxLines", 25); }, 150);
+			setTimeout(function(){ editor.setOption('maxLines', 25); }, 150);
 		});
 
 		editor.on('focus', function(){
-			editor.setOption("maxLines", Infinity);
+			editor.setOption('maxLines', Infinity);
 		});
 
 		if (document.body.classList.contains('index'))

@@ -62,7 +62,7 @@ class PhpShell_Action_Search extends PhpShell_Action
 			array_push($params, Basic::$userinput['operand']);
 		}
 
-		$this->entries = new PhpShell_SearchScriptsList(PhpShell_Input, $q, $params);
+		$this->entries = new PhpShell_SearchScriptsList(PhpShell_Input, $q, $params, ['input.id' => !true]);
 
 		return parent::run();
 	}

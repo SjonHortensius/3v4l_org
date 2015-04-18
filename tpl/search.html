@@ -6,38 +6,52 @@
 
 <div>
 	<table>
-		<thead>
+	<thead>
 		<tr>
 			<th>name</th>
+			<th>created</th>
 			<th>~ userTime</th>
 			<th>~ systemTime</th>
 			<th>~ maxMemory</th>
 			<th># runs</th>
 			<th># operations</th>
 			<th>% variance</th>
-			<th># occurences</th>
 		</tr>
-		</thead>
+	</thead>
 
-		<tbody>
-		{foreach ($this->entries->getPage(Basic::$userinput['page'], 20) as $this->result)}
-			<tr>
-				<td>
-					<a href="/{result->short}">{result->short} {result->title}</a>
-				</td>
-				<td>{print round($this->result->userTime, 2);} s</td>
-				<td>{print round($this->result->systemTime, 2);} s</td>
-				<td>{print round($this->result->maxMemory/1024);} MiB</td>
-				<td>{result->run}</td>
-				<td>{result->operationCount}</td>
-				<td>{result->variance}</td>
-				<td>{result->count}</td>
-			</tr>
-
-			{$this->prevResult = $this->result;}
+	<tbody>
+		{$count=0;}
+		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
+			{$count++;}
+		<tr>
+			<td>
+				<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
+			</td>
+			<td>{print date('r', strtotime($this->result->created));}</td>
+			<td>{print round($this->result->userTime, 2);} s</td>
+			<td>{print round($this->result->systemTime, 2);} s</td>
+			<td>{print round($this->result->maxMemory/1024);} MiB</td>
+			<td>{result->run}</td>
+			<td>{result->operationCount}</td>
+			<td>{result->variance}</td>
+		</tr>
 		{/}
-		</tbody>
+	</tbody>
 	</table>
 
-	<p><i>only the first 20 results are shown</i></p>
+	<p class="pagination">
+		Pages: 
+		{if (Basic::$userinput['page'] > 1)}
+			{$this->prevPage = Basic::$userinput['page']-1;}
+			<a href="./{prevPage}">{prevPage}</a>
+			&hellip;
+		{/}
+
+		{userinput['page']}
+
+		{if ($count==25)}
+			&hellip;
+			{$this->nextPage = Basic::$userinput['page']+1;}
+			<a href="./{nextPage}">{nextPage}</a>
+		{/}
 </div>
