@@ -10,7 +10,7 @@
 	{if (isset($this->input->title))}
 		"title":"{input->title}",
 	{/}
-	"created":"{print substr($this->input->created, 0, 20);}",
+	"created":"{print substr($this->input->created, 0, 19);}",
 	"state": "{input->state}",
 	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done', 'busy')));},
 	"code": {print json_encode(Basic::$action->code);}
