@@ -112,17 +112,6 @@ var evalOrg = {};
 			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
 		});
 
-		document.getElementsByTagName('dd').forEach(function(el){
-			el.addEventListener('click', function(e){
-				var node = e.target;
-				while (node && node.tagName != 'DD')
-					node = node.parentNode;
-
-				if (node && window.location.hash != '#'+ node.previousSibling.id)
-					window.location.hash = '#'+ node.previousSibling.id;
-			});
-		});
-
 		document.querySelectorAll('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
 				//FIXME xhr submit

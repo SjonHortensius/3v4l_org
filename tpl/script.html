@@ -1,5 +1,11 @@
 <form method="post" action="/new">
-	<h1>results for {input->short} <small>{if (isset($this->input->title))}| {input->title}{/} @{input->created}</small></h1>
+	<h1>
+		results for {input->short}
+		{if (isset($this->input->title))}
+			<i>{input->title}</i>
+		{/}
+		<small> @ {print substr($this->input->created, 0, 19);}</small>
+	</h1>
 	<code>{print htmlspecialchars(Basic::$action->code);}</code>
 
 	{if (isset($this->input->source))}

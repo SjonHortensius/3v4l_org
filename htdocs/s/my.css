@@ -466,11 +466,6 @@ body.perf meter
 	float: right;
 }
 
-body.perf th
-{
-	text-align: left;
-}
-
 body.perf tr[data-unsuccessful]
 {
 	color: gray;
@@ -495,4 +490,5 @@ body.about pre
 {
 	background-color: #ddd;
 	overflow: auto;
+	padding: 0.5em;
 }
