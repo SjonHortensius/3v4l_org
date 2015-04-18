@@ -46,11 +46,6 @@ form > div
 	margin: 0.5em 0 1.5em 0;
 }
 
-form input[type=submit]
-{
-	margin-left: 10em;
-}
-
 form input[type=text],
 form select
 {
@@ -422,9 +417,9 @@ body.index label[for=code]
 	display: none;
 }
 
-body.index input[type=submit]
+body.search input[type=submit]
 {
-	margin-left: 0;
+	margin-left: 10em;
 }
 
 body.output dt a
