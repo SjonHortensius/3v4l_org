@@ -32,3 +32,15 @@
 		<li><a href="/DgUUQ">Broken formatting in DateTime</a></li>
 	</ul>
 </div>
+
+<div class="column">
+	<h2>Recent submissions</h2>
+	<ul>
+		{foreach ($this->last->getPage(1, 5) as $this->result)}
+			<li>
+				<a href="/{result->short}">{if (isset($this->result->title))}{result->title}{:}{result->short}{/}</a>
+				 <i>@ {print substr($this->result->created, 11, 8);}</i>
+			</li>
+		{/}
+	</ul>
+</div>
