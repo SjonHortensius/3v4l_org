@@ -39,7 +39,18 @@
 		{foreach ($this->last->getPage(1, 5) as $this->result)}
 			<li>
 				<a href="/{result->short}">{if (isset($this->result->title))}{result->title}{:}{result->short}{/}</a>
-				 <i>@ {print substr($this->result->created, 11, 8);}</i>
+				{$d = time() - strtotime($this->result->created);}
+				 <i title="at {print substr($this->result->created, 11, 8);}">
+					{if ($d <= 60)}
+						just now
+					{:}
+						{if ($d < 3600)}
+							{print ceil($d/60);} minutes ago
+						{:}
+							{print ceil($d/3600);} hours ago
+						{/}
+					{/}
+				</i>
 			</li>
 		{/}
 	</ul>

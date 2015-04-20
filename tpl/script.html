@@ -1,8 +1,9 @@
 <form method="post" action="/new">
 	<h1>
-		results for {input->short}
 		{if (isset($this->input->title))}
-			<i>{input->title}</i>
+			{input->title}
+		{:}
+			results for {input->short}
 		{/}
 		<small> @ {print substr($this->input->created, 0, 19);}</small>
 	</h1>
