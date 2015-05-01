@@ -434,7 +434,7 @@ body.perf table i
 	margin-right: 5px;
 }
 
-body.perf table tr.open i
+body.perf tr.open i
 {
 	/* icon-min */
 	background-position: -433px -96px;
@@ -446,7 +446,7 @@ body.perf td:first-child
 	width: 100px;
 }
 
-body.perf tr
+body.perf tr.header
 {
 	cursor: pointer;
 }

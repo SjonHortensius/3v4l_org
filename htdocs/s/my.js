@@ -71,7 +71,6 @@ var evalOrg = {};
 //		editor.session.setOption("useWorker", false);
 		editor.session.setMode('ace/mode/php');
 		editor.session.setUseWrapMode(true);
-		editor.setOption("workerPath", '/');
 
 		editor.on('blur', function(){
 			// The timeout prevents a click on submit from being ignored due to the button jumping
