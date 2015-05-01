@@ -35,7 +35,7 @@
 	</div>
 {/}
 
-<ul id="tabs" class="{input->state}">
+<ul id="tabs"{if ('done' != $this->input->state)} class="{input->state}"{/}>
 {foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
 	{if (empty($this->name)) continue;}
 

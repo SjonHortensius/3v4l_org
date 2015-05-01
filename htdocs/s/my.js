@@ -134,8 +134,11 @@ var evalOrg = {};
 		var r = this.responseText.match(/<div id="tab">([\s\S]*?)<\/div>/);
 		if (!r)
 			window.location.reload();
-
 		document.getElementById('tab').innerHTML = r[1];
+
+		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
+		if (t)
+			document.getElementById('tabs').innerHTML = t[1];
 
 		var pageHandler = 'handle'+ document.body.className.ucFirst();
 		if ('function' == typeof self[ pageHandler ])
