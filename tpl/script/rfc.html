@@ -1,17 +1,15 @@
 <h3>Shows output from various feature-branches currently under review from the php developers</h3>
 
-{!--
 <dl>
-{$r = $this->input->getLastVersionResult('rfc-scalar_type_hints_v5');}
+{$r = $this->input->getLastVersionResult('rfc-short_closures');}
 {if (1 == count($r))}
-	<dt id="rfc-scalar_type_hints_v5">Output for rfc-scalar_type_hints_v5 | <a href="http://wiki.php.net/rfc/scalar_type_hints_v5">rfc</a></dt>
+	<dt id="rfc-short_closures">Output for rfc-short_closures | <a href="http://wiki.php.net/rfc/short_closures">rfc</a></dt>
 
 	<dd>
-		{print $r->getSingle()->output->getRaw($this->input, 'rfc-scalar_type_hints_v5');}
+		{print $r->getSingle()->output->getRaw($this->input, 'rfc-short_closures');}
 	</dd>
 {/}
 </dl>
---}
 
 <h3>Archived branches</h3>
 <p>Once feature-branches are merged to php7-master or a released version they are no longer available on this page. You can view them on the <a href="/{input->short}">main output page</a></p>

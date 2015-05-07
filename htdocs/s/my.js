@@ -64,6 +64,7 @@ var evalOrg = {};
 
 		textarea.style.display = 'none';
 
+		ace.config.set('workerPath', '/');
 		var editor = ace.edit(code);
 		editor.setTheme('ace/theme/chrome');
 		editor.setShowPrintMargin(false);
@@ -86,12 +87,16 @@ var evalOrg = {};
 			editor.focus();
 			editor.gotoLine(editor.session.getLength());
 		}
+		else
+			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
 
 		document.forms[0].addEventListener('submit', function(e){
 			textarea.value = editor.getValue();
 		});
 
 		code.addEventListener('keydown', function(e){
+			document.querySelector('input[type=submit]').removeAttribute('disabled');
+
 			if (13 == e.keyCode && e.ctrlKey)
 			{
 				textarea.value = editor.getValue();
