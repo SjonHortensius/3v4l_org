@@ -27,6 +27,12 @@
 		<p>This script was stopped while abusing our resources</p>
 	</div>
 {/}
+{if ($this->input->state == 'new')}
+	<div class="alert notice">
+		<h2>Oops, something is wrong</h2>
+		<p>Something has broken; if this happens frequently please let me know</p>
+	</div>
+{/}
 {if ($this->input->state == 'verbose')}
 	<div class="alert warning">
 		<h2>Verbose script</h2>

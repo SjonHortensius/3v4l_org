@@ -1,0 +1,38 @@
+{$this->show('Userinput/Form');}
+
+{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
+	<div class="alert error">
+		<h2>Abusive script</h2>
+		<p>This script was stopped while abusing our resources</p>
+	</div>
+{/}
+{if ($this->input->state == 'new')}
+	<div class="alert notice">
+		<h2>Oops, something is wrong</h2>
+		<p>Something has broken; if this happens frequently please let me know</p>
+	</div>
+{/}
+{if ($this->input->state == 'verbose')}
+	<div class="alert warning">
+		<h2>Verbose script</h2>
+		<p>This script was stopped because it was generating too much output</p>
+	</div>
+{/}
+
+<ul id="tabs"{if ('done' != $this->input->state)} class="{input->state}"{/}>
+	<li class="active"><a>Quick output</a></li>
+</ul>
+
+<div id="tab">
+	<dl>
+		{foreach ($this->input->getOutput() as $this->versions => $this->output)}
+			<dt>
+				Output for {versions}
+			</dt>
+
+			<dd>
+				{output}
+			</dd>
+		{/}
+	</dl>
+</div>

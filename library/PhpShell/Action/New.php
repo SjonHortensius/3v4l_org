@@ -7,6 +7,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	protected $_userinputConfig = array(
 		'title' => [
 			'valueType' => 'scalar',
+			'regexp' => '~^[[:graph:] ]*$~',
 			'options' => [
 				'maxLength' => 64,
 //				'minLength' => 0,
@@ -53,7 +54,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				#care
 			}
 
-			$input = PhpShell_Input::create($code, $source, Basic::$userinput['title']);
+			$input = PhpShell_Input::create($code, ['source' => $source, 'title' => Basic::$userinput['title']]);
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);

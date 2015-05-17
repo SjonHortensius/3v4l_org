@@ -5,6 +5,7 @@ class PhpShell_Input extends PhpShell_Entity
 	protected static $_relations = [
 		'user' => PhpShell_User,
 		'source' => PhpShell_Input,
+		'quickVersion' => PhpShell_Version,
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
@@ -39,7 +40,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
-	public static function create($code, PhpShell_Input $source = null, $title = null)
+	public static function create($code, $extra = [])
 	{
 		if (false !== strpos($code, 'pcntl_fork(') || false !== strpos($code, ':|:&') || false !== strpos($code, ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
@@ -62,8 +63,9 @@ class PhpShell_Input extends PhpShell_Entity
 		umask(0022);
 		file_put_contents(self::PATH. $short, $code);
 
-		$extra  = isset(Basic::$action->user) ? ['user' => Basic::$action->user] : [];
-		$extra += isset($title) ? ['title' => $title] : [];
+		if (isset(Basic::$action->user))
+			$extra['user'] = Basic::$action->user;
+
 		$input = parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
 
 		$input->trigger();
@@ -98,8 +100,9 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger()
 	{
+		$version = isset($this->quickVersion) ? $this->quickVersion->name : null;
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-			Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
+			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version]);
 
 		// Make sure state comes fresh from the db
 		$this->removeCached();

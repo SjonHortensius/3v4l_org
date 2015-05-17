@@ -164,8 +164,9 @@ textarea + code
 	background: none;
 }
 
-textarea.invalid,
-code.invalid
+form.submit-attempted textarea.invalid,
+form.submit-attempted code.invalid,
+form.submit-attempted input.invalid
 {
 	border-color: red;
 }

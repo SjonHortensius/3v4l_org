@@ -95,7 +95,8 @@ var evalOrg = {};
 			editor.focus();
 			editor.gotoLine(editor.session.getLength());
 		}
-		else
+
+		if (document.body.classList.contains('script'))
 			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
 
 		document.forms[0].addEventListener('submit', function(e){
@@ -110,6 +111,16 @@ var evalOrg = {};
 	this.handleRfc = function()
 	{
 		return this.handleOutput();
+	},
+
+	this.handleQuick = function()
+	{
+		document.querySelector('button[name=versions]').addEventListener('click', function(e){
+			document.forms[0].action = '/new';
+			var title = prompt('Please enter an optional title for this script');
+			if (title != 'undefined' && title != 'false')
+				document.querySelector('input[name=title]').value = title;
+		});
 	},
 
 	this.handleOutput = function()

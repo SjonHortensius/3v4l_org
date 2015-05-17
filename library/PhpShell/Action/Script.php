@@ -34,7 +34,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $code;
 	public $input;
 	public $showTab = [];
-	public $bodyClass = 'output';
+	public $bodyClass = 'script output';
 
 	public function init()
 	{
@@ -43,7 +43,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
 
 		if (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
-			$this->bodyClass = $GLOBALS['_MULTIVIEW'][1];
+			$this->bodyClass = 'script '.$GLOBALS['_MULTIVIEW'][1];
 
 		parent::init();
 	}
@@ -74,12 +74,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		if (!isset($this->user))
 		{
-			if (in_array($this->input->state, ['busy', 'new']))
-			{
-				$this->lastModified = time();
-				$this->cacheLength = 0;
-			}
-			else
+			if (!in_array($this->input->state, ['busy', 'new']))
 			{
 				$this->lastModified = $this->input->getLastModified();
 				$this->cacheLength = '5 minutes';
@@ -94,7 +89,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->trigger();
 
 			// Refresh state
-			$this->input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();
+			$this->input = PhpShell_Input::find("id = ?", [$this->input->id])->getSingle();
 		}
 
 		$this->code = $this->input->getCode();

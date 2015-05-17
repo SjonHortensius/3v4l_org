@@ -15,9 +15,4 @@ class PhpShell_Submit extends PhpShell_Entity
 			INSERT INTO submit SELECT :input, :ip, now(), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
 			$data);
 	}
-
-	public static function getTable()
-	{
-		return '"operations"';
-	}
 }

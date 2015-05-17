@@ -8,6 +8,6 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 	{
 		parent::init();
 
-		$this->last = new PhpShell_LastScriptsList(PhpShell_Input, null, [], ['id' => false]);
+		$this->last = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0', [], ['id' => false]);
 	}
 }
