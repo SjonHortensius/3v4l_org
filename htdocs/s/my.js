@@ -38,6 +38,14 @@ var evalOrg = {};
 			el.setAttribute('target', '_blank');
 		});
 
+		if (document.forms.length > 0)
+		{
+			document.body.addEventListener('keydown', function(e){
+				if (13 == e.keyCode && e.ctrlKey)
+					document.forms[0].submit();
+			});
+		}
+
 		var pageHandler = 'handle'+ document.body.className.ucFirst();
 		if ('function' == typeof this[ pageHandler ])
 			this[ pageHandler ]();
@@ -52,7 +60,7 @@ var evalOrg = {};
 
 		var textarea = document.createElement('textarea');
 		textarea.name = 'code';
-		textarea.value = code.innerText;
+		textarea.value = code.textContent;
 		code.parentNode.insertBefore(textarea, code);
 
 		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
@@ -96,12 +104,6 @@ var evalOrg = {};
 
 		code.addEventListener('keydown', function(e){
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
-
-			if (13 == e.keyCode && e.ctrlKey)
-			{
-				textarea.value = editor.getValue();
-				document.forms[0].submit();
-			}
 		});
 	};
 

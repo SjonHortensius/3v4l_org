@@ -19,7 +19,7 @@ echo -ne "Configuring...\r"
 ./configure $confFlags &>build-configure.log
 
 echo -ne "Making...     \r"
-make -j8 &>build-make.log
+make -j10 &>build-make.log
 
 # verify correct build
 ./sapi/cli/php -i >/dev/null

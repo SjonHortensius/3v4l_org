@@ -32,7 +32,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		{
 			$input = PhpShell_Input::byHash($hash);
 
-			if ($input->state == "busy")
+			if ($input->state == 'busy')
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
 
 			$input->trigger();

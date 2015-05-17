@@ -1,13 +1,12 @@
 <form method="post" action="/new">
-	<h1>
-		{if (isset($this->input->title))}
-			{input->title}
-		{:}
-			results for {input->short}
-		{/}
+	<div>
+		<input type="text" name="title" id="title" size="64" maxlength="64" value="{if (isset($this->input->title))}{print htmlspecialchars($this->input->title);}{/}" placeholder="Untitled" />
 		<small> @ {print substr($this->input->created, 0, 19);}</small>
-	</h1>
-	<code>{print htmlspecialchars(Basic::$action->code);}</code>
+	</div>
+
+	<div>
+		<code>{print htmlspecialchars(Basic::$action->code);}</code>
+	</div>
 
 	{if (isset($this->input->source))}
 		<a href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>

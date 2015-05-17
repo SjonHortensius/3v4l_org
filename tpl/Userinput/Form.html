@@ -9,6 +9,7 @@
 		{throw new PhpShell_MissingInputException('Missing parameters', null, 404);}
 	{:}
 		{inputs}
+		{unset($this->input);}
 	{/}
 
 	<input type="submit" value="{formSubmit}" title="shortcut: ctrl+enter" />
