@@ -432,6 +432,11 @@ body.search input[type=submit]
 	margin-left: 10em;
 }
 
+body.search input.noOperand
+{
+	opacity: 0.3;
+}
+
 body.output dt a
 {
 	float: right;

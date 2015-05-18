@@ -29,6 +29,7 @@ class PhpShell_Action_Search extends PhpShell_Action
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
 	);
+	public $noOperand;
 
 	public function init()
 	{
@@ -44,6 +45,13 @@ class PhpShell_Action_Search extends PhpShell_Action
 			foreach (PhpShell_Operation::find()->getCount('operation') as $op => $count)
 				$opCount[$op] = $op .' ('. number_format($count) .' occurrences)';
 			return $opCount;
+		});
+
+		$this->haveOperand = Basic::$cache->get(__CLASS__.'::haveOperand', function(){
+			$ops = [];
+			foreach (Basic::$database->query("SELECT operation FROM operations GROUP BY operation HAVING COUNT(DISTINCT operand)>0") as $row)
+				array_push($ops, $row['operation']);
+			return $ops;
 		});
 
 		$this->_userinputConfig['operation']['values'] = $opCount;

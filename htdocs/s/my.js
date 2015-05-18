@@ -266,6 +266,10 @@ var evalOrg = {};
 				url += '/'+ document.getElementById('operand').value;
 			window.location.href = url;
 		});
+
+		document.querySelector('select[name=operation]').addEventListener('change', function(e){
+			document.querySelector('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
+		});
 	}
 
 	var btcAmountReceived = function()
