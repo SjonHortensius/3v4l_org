@@ -25,14 +25,12 @@
 
 <div id="tab">
 	<dl>
-		{foreach ($this->input->getOutput() as $this->versions => $this->output)}
-			<dt>
-				Output for {versions}
-			</dt>
+		<dt>
+			Output for {userinput['version']}
+		</dt>
 
-			<dd>
-				{output}
-			</dd>
-		{/}
+		<dd>
+			{output}
+		</dd>
 	</dl>
 </div>

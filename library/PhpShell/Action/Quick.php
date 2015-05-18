@@ -20,6 +20,8 @@ class PhpShell_Action_Quick extends PhpShell_Action
 			'values' => []
 		],
 	);
+	public $result;
+	public $input;
 
 	public function init()
 	{
@@ -27,7 +29,7 @@ class PhpShell_Action_Quick extends PhpShell_Action
 
 		if (isset($GLOBALS['_MULTIVIEW'][1]))
 			$this->_userinputConfig['version']['default'] = $GLOBALS['_MULTIVIEW'][1];
-//Basic::debug($this->_userinputConfig['version']);
+
 		parent::init();
 	}
 
@@ -35,6 +37,7 @@ class PhpShell_Action_Quick extends PhpShell_Action
 	{
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
+		$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
 		try
 		{
@@ -43,31 +46,18 @@ class PhpShell_Action_Quick extends PhpShell_Action
 			if ($this->input->state == "busy")
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
 
-			$this->input->trigger();
+			if (0 == $this->input->getRelated('PhpShell_Result')->getSubset("run = ? AND version = ?", [$input->run, $version])->getCount())
+				$this->input->trigger($version);
 		}
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
-			$this->input = PhpShell_Input::create($code, ['quickVersion' => PhpShell_Version::byName(Basic::$userinput['version'])]);
+			$this->input = PhpShell_Input::create($code, ['quickVersion' => $version]);
 		}
 
 		PhpShell_Submit::create(['input' => $this->input, 'ip' => $_SERVER['REMOTE_ADDR']]);
 
-		$i = 0;
-		while ($i < 15 && $this->input->state == 'new')
-		{
-			$i++;
-
-			if (0 == $i%5)
-				$this->input->trigger();
-			else
-				usleep(100 * 1000);
-
-			$this->input = PhpShell_Input::find("id = ?", [$this->input->id])->getSingle();
-		}
-
-//		if (!isset($this->input->operationCount))
-//			$this->input->updateOperations();
+		$this->output = $this->input->getResult($version)->getSingle()->output->getRaw($this->input, Basic::$userinput['version']);
 
 		return parent::run();
 	}

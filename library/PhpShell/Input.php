@@ -67,8 +67,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$extra['user'] = Basic::$action->user;
 
 		$input = parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
-
-		$input->trigger();
+		$input->trigger($input->quickVersion);
 
 		return $input;
 	}
@@ -98,15 +97,28 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 	}
 
-	public function trigger()
+	public function trigger(PhpShell_Version $version = null)
 	{
-		$version = isset($this->quickVersion) ? $this->quickVersion->name : null;
+		$version = isset($version) ? $version->name : null;
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
 			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version]);
 
 		// Make sure state comes fresh from the db
 		$this->removeCached();
+/*
+		$i = 0;
+		while ($i < 15 && $this->input->state == 'new')
+		{
+			$i++;
 
+			if (0 == $i%5)
+				$this->input->trigger($version);
+			else
+				usleep(100 * 1000);
+
+			$this->input = PhpShell_Input::find("id = ?", [$this->input->id])->getSingle();
+		}
+ */
 		usleep(200 * 1000);
 	}
 
@@ -218,59 +230,43 @@ class PhpShell_Input extends PhpShell_Entity
 		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->id, $this->run])->fetchArray('max')[0];
 	}
 
+	public function getResult(PhpShell_Version $version)
+	{
+		return $this->getRelated('PhpShell_Result')->getSubset("run = ? AND version = ?", [$this->run, $version]);
+	}
+
 	public function getSegfault()
 	{
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 139', [
-			$this->id,
-			PhpShell_Version::byName('segfault'),
-			$this->run,
-		]);
+		$version = PhpShell_Version::byName('segfault');
+
+		return $this->getResult($version)->getSubset('"exitCode" = 139');
 	}
 
 	public function getVld()
 	{
+		$version = PhpShell_Version::byName('vld');
 		$emptyOutput = Basic::$cache->get(__CLASS__.'::vldEmpty', function(){
 			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('', true))])->getSingle();
 		});
 
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND output != ?', [
-			$this->id,
-			PhpShell_Version::byName('vld'),
-			$this->run,
-			$emptyOutput,
-		]);
-	}
-
-	public function getLastVersionResult($version)
-	{
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
-			$this->id,
-			PhpShell_Version::byName($version),
-			$this->run,
-		]);
+		return $this->getResult($version)->getSubset('output != ?', [$emptyOutput]);
 	}
 
 	public function getBytecode()
 	{
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ?', [
-			$this->id,
-			PhpShell_Version::byName('hhvm-bytecode'),
-			$this->run,
-		]);
+		$version = PhpShell_Version::byName('hhvm-bytecode');
+
+		return $this->getResult($version);
 	}
 
 	public function getAnalyze()
 	{
+		$version = PhpShell_Version::byName('hhvm-analyze');
 		$emptyOutput = Basic::$cache->get(__CLASS__.'::analyzeEmpty', function(){
 			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('[]', true))])->getSingle();
 		});
 
-		return PhpShell_Result::find('input = ? AND version = ? AND run = ? AND "exitCode" = 0 AND output != ?', [
-			$this->id,
-			PhpShell_Version::byName('hhvm-analyze'),
-			$this->run,
-			$emptyOutput->id,
-		]);
+		return $this->getResult($version)->getSubset('"exitCode" = 0 AND output != ?', [$emptyOutput]);
 	}
 
 	protected function _checkPermissions($action)
