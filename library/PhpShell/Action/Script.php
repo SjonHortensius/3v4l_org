@@ -34,7 +34,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $code;
 	public $input;
 	public $showTab = [];
-	public $bodyClass = 'script output';
+	public $bodyClass = 'output script';
 
 	public function init()
 	{
@@ -43,7 +43,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
 
 		if (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
-			$this->bodyClass = 'script '.$GLOBALS['_MULTIVIEW'][1];
+			$this->bodyClass = $GLOBALS['_MULTIVIEW'][1]. ' script';
 
 		parent::init();
 	}

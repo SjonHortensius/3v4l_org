@@ -1,12 +1,12 @@
 <h3>Shows output from various feature-branches currently under review from the php developers</h3>
 
 <dl>
-{$r = $this->input->getLastVersionResult('rfc-short_closures');}
+{$r = $this->input->getResult(PhpShell_Version::byName('rfc-short_closures'));}
 {if (1 == count($r))}
 	<dt id="rfc-short_closures">Output for rfc-short_closures | <a href="http://wiki.php.net/rfc/short_closures">rfc</a></dt>
 
 	<dd>
-		{print $r->getSingle()->output->getRaw($this->input, 'rfc-short_closures');}
+		{print htmlspecialchars($r->getSingle()->output->getRaw($this->input, 'rfc-short_closures'));}
 	</dd>
 {/}
 </dl>

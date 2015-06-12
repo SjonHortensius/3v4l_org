@@ -46,7 +46,7 @@ var evalOrg = {};
 			});
 		}
 
-		var pageHandler = 'handle'+ document.body.className.ucFirst();
+		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
 		if ('function' == typeof this[ pageHandler ])
 			this[ pageHandler ]();
 	};
@@ -76,19 +76,9 @@ var evalOrg = {};
 		var editor = ace.edit(code);
 		editor.setTheme('ace/theme/chrome');
 		editor.setShowPrintMargin(false);
-		editor.setOption('maxLines', 25);
-//		editor.session.setOption("useWorker", false);
+		editor.setOption('maxLines', Infinity);
 		editor.session.setMode('ace/mode/php');
 		editor.session.setUseWrapMode(true);
-
-		editor.on('blur', function(){
-			// The timeout prevents a click on submit from being ignored due to the button jumping
-			setTimeout(function(){ editor.setOption('maxLines', 25); }, 150);
-		});
-
-		editor.on('focus', function(){
-			editor.setOption('maxLines', Infinity);
-		});
 
 		if (document.body.classList.contains('index'))
 		{

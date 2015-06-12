@@ -46,7 +46,7 @@ class PhpShell_Action_Quick extends PhpShell_Action
 			if ($this->input->state == "busy")
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
 
-			if (0 == $this->input->getRelated('PhpShell_Result')->getSubset("run = ? AND version = ?", [$input->run, $version])->getCount())
+			if (0 == $this->input->getResult($version)->getCount(null, true))
 				$this->input->trigger($version);
 		}
 		// No results from ::byHash

@@ -81,7 +81,7 @@ func (this *Input) setDone() {
 		state = "abusive"
 	}
 
-	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $2) / run, state = $3 WHERE short = $1 AND state = 'busy'", this.short, this.penalty, state); err != nil {
+	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3 WHERE short = $1 AND state = 'busy'", this.short, this.penalty, state); err != nil {
 		log.Fatalf("Input: failed to update: %s", err)
 	}
 
