@@ -14,7 +14,7 @@ class PhpShell_Input extends PhpShell_Entity
 		137 => 'Process was killed',
 		255 => 'Generic Error',
 	);
-	const PATH  = '/var/lxc/php_shell/in/';
+	const PATH  = '/srv/http/3v4l.org/in/';
 	const VLD_MATCH = '~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
 
 	public function getCode()
@@ -99,27 +99,21 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger(PhpShell_Version $version = null)
 	{
-		$version = isset($version) ? $version->name : null;
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version]);
+			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, isset($version) ? $version->name : null]);
 
-		// Make sure state comes fresh from the db
-		$this->removeCached();
-/*
 		$i = 0;
-		while ($i < 15 && $this->input->state == 'new')
+		do
 		{
-			$i++;
+			usleep(100 * 1000);
 
-			if (0 == $i%5)
-				$this->input->trigger($version);
-			else
-				usleep(100 * 1000);
-
-			$this->input = PhpShell_Input::find("id = ?", [$this->input->id])->getSingle();
+			$input = PhpShell_Input::find("id = ?", [$this->id])->getSingle();
+			foreach ($input as $k => $v)
+				$this->$k = $v;
 		}
- */
-		usleep(200 * 1000);
+		while (++$i < 15 && $this->state == 'new');
+
+		usleep(100 * 1000);
 	}
 
 	public function getOutput()

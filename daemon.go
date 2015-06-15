@@ -85,7 +85,7 @@ func (this *Input) setDone() {
 		log.Fatalf("Input: failed to update: %s", err)
 	}
 
-	log.Printf("done, penalty = %d (%s)", this.penalty, state)
+	log.Printf("state = %s penalty = %d", state, this.penalty)
 
 	log.SetPrefix("")
 	os.RemoveAll("/tmp/")
