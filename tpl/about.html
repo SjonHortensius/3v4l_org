@@ -73,7 +73,18 @@
 
 		<p>I use the following php.ini settings for the scripts:</p>
 		<pre>
-			{phpIni}
+[PHP]<br/>
+; Precision of floats in serialized output<br/>
+serialize_precision = 24<br/>
+<br/>
+; ini_set should be in here too if you're concerned about security<br/>
+disable_functions = pcntl_fork,phpinfo<br/>
+max_execution_time = 3<br/>
+memory_limit = 64M<br/>
+enable_dl = Off<br/>
+<br/>
+; for consistency of older versions<br/>
+allow_call_time_pass_reference Europe/Amsterdam
 		</pre>
 
 		<p>When I started in 2012, this site was nothing more then a small bash script that looped through all installed PHP binaries and stored the output in <i>/out/</i>.

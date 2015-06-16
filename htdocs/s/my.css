@@ -380,6 +380,7 @@ nav header
 {
 	display: inline;
 	font-weight: bold;
+	float: left;
 }
 
 nav header a
