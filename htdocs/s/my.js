@@ -85,7 +85,7 @@ var evalOrg = {};
 			editor.gotoLine(editor.session.getLength());
 		}
 
-		if (document.body.classList.contains('script'))
+		if (document.querySelector('input[type=submit]'))
 			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
 
 		document.forms[0].addEventListener('submit', function(e){
@@ -259,7 +259,34 @@ var evalOrg = {};
 		document.querySelector('select[name=operation]').addEventListener('change', function(e){
 			document.querySelector('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
 		});
-	}
+
+		if (document.querySelector('svg'))
+			this.handleTagcloud();
+	};
+
+	this.handleTagcloud = function()
+	{
+		document.querySelectorAll('g text').forEach(function (el){
+			el.addEventListener('click', function(e){
+
+				window.location = '/search/DO_FCALL/'+ e.target.textContent;
+			});
+		});
+
+		// svg sucks
+		return;
+
+		var ns = 'http://www.w3.org/1999/xlink';
+		document.querySelector('svg').setAttribute('xmlns:xlink', ns);
+
+		document.querySelectorAll('g text').forEach(function (el){
+			var w = document.createElementNS(ns, 'a');
+			w.setAttributeNS(ns, 'xlink:href', 'http://google.com');
+			w.setAttributeNS(ns, 'target', '_top');
+			w.appendChild(el.cloneNode(true));
+			el.parentNode.replaceChild(w, el);
+		});
+	};
 
 	var btcAmountReceived = function()
 	{

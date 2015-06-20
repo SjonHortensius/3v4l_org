@@ -12,7 +12,7 @@ class PhpShell_Action extends Basic_Action
 		if (isset($_SESSION['userId']))
 			$this->user = PhpShell_User::get($_SESSION['userId']);
 
-		if (in_array($_SERVER['REMOTE_ADDR'], ['37.143.86.26']))
+		if (0 && in_array($_SERVER['REMOTE_ADDR'], ['31.201.148.110']))
 		{
 			$wasOn = Basic::$config->PRODUCTION_MODE;
 			Basic::$config->PRODUCTION_MODE = false;

@@ -1,4 +1,4 @@
-{$this->show('Userinput/Form');}
+{$this->show('Userinput/Search/Form');}
 
 <ul id="tabs">
 	<li class="active"><a href="/search">Search results</a></li>
@@ -41,7 +41,7 @@
 
 	<p class="pagination">
 		{$this->base = '/search/'. Basic::$userinput['operation'].'/'.Basic::$userinput['operand'];}
-		Pages: 
+		Pages:&nbsp;
 		{if (Basic::$userinput['page'] > 1)}
 			{$this->prevPage = Basic::$userinput['page']-1;}
 			<a href="{base}/{prevPage}">{prevPage}</a>
