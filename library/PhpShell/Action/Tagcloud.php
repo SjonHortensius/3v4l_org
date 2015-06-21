@@ -44,11 +44,4 @@ class PhpShell_Action_Tagcloud extends PhpShell_Action
 			$this->min = min($this->min, $f['size']);
 		}
 	}
-
-	public function run()
-	{
-//		$this->generate();
-
-		return parent::run();
-	}
 }

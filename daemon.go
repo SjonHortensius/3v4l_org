@@ -289,8 +289,6 @@ func refreshVersions() {
 		newVersions = append(newVersions, &v)
 	}
 
-	log.Printf("Debug: refreshVersions completed succesfully")
-
 	versions = newVersions
 }
 
@@ -392,6 +390,7 @@ func main() {
 		case <-l.Notify:
 			go doWork()
 
+		//FIXME: doesn't run every 5mins, but only after 5mins of inactivity
 		case <-time.After(5 * time.Minute):
 			refreshVersions()
 

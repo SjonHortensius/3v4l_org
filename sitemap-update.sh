@@ -3,7 +3,7 @@ set -e ; cd `dirname $0`/htdocs/
 
 rm sitemap*.*
 
-ls /var/lxc/php_shell/in -l --time-style='+%Y-%m-%d' | while read x x x x x d n
+ls /srv/http/3v4l.org/in -l --time-style='+%Y-%m-%d' | while read x x x x x d n
 do
 	[[ -z $n ]] && continue
 

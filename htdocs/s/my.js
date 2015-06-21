@@ -268,20 +268,19 @@ var evalOrg = {};
 	{
 		document.querySelectorAll('g text').forEach(function (el){
 			el.addEventListener('click', function(e){
-
 				window.location = '/search/DO_FCALL/'+ e.target.textContent;
 			});
 		});
 
-		// svg sucks
 		return;
 
+		//FIXME: Paste the lines below in your console and tell me why the svg disappears
 		var ns = 'http://www.w3.org/1999/xlink';
 		document.querySelector('svg').setAttribute('xmlns:xlink', ns);
 
 		document.querySelectorAll('g text').forEach(function (el){
 			var w = document.createElementNS(ns, 'a');
-			w.setAttributeNS(ns, 'xlink:href', 'http://google.com');
+			w.setAttributeNS(ns, 'xlink:href', '/search/DO_FCALL/'+ el.textContent);
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
 			el.parentNode.replaceChild(w, el);
@@ -290,6 +289,7 @@ var evalOrg = {};
 
 	var btcAmountReceived = function()
 	{
+		return 0;
 		// https://blockchain.info/q/getreceivedbyaddress/3DJhjy98RiQRc7751B4PPugMkG3BGVogrX / 100000000
 	};
 }).apply(evalOrg);

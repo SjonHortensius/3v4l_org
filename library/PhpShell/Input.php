@@ -66,7 +66,7 @@ class PhpShell_Input extends PhpShell_Entity
 		if (isset(Basic::$action->user))
 			$extra['user'] = Basic::$action->user;
 
-		$input = parent::create(['short' => $short, 'source' => $source, 'hash' => $hash] + $extra);
+		$input = parent::create(['short' => $short, 'hash' => $hash] + $extra);
 		$input->trigger($input->quickVersion);
 
 		return $input;

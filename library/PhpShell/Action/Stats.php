@@ -2,14 +2,19 @@
 
 class PhpShell_Action_Stats extends PhpShell_Action
 {
-	public $submitPerDay;
+	public $inputPerDay;
 
 	public function run()
 	{
-		$this->submitPerDay = Basic::$database->query("
-SELECT DATE_TRUNC('day',submit.created), COUNT(*), AVG(input.penalty) penalty, AVG(\"operationCount\") ops
-FROM submit JOIN input on (id = input)
-GROUP BY date_trunc('day', submit.created)
-ORDER BY date_trunc('day', submit.created) DESC;");
+		$this->inputPerDay = Basic::$database->query("
+SELECT SUBSTRING(DATE_TRUNC('day',created)||'' FROM 0 FOR 11) as date, COUNT(*)
+FROM input
+WHERE now() - created < '1 year'
+GROUP BY date_trunc('day', created)
+ORDER BY date_trunc('day', created) DESC;");
+
+		return parent::run();
+
+//Basic::debug(iterator_to_array($this->submitPerDay));
 	}
 }
