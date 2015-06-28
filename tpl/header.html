@@ -25,8 +25,8 @@
 			<li><a href="/last">recent</a></li>
 			<li><a href="/about">about</a></li>
 {if (isset($this->user))}
-			<li>logged in as <i><a href="/me">{user->name}</a></i></li>
-			<li><a href="/logout">/logout</a></li>
+			<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
+			<li><a href="/logout">logout</a></li>
 {/}
 		</ul>
 	</nav>

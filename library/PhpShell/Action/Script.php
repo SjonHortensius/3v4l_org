@@ -38,10 +38,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 	public function init()
 	{
-		// Retards hammering
-		if (false != strpos($_SERVER['REQUEST_URI'], '?a%5B'))
-			throw new PhpShell_InvalidUrlParametersException('You sound like a bot; stop passing stupid stuff in the Request-URI', [], 404);
-
 		if (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
 			$this->bodyClass = $GLOBALS['_MULTIVIEW'][1]. ' script';
 
@@ -72,16 +68,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ('hhvm' == Basic::$userinput['tab'])
 			Basic::$controller->redirect($this->input->short, true);
 
-		if (!isset($this->user))
+		if (!in_array($this->input->state, ['busy', 'new']))
 		{
-			if (!in_array($this->input->state, ['busy', 'new']))
-			{
-				$this->lastModified = $this->input->getLastModified();
-				$this->cacheLength = '5 minutes';
-			}
-
-			parent::_handleLastModified();
+			$this->_lastModified = $this->input->getLastModified();
+			$this->_cacheLength = '5 minutes';
 		}
+
+		// Rerun caching logic now that we have input.lastModified
+		parent::_handleLastModified();
 
 		if ($this->input->state == 'new')
 		{

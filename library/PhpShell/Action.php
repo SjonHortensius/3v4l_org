@@ -33,6 +33,14 @@ class PhpShell_Action extends Basic_Action
 		parent::init();
 	}
 
+	protected function _handleLastModified()
+	{
+		if (isset($_SESSION['userId']))
+			return false;
+
+		parent::_handleLastModified();
+	}
+
 	public static function resolve($action, $hasClass, $hasTemplate)
 	{
 		if ($hasClass)

@@ -22,7 +22,7 @@ class PhpShell_Version extends PhpShell_Entity
 				$res[ $version->name ] = $version;
 
 			return $res;
-		}, 3600);
+		}, 300);
 
 		return self::$_nameCache[$name];
 	}

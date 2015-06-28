@@ -1,5 +1,9 @@
-<style>
+<ul>
+	<li>New scripts last 7 days: {weekStats['count']}</li>
+	<li>Average penalty: {print intval($this->weekStats['penalty']);}</li>
+</ul>
 
+<style>
 .axis path,
 .axis line {
   fill: none;
@@ -16,15 +20,13 @@
   stroke: steelblue;
   stroke-width: 1.5px;
 }
-
 </style>
-<body>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script>
-
 var margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = 1250 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+    width = 625 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
 
 var parseDate = d3.time.format("%Y-%m-%d").parse;
 
@@ -32,6 +34,7 @@ var x = d3.time.scale()
     .range([0, width]);
 
 var y = d3.scale.linear()
+	.domain([0, 7500])
     .range([height, 0]);
 
 var xAxis = d3.svg.axis()
@@ -52,7 +55,7 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-var data = {print json_encode(iterator_to_array($this->inputPerDay));};
+var data = {print json_encode(iterator_to_array($this->inputPerWeek));};
 
 data.forEach(function(d) {
 	d.date = parseDate(d.date);
@@ -60,7 +63,7 @@ data.forEach(function(d) {
 });
 
 x.domain(d3.extent(data, function(d) { return d.date; }));
-y.domain(d3.extent(data, function(d) { return d.count; }));
+y.domain([0, d3.max(data, function(d) { return d.count; })]);
 
 svg.append("g")
   .attr("class", "x axis")
