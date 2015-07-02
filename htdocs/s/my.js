@@ -23,6 +23,7 @@ var evalOrg = {};
 	"use strict"
 
 	var self = this,
+		editor,
 		refreshTimer,
 		refreshCount = 0;
 
@@ -40,9 +41,13 @@ var evalOrg = {};
 		if (document.forms.length > 0)
 		{
 			document.body.addEventListener('keydown', function(e){
-				if (13 == e.keyCode && e.ctrlKey)
-					document.forms[0].submit();
-			});
+				if (13 != e.keyCode || !e.ctrlKey)
+					return;
+
+				document.getElementsByName('code')[0].value = this.editor.getValue();
+				// Won't trigger submit-event!
+				document.forms[0].submit();
+			}.bind(this));
 		}
 
 		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
@@ -72,24 +77,24 @@ var evalOrg = {};
 		textarea.style.display = 'none';
 
 		ace.config.set('basePath', 'http://cdn.jsdelivr.net/ace/1.1.9/min/')
-		var editor = ace.edit(code);
-		editor.setTheme('ace/theme/chrome');
-		editor.setShowPrintMargin(false);
-		editor.setOption('maxLines', Infinity);
-		editor.session.setMode('ace/mode/php');
-		editor.session.setUseWrapMode(true);
+		this.editor = ace.edit(code);
+		this.editor.setTheme('ace/theme/chrome');
+		this.editor.setShowPrintMargin(false);
+		this.editor.setOption('maxLines', Infinity);
+		this.editor.session.setMode('ace/mode/php');
+		this.editor.session.setUseWrapMode(true);
 
 		if (document.body.classList.contains('index'))
 		{
-			editor.focus();
-			editor.gotoLine(editor.session.getLength());
+			this.editor.focus();
+			this.editor.gotoLine(this.editor.session.getLength());
 		}
 
 		if (document.querySelector('input[type=submit]'))
 			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
 
 		document.forms[0].addEventListener('submit', function(e){
-			textarea.value = editor.getValue();
+			textarea.value = this.editor.getValue();
 		});
 
 		code.addEventListener('keydown', function(e){
@@ -266,20 +271,11 @@ var evalOrg = {};
 
 	this.handleTagcloud = function()
 	{
-		document.querySelectorAll('g text').forEach(function (el){
-			el.addEventListener('click', function(e){
-				window.location = '/search/DO_FCALL/'+ e.target.textContent;
-			});
-		});
-
-		return;
-
-		//FIXME: Paste the lines below in your console and tell me why the svg disappears
-		var ns = 'http://www.w3.org/1999/xlink';
+		var ns = 'http://www.w3.org/1999/xlink', svgNs = 'http://www.w3.org/2000/svg';
 		document.querySelector('svg').setAttribute('xmlns:xlink', ns);
 
 		document.querySelectorAll('g text').forEach(function (el){
-			var w = document.createElementNS(ns, 'a');
+			var w = document.createElementNS(svgNs, 'a');
 			w.setAttributeNS(ns, 'xlink:href', '/search/DO_FCALL/'+ el.textContent);
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
