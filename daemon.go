@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"github.com/lib/pq"
 	"io"
-	"log"
+	"fmt"
 	"os"
 	"os/exec"
+	"net"
 	"strings"
 	"syscall"
 	"time"
@@ -46,6 +47,38 @@ type Result struct {
 	maxMemory	int64
 }
 
+func SdNotify(state string) error {
+	socketAddr := &net.UnixAddr{
+		Name: os.Getenv("NOTIFY_SOCKET"),
+		Net:  "unixgram",
+	}
+
+	if socketAddr.Name == "" {
+		return fmt.Errorf("Systemd notification socket not found")
+	}
+
+	conn, err := net.DialUnix(socketAddr.Net, nil, socketAddr)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Write([]byte(state))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func notifyReady() error { return SdNotify("READY=1")}
+func notifyStatus(status string) error { return SdNotify(fmt.Sprintf("STATUS=%s", status))}
+func notifyErrno(errno uint) error { return SdNotify(fmt.Sprintf("ERRNO=%d", errno))}
+func notifyWatchdog() error { return SdNotify("WATCHDOG=1")}
+
+func exitError(format string, v ...interface{}){
+	fmt.Fprintf(os.Stderr, format, v...)
+	os.Exit(1)
+}
+
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 
@@ -53,11 +86,13 @@ func (this *Input) penalize(r string, p int) {
 		return
 	}
 
-//	log.Printf("Penalized %d for: %s", p, r)
+	if this.penalty > 256 {
+		fmt.Printf("Penalized %d for: %s", p, r)
+	}
 }
 
 func (this *Input) setBusy(newRun bool) {
-	log.SetPrefix("[" + this.short + "] ")
+	notifyStatus("executing "+ this.short)
 
 	incRun := 0
 	if newRun {
@@ -65,13 +100,13 @@ func (this *Input) setBusy(newRun bool) {
 	}
 
 	if r, err := db.Exec("UPDATE input SET run = run + $2, state = 'busy' WHERE short = $1", this.short, incRun); err != nil {
-		log.Fatalf("Input: failed to update run+state: %s", err)
+		exitError("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		log.Fatalf("Input: failed to update run+state; %d rows affected, %s", a, err)
+		exitError("Input: failed to update run+state; %d rows affected, %s", a, err)
 	}
 
 	if err := db.QueryRow("SELECT id, run FROM input WHERE short = $1", this.short).Scan(&this.id, &this.run); err != nil {
-		log.Fatalf("Input: failed to fetch run: %s", err)
+		exitError("Input: failed to fetch run: %s", err)
 	}
 }
 
@@ -82,12 +117,12 @@ func (this *Input) setDone() {
 	}
 
 	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3 WHERE short = $1 AND state = 'busy'", this.short, this.penalty, state); err != nil {
-		log.Fatalf("Input: failed to update: %s", err)
+		exitError("Input: failed to update: %s", err)
 	}
 
-	log.Printf("state = %s penalty = %d", state, this.penalty)
+	fmt.Printf("state = %s penalty = %d", state, this.penalty)
 
-	log.SetPrefix("")
+	notifyStatus("completed "+ this.short)
 	os.RemoveAll("/tmp/")
 }
 
@@ -105,12 +140,12 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
 		var duplicateKey = "pq: duplicate key value violates unique constraint \"output_hash_key\""
 		if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", o.hash, o.raw); err != nil && err.Error() != duplicateKey {
-			log.Fatalf("Output: failed to store: %s", err)
+			exitError("Output: failed to store: %s", err)
 		}
 
 		// LastInsertId doesn't work
 		if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
-			log.Fatalf("Output: failed to retrieve after storing: %s", err)
+			exitError("Output: failed to retrieve after storing: %s", err)
 		}
 	}
 
@@ -161,16 +196,16 @@ func (this *Result) store() {
 	)
 
 	if err != nil {
-		log.Fatalf("Result: failed to store: %s", err)
+		exitError("Result: failed to store: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		log.Fatalf("Result: failed to store: %d, %s", a, err)
+		exitError("Result: failed to store: %d, %s", a, err)
 	}
 }
 
 func (this *Input) execute(v *Version) *Result {
 	cmdArgs := strings.Split(v.command, " ")
 
-	log.SetPrefix("[" + this.short + ":" + v.name + "] ")
+	notifyStatus("executing "+ this.short +": "+ v.name)
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -203,7 +238,7 @@ func (this *Input) execute(v *Version) *Result {
 	cmdR := io.MultiReader(stdout, stderr)
 
 	if err := cmd.Start(); err != nil {
-		log.Printf("While starting: %s", err)
+		fmt.Printf("While starting: %s", err)
 		return &Result{}
 	}
 
@@ -212,7 +247,7 @@ func (this *Input) execute(v *Version) *Result {
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
 			if err != nil {
-				log.Printf("While reading output: %s", err)
+				fmt.Printf("While reading output: %s", err)
 				break
 			}
 
@@ -240,7 +275,7 @@ func (this *Input) execute(v *Version) *Result {
 		state, err := c.Process.Wait()
 
 		if err != nil {
-			log.Printf("While waiting for process: %s", err)
+			fmt.Printf("While waiting for process: %s", err)
 		}
 
 		procDone <- state
@@ -252,7 +287,7 @@ func (this *Input) execute(v *Version) *Result {
 	select {
 	case <-time.After(2500 * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
-			log.Printf("Kill after timeout resulted in : %s", err)
+			fmt.Printf("Kill after timeout resulted in : %s", err)
 
 			if err.Error() != "os: process already finished" && err.Error() != "no such process" {
 				this.penalize("Failed to kill after timeout", 256)
@@ -276,14 +311,14 @@ func refreshVersions() {
 	rs, err := db.Query("SELECT id, name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
 
 	if err != nil {
-		log.Fatalf("Could not populate versions: %s", err)
+		exitError("Could not populate versions: %s", err)
 	}
 
 	for rs.Next() {
 		v := Version{}
 
 		if err := rs.Scan(&v.id, &v.name, &v.command, &v.isHelper); err != nil {
-			log.Fatalf("Error fetching version: %s", err)
+			exitError("Error fetching version: %s", err)
 		}
 
 		newVersions = append(newVersions, &v)
@@ -296,20 +331,24 @@ func doWork() {
 	rs, err := db.Query("DELETE FROM queue RETURNING input, version")
 
 	if err != nil {
-		log.Fatalf("doWork: error in DELETE query: %s", err)
+		exitError("doWork: error in DELETE query: %s", err)
 	}
 
+	var input Input;
 	for rs.Next() {
-		input := &Input{}
+		if input.short != "" {
+			time.Sleep(250 * time.Millisecond)
+		}
+
 		input.uniqueOutput = map[string]bool{}
 		var qVersion sql.NullString
 
 		if err := rs.Scan(&input.short, &qVersion); err != nil {
-			log.Fatalf("doWork: error fetching work: %s", err)
+			exitError("doWork: error fetching work: %s", err)
 		}
 
 		if err := db.QueryRow("SELECT id FROM input WHERE short = $1", input.short).Scan(&input.id); err != nil {
-			log.Fatalf("doWork: error verifying input: %s", err)
+			exitError("doWork: error verifying input: %s", err)
 		}
 
 		input.setBusy(!qVersion.Valid)
@@ -321,9 +360,6 @@ func doWork() {
 		}
 
 		input.setDone()
-
-		//FIXME: make dependant on /proc/loadavg
-		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -343,21 +379,21 @@ func init() {
 	db, err = sql.Open("postgres", DSN)
 
 	if err != nil {
-		log.Fatalf("Failed connect to db: %s", err)
+		exitError("Failed connect to db: %s", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping db: %s", err)
+		exitError("Failed to ping db: %s", err)
 	}
 
 	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			log.Printf("Daemon.report: %s", err)
+			fmt.Printf("Daemon.report: %s", err)
 		}
 	})
 
 	if err := l.Listen("daemon"); err != nil {
-		log.Fatalf("Could not setup Listener %s", err)
+		exitError("Could not setup Listener %s", err)
 	}
 
 	refreshVersions()
@@ -374,13 +410,14 @@ func init() {
 
 	for key, value := range limits {
 		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value) * 1.25)}); err != nil {
-			log.Fatalf("Failed to set resourceLimit: %d to %d: %s", key, value, err)
+			exitError("Failed to set resourceLimit: %d to %d: %s", key, value, err)
 		}
 	}
 }
 
 func main() {
-	log.Printf("Daemon started")
+	fmt.Printf("Daemon started")
+	notifyReady()
 
 	// Process pending work first
 	doWork()
@@ -388,14 +425,13 @@ func main() {
 	for {
 		select {
 		case <-l.Notify:
-			go doWork()
+			doWork()
 
 		//FIXME: doesn't run every 5mins, but only after 5mins of inactivity
 		case <-time.After(5 * time.Minute):
+			notifyStatus("refreshed versions")
 			refreshVersions()
 
-//		case <-time.After(90 * time.Second):
-//			doWork()
 		}
 	}
 }
