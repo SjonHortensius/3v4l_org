@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"net"
 	"strings"
 	"syscall"
 	"time"
@@ -47,35 +46,8 @@ type Result struct {
 	maxMemory	int64
 }
 
-func SdNotify(state string) error {
-	socketAddr := &net.UnixAddr{
-		Name: os.Getenv("NOTIFY_SOCKET"),
-		Net:  "unixgram",
-	}
-
-	if socketAddr.Name == "" {
-		return fmt.Errorf("Systemd notification socket not found")
-	}
-
-	conn, err := net.DialUnix(socketAddr.Net, nil, socketAddr)
-	if err != nil {
-		return err
-	}
-
-	_, err = conn.Write([]byte(state))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-func notifyReady() error { return SdNotify("READY=1")}
-func notifyStatus(status string) error { return SdNotify(fmt.Sprintf("STATUS=%s", status))}
-func notifyErrno(errno uint) error { return SdNotify(fmt.Sprintf("ERRNO=%d", errno))}
-func notifyWatchdog() error { return SdNotify("WATCHDOG=1")}
-
 func exitError(format string, v ...interface{}){
-	fmt.Fprintf(os.Stderr, format, v...)
+	fmt.Fprintf(os.Stderr, format+"\n", v...)
 	os.Exit(1)
 }
 
@@ -87,13 +59,11 @@ func (this *Input) penalize(r string, p int) {
 	}
 
 	if this.penalty > 256 {
-		fmt.Printf("Penalized %d for: %s", p, r)
+		fmt.Printf("Penalized %d for: %s\n", p, r)
 	}
 }
 
 func (this *Input) setBusy(newRun bool) {
-	notifyStatus("executing "+ this.short)
-
 	incRun := 0
 	if newRun {
 		incRun = 1
@@ -120,9 +90,10 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
-	fmt.Printf("state = %s penalty = %d", state, this.penalty)
+	if this.penalty > 128 {
+		fmt.Printf("[%s] state = %s penalty = %d\n", this.short, state, this.penalty)
+	}
 
-	notifyStatus("completed "+ this.short)
 	os.RemoveAll("/tmp/")
 }
 
@@ -196,7 +167,7 @@ func (this *Result) store() {
 	)
 
 	if err != nil {
-		exitError("Result: failed to store: %s", err)
+		fmt.Println("Result: failed to store input=%s,version=%s,run=%d: %s", this.input.short, this.version.name, this.input.run, err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		exitError("Result: failed to store: %d, %s", a, err)
 	}
@@ -204,8 +175,6 @@ func (this *Result) store() {
 
 func (this *Input) execute(v *Version) *Result {
 	cmdArgs := strings.Split(v.command, " ")
-
-	notifyStatus("executing "+ this.short +": "+ v.name)
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -238,7 +207,7 @@ func (this *Input) execute(v *Version) *Result {
 	cmdR := io.MultiReader(stdout, stderr)
 
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("While starting: %s", err)
+		fmt.Printf("While starting: %s\n", err)
 		return &Result{}
 	}
 
@@ -247,7 +216,7 @@ func (this *Input) execute(v *Version) *Result {
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
 			if err != nil {
-				fmt.Printf("While reading output: %s", err)
+				fmt.Printf("While reading output: %s\n", err)
 				break
 			}
 
@@ -275,7 +244,7 @@ func (this *Input) execute(v *Version) *Result {
 		state, err := c.Process.Wait()
 
 		if err != nil {
-			fmt.Printf("While waiting for process: %s", err)
+			fmt.Printf("While waiting for process: %s\n", err)
 		}
 
 		procDone <- state
@@ -287,7 +256,7 @@ func (this *Input) execute(v *Version) *Result {
 	select {
 	case <-time.After(2500 * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
-			fmt.Printf("Kill after timeout resulted in : %s", err)
+			fmt.Printf("Kill after timeout resulted in : %s\n", err)
 
 			if err.Error() != "os: process already finished" && err.Error() != "no such process" {
 				this.penalize("Failed to kill after timeout", 256)
@@ -334,11 +303,8 @@ func doWork() {
 		exitError("doWork: error in DELETE query: %s", err)
 	}
 
-	var input Input;
 	for rs.Next() {
-		if input.short != "" {
-			time.Sleep(250 * time.Millisecond)
-		}
+		input := &Input{}
 
 		input.uniqueOutput = map[string]bool{}
 		var qVersion sql.NullString
@@ -360,6 +326,9 @@ func doWork() {
 		}
 
 		input.setDone()
+
+		// Make depend on loadavg
+		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -388,7 +357,7 @@ func init() {
 
 	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			fmt.Printf("Daemon.report: %s", err)
+			fmt.Printf("While creating listener: %s\n", err)
 		}
 	})
 
@@ -416,8 +385,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("Daemon started")
-	notifyReady()
+	fmt.Printf("Daemon ready\n")
 
 	// Process pending work first
 	doWork()
@@ -425,11 +393,10 @@ func main() {
 	for {
 		select {
 		case <-l.Notify:
-			doWork()
+			go doWork()
 
 		//FIXME: doesn't run every 5mins, but only after 5mins of inactivity
 		case <-time.After(5 * time.Minute):
-			notifyStatus("refreshed versions")
 			refreshVersions()
 
 		}

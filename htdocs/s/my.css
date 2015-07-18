@@ -204,6 +204,11 @@ dt
 	cursor: pointer;
 }
 
+dt span
+{
+	cursor: help;
+}
+
 dd
 {
 	margin: 1em 0 1.5em 0;

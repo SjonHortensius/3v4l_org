@@ -6,5 +6,5 @@
 	{$this->raw = $r->getSingle()->output->getRaw($this->input, 'hhvm-bytecode');}
 	{$o = strpos($this->raw, "Pseudo-main at "); if (false !== $o) $this->raw = substr($this->raw, $o);}
 	<pre>{print htmlspecialchars($this->raw);}</pre>
-	<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHVM 3.5.0</p>
+	<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHVM 3.7.0</p>
 {/}
