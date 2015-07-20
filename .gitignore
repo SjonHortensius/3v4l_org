@@ -1,3 +1,5 @@
 cache/*
 htdocs/s/c.*
 build/out/
+build/in/
+build/root/

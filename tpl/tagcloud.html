@@ -6,7 +6,7 @@ var fill = d3.scale.category20();
 var fontSize = d3.scale.linear().range([10, 100]).domain([{min}, {max}]);
 
 var layout = d3.layout.cloud()
-	.size([1250, 600])
+	.size([1022, 600])
 	.padding(5)
 	.rotate(0)
 	.font('Impact')
@@ -17,10 +17,10 @@ var layout = d3.layout.cloud()
 
 function draw(words) {
 	d3.select('body').append('svg')
-		.attr('width', 1250)
+		.attr('width', 1022)
 		.attr('height', 600)
 		.append('g')
-		.attr('transform', 'translate(625,300)')
+		.attr('transform', 'translate(511,300)')
 		.selectAll('text')
 		.data(words)
 		.enter().append('text')

@@ -1,13 +1,17 @@
 #!/bin/bash
 set -e
-cd `dirname $0`/root
+cd `dirname $0`/in/
 
 version=$1
 
 echo -ne "Downloading...\r"
-curl -sS http://nl3.php.net/distributions/php-$version.tar.bz2 | tar xj || curl -# http://museum.php.net/php5/php-$version.tar.bz2 | tar xj
+[[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl3.php.net/distributions/php-$version.tar.bz2
+[[ `du php-$version.tar.bz2|cut -f1` -lt 999 ]] && rm php-$version.tar.bz2
+[[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
 
-cd php-$version/
+echo -ne "Extracting...\r"
+tar xjf php-$version.tar.bz2 -C ../root/
+cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 

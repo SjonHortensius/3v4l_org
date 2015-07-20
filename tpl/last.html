@@ -18,30 +18,27 @@
 		</thead>
 
 		<tbody>
-		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
+		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->row)}
 			<tr>
 				<td>
-					{if ($this->prevResult->source->id === $this->result->id)}
-						<i class="icon icon-edit" title="this script was a template for {prevResult->short}"></i>
+					{if ($this->prevrow->sourceId === $this->row->id)}
+						<i class="icon icon-edit" title="this script was a template for {prevrow->short}"></i>
 					{:}
-						{!-- for offset only --}
-						<i class="icon icon-"></i>
+						<i class="icon-"></i>
 					{/}
-
-					&nbsp;<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
+					 <a href="/{row->short}">{row->short}</a>{if (isset($this->row->title))} <i>{row->title}</i>{/}
 				</td>
-				<td>{print substr($this->result->created, 0, 19);}</td>
-				<td>{print round($this->result->userTime, 2);} s</td>
-				<td>{print round($this->result->systemTime, 2);} s</td>
-				<td>{print round($this->result->maxMemory/1024);} MiB</td>
-				<td>{result->run}</td>
-				<td>{result->operationCount}</td>
-				<td>{result->variance}</td>
+				<td><time datetime="{row->getCreatedUtc('c')}"/>{row->getCreatedUtc()}</td>
+				<td>{print round($this->row->userTime, 2);} s</td>
+				<td>{print round($this->row->systemTime, 2);} s</td>
+				<td>{print round($this->row->maxMemory/1024);} MiB</td>
+				<td>{row->run}</td>
+				<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
+				<td>{row->variance}</td>
 			</tr>
 
-			{$this->prevResult = $this->result;}
+			{$this->prevrow = $this->row;}
 		{/}
 		</tbody>
 	</table>
-
 </div>

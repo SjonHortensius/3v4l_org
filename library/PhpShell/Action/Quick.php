@@ -25,7 +25,6 @@ class PhpShell_Action_Quick extends PhpShell_Action
 
 	public function init()
 	{
-		die('boefje');
 		$this->_userinputConfig['version']['values'] = PhpShell_Version::find('"isHelper" = false', [], ['name' => false])->getSimpleList('name', 'name');
 
 		if (isset($GLOBALS['_MULTIVIEW'][1]))

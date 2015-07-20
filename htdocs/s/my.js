@@ -203,6 +203,22 @@ var evalOrg = {};
 		});
 	};
 
+	this.handleIndex = function()
+	{
+		document.querySelectorAll('time').forEach(function (el){
+			var d = new Date(el.getAttribute('datetime'));
+			el.setAttribute('title', 'at '+ ('0'+d.getHours()).slice(-2) +':'+ ('0'+d.getMinutes()).slice(-2) +':'+ ('0'+d.getSeconds()).slice(-2));
+		});
+	};
+
+	this.handleLast = function()
+	{
+		document.querySelectorAll('time').forEach(function (el){
+			var d = new Date(el.getAttribute('datetime'));
+			el.innerHTML = ('0'+d.getHours()).slice(-2) +':'+ ('0'+d.getMinutes()).slice(-2) +':'+ ('0'+d.getSeconds()).slice(-2);
+		});
+	};
+
 	this.handlePerf = function()
 	{
 		if (!perfAggregates)

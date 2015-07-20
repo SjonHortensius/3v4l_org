@@ -36,11 +36,11 @@
 <div class="column">
 	<h2>Recent submissions</h2>
 	<ul>
-		{foreach ($this->last->getPage(1, 5) as $this->result)}
+		{foreach ($this->last->getPage(1, 5) as $this->row)}
 			<li>
-				<a href="/{result->short}">{if (isset($this->result->title))}{result->title}{:}{result->short}{/}</a>
-				{$d = time() - strtotime($this->result->created);}
-				 <i title="at {print substr($this->result->created, 11, 8);}">
+				<a href="/{row->short}">{if (isset($this->row->title))}{row->title}{:}{row->short}{/}</a>
+				{$d = time() - strtotime($this->row->created);}
+				 <time datetime="{row->getCreatedUtc('c')}"/>
 					{if ($d <= 60)}
 						just now
 					{:}
@@ -50,7 +50,7 @@
 							{print ceil($d/3600);} hours ago
 						{/}
 					{/}
-				</i>
+				</time>
 			</li>
 		{/}
 	</ul>
