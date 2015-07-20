@@ -274,7 +274,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return true;
 	}
 
-	public function getCreatedUtc($format = 'H:i:s')
+	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
 	{
 		$dt = new DateTime($this->created);
 		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);

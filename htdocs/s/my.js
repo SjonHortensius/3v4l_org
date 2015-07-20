@@ -50,6 +50,10 @@ var evalOrg = {};
 			}.bind(this));
 		}
 
+		localTime(function(el, d){
+			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
+		}, 'input + time');
+
 		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
 		if ('function' == typeof this[ pageHandler ])
 			this[ pageHandler ]();
@@ -203,19 +207,27 @@ var evalOrg = {};
 		});
 	};
 
+	var localTime = function(cb, sel)
+	{
+		sel = sel || 'time';
+
+		document.querySelectorAll(sel).forEach(function (el){
+			var d = new Date(el.getAttribute('datetime'));
+			el.setAttribute('title', d.toString());
+			cb(el, d);
+		});
+	};
+
 	this.handleIndex = function()
 	{
-		document.querySelectorAll('time').forEach(function (el){
-			var d = new Date(el.getAttribute('datetime'));
-			el.setAttribute('title', 'at '+ ('0'+d.getHours()).slice(-2) +':'+ ('0'+d.getMinutes()).slice(-2) +':'+ ('0'+d.getSeconds()).slice(-2));
-		});
+		localTime(function(){}, 'time');
 	};
 
 	this.handleLast = function()
 	{
-		document.querySelectorAll('time').forEach(function (el){
-			var d = new Date(el.getAttribute('datetime'));
-			el.innerHTML = ('0'+d.getHours()).slice(-2) +':'+ ('0'+d.getMinutes()).slice(-2) +':'+ ('0'+d.getSeconds()).slice(-2);
+		localTime(function(el, d){
+			function pad(d){ return ('0'+d).slice(-2); };
+			el.innerHTML = pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 		});
 	};
 

@@ -252,6 +252,12 @@ th
 	text-align: right;
 }
 
+th:first-child
+{
+	min-width: 150px;
+	text-align: center;
+}
+
 tbody tr:not(.header):nth-child(odd)
 {
 	background-color:#eee;
@@ -396,6 +402,12 @@ nav header a
 small
 {
 	color: #999;
+}
+
+input + time
+{
+	color: #999;
+	font-size: 10px;
 }
 
 nav ul

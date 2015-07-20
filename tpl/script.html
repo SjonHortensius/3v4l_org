@@ -1,7 +1,7 @@
 <form method="post" action="/new">
 	<div>
 		<input type="text" name="title" id="title" size="48" maxlength="64" value="{if (isset($this->input->title))}{print htmlspecialchars($this->input->title);}{/}" placeholder="Untitled" />
-		<small> @ {print substr($this->input->created, 0, 19);}</small>
+		<time datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
 	</div>
 
 	<div>
