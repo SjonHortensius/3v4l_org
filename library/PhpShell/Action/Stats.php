@@ -21,8 +21,21 @@ SELECT COUNT(*) count, AVG(penalty) penalty
 FROM input
 WHERE now() - created < '1 week';")));
 
-		return parent::run();
+		echo Basic::$database->query("
+			SELECT
+				count(*), ip,
+				SUM(submit.count) * 4 * COUNT(input.\"quickVersion\") +
+				SUM(submit.count) * 256 * (COUNT(*)-COUNT(input.\"quickVersion\")) +
+				AVG(penalty)/128 p
+			FROM submit
 
+JOIN input ON (input.id = submit.input)
+WHERE now()-submit.created < '24 hour'
+group by ip
+order by SUM(submit.count)*256 + AVG(penalty)/128 desc
+limit 30;")->show();
+
+		return parent::run();
 //Basic::debug(iterator_to_array($this->submitPerWeek));
 	}
 }
