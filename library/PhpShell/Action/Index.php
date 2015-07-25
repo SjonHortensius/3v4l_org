@@ -4,7 +4,7 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 {
 	public $bodyClass = 'index';
 	public $lastModified = 'now';
-	public $cacheLength = '3 minutes';
+	protected $_cacheLength = '45 seconds';
 
 	public function init()
 	{

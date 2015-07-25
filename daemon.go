@@ -59,7 +59,7 @@ func (this *Input) penalize(r string, p int) {
 	}
 
 	if this.penalty > 256 {
-		fmt.Printf("Penalized %d for: %s\n", p, r)
+		fmt.Printf("Penalized %s: %d + %d for: %s\n", this.short, this.penalty, p, r)
 	}
 }
 

@@ -8,9 +8,13 @@ class PhpShell_Action extends Basic_Action
 
 	public function init()
 	{
-//		$_SESSION['userId']=1;
 		if (isset($_SESSION['userId']))
 			$this->user = PhpShell_User::get($_SESSION['userId']);
+		elseif (!empty($_COOKIE))
+		{
+			foreach (array_keys($_COOKIE) as $name)
+				setcookie($name, '', strtotime('-1 day'));
+		}
 
 		if (0 && in_array($_SERVER['REMOTE_ADDR'], ['31.201.148.110']))
 		{

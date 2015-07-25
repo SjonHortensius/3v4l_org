@@ -29,6 +29,15 @@ class PhpShell_Action_New extends PhpShell_Action
 		$hash = PhpShell_Input::getHash($code);
 #throw new PhpShell_MaintenanceModeException('We are currently in maintenance, read-only mode', [], 503);
 
+		$penalty = Basic::$database->query("
+			SELECT SUM(submit.count)*256 + AVG(penalty)/128 FROM submit
+			JOIN input ON (input.id = submit.input)
+			WHERE ip = ? AND submit.created - now() < '48 hour'
+		", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0];
+
+		if ($penalty > 4096)
+			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
+
 		try
 		{
 			$input = PhpShell_Input::byHash($hash);
