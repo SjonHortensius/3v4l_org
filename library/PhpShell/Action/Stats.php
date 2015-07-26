@@ -24,8 +24,9 @@ WHERE now() - created < '1 week';")));
 		echo Basic::$database->query("
 			SELECT
 				count(*), ip,
-				SUM(submit.count) * 4 * COUNT(input.\"quickVersion\") +
-				SUM(submit.count) * 256 * (COUNT(*)-COUNT(input.\"quickVersion\")) +
+				SUM(submit.count),
+				SUM(submit.count) * 8 * COUNT(input.\"quickVersion\") ||'+'||
+				SUM(submit.count) * 64 * (COUNT(*)-COUNT(input.\"quickVersion\")) ||'+'||
 				AVG(penalty)/128 p
 			FROM submit
 

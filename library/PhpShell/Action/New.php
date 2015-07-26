@@ -32,8 +32,8 @@ class PhpShell_Action_New extends PhpShell_Action
 		# count(expression) - number of input rows for which the value of expression is not null
 		$penalty = Basic::$database->query("
 			SELECT
-				SUM(submit.count) * 4 * COUNT(input.\"quickVersion\") +
-				SUM(submit.count) * 256 * (COUNT(*)-COUNT(input.\"quickVersion\")) +
+				SUM(submit.count) * 8 * COUNT(input.\"quickVersion\") +
+				SUM(submit.count) * 64 * (COUNT(*)-COUNT(input.\"quickVersion\")) +
 				AVG(penalty)/128 p
 			FROM submit
 			JOIN input ON (input.id = submit.input)
