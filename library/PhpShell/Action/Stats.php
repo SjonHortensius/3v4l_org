@@ -7,6 +7,9 @@ class PhpShell_Action_Stats extends PhpShell_Action
 
 	public function run()
 	{
+		if (Basic::$config->PRODUCTION_MODE)
+			throw new PhpShell_Action_Stats_NotAvailableException('Not available');
+
 		$lastSunday = date('Y-m-d', strtotime('last monday'));
 
 		$this->inputPerWeek = Basic::$database->query("

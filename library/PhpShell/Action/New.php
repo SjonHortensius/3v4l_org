@@ -7,7 +7,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	protected $_userinputConfig = array(
 		'title' => [
 			'valueType' => 'scalar',
-			'regexp' => '~^[[:graph:] ]*$~',
+			'regexp' => '~^[\x20-\x7e\x80-\xff]*$~',
 			'options' => [
 				'maxLength' => 64,
 //				'minLength' => 0,
@@ -40,7 +40,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			WHERE ip = ? AND now() - submit.created < '24 hour'
 		", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
 
-		if ($penalty > 4096)
+		if ($penalty > 150*1000)
 			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
 
 		try

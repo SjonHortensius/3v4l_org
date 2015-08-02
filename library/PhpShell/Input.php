@@ -19,8 +19,11 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getCode()
 	{
+		if ($this->state == 'private')
+			throw new PhpShell_Input_PrivateException('This script is marked as private', [], 401);
+
 		if (!is_readable(self::PATH. $this->short))
-			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...');
+			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...', [], 404);
 
 		return file_get_contents(self::PATH. $this->short);
 	}
