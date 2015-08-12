@@ -8,19 +8,14 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		'versions' => [
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
 			'required' => true,
-			'options' => ['minLength' => 5, 'maxLength' => 24,
-				'placeholder' => 'versions, separated by spaces',
-			],
 			'values' => [],
+			'options' => ['multiple' => true],
 		],
 		'controls' => [
-			'valueType' => 'scalar',
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
-			'required' => false,
-			'options' => ['minLength' => 5, 'maxLength' => 24,
-				'placeholder' => 'versions, separated by spaces',
-			],
+			'required' => true,
 			'values' => [],
+			'options' => ['multiple' => true],
 		],
 		'page' => [
 			'valueType' => 'integer',
@@ -52,7 +47,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (empty(Basic::$userinput['versions']) || count(Basic::$userinput['controls']) < 2)
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select at least one version and two controls');
 
-		$params = []; $joins=[]; $q = "input.state = 'done'";
+		$params = []; $joins=[]; $q = "true";
 		foreach (Basic::$userinput['versions'] as $i => $v)
 		{
 			$alias = 'v'.$i;
@@ -70,7 +65,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			array_push($params, PhpShell_Version::byName($v)->id);
 		}
 
-		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q."\n", $params, ['input.id' => true]);
+		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
 		foreach ($joins as $join)
 			$this->entries->addJoin(...$join);
 
