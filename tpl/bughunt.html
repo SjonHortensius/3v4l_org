@@ -1,0 +1,50 @@
+<ul id="tabs">
+	<li class="active"><a href="/bughunt">Bughunt results</a></li>
+</ul>
+
+<div>
+	<h2>List of scripts where the output from ({print implode(' == ', Basic::$userinput['versions']);}) != ({print implode(' == ', Basic::$userinput['controls']);})</h2>
+
+	<table>
+	<thead>
+		<tr>
+			<th>name</th>
+			<th>created</th>
+			<th># runs</th>
+			<th># operations</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{$count=0;}
+		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
+			{$count++;}
+		<tr>
+			<td>
+				<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
+			</td>
+			<td>{print substr($this->result->created, 0, 19);}</td>
+			<td>{result->run}</td>
+			<td>{result->operationCount}</td>
+		</tr>
+		{/}
+	</tbody>
+	</table>
+
+	<p class="pagination">
+		{$this->base = '/bughunt/'. implode('+', Basic::$userinput['versions']).'/'.implode('+', Basic::$userinput['controls']);}
+		Pages:&nbsp;
+		{if (Basic::$userinput['page'] > 1)}
+			{$this->prevPage = Basic::$userinput['page']-1;}
+			<a href="{base}/{prevPage}">{prevPage}</a>
+			&hellip;
+		{/}
+
+		{userinput['page']}
+
+		{if ($count==25)}
+			&hellip;
+			{$this->nextPage = Basic::$userinput['page']+1;}
+			<a href="{base}/{nextPage}">{nextPage}</a>
+		{/}
+</div>
