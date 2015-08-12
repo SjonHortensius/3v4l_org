@@ -3,6 +3,11 @@ class PhpShell_BughuntSet extends Basic_EntitySet
 {
 	protected $_joins = [];
 
+	protected function _query($fields = "*", $groupBy = null)
+	{
+		return parent::_query("input.*", $groupBy);
+	}
+
 	//FIXME; move to Basic_EntitySet?
 	public function addJoin($table, $condition, $alias = null)
 	{

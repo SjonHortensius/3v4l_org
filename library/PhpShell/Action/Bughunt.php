@@ -3,12 +3,12 @@
 class PhpShell_Action_Bughunt extends PhpShell_Action
 {
 	public $formSubmit = 'array_intersect_uassoc();';
-	public $formTitle = '3v4l.org<small> - Find scripts q one version differs from the others';
+	public $formTitle = '3v4l.org<small> - Find scripts where one version differs from the others</small>';
 	protected $_userinputConfig = array(
 		'versions' => [
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
 			'required' => true,
-			'options' => ['minLength' => 5, 'maxLength' => 32,
+			'options' => ['minLength' => 5, 'maxLength' => 24,
 				'placeholder' => 'versions, separated by spaces',
 			],
 			'values' => [],
@@ -17,7 +17,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			'valueType' => 'scalar',
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
 			'required' => false,
-			'options' => ['minLength' => 5, 'maxLength' => 32,
+			'options' => ['minLength' => 5, 'maxLength' => 24,
 				'placeholder' => 'versions, separated by spaces',
 			],
 			'values' => [],
@@ -70,7 +70,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			array_push($params, PhpShell_Version::byName($v)->id);
 		}
 
-		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => false]);
+		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q."\n", $params, ['input.id' => true]);
 		foreach ($joins as $join)
 			$this->entries->addJoin(...$join);
 
