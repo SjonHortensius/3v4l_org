@@ -9,7 +9,7 @@ ga('send', 'pageview');
 
 NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function(cb) {
 	for (var i = 0; i < this.length; i++) {
-		cb(this.item(i));
+		cb(this.item(i), i);
 	}
 }
 
@@ -150,7 +150,38 @@ var evalOrg = {};
 		var r = this.responseText.match(/<div id="tab">([\s\S]*?)<\/div>/);
 		if (!r)
 			window.location.reload();
-		document.getElementById('tab').innerHTML = r[1];
+
+		// by http://stackoverflow.com/users/4251625/abe, via http://chat.stackoverflow.com/transcript/message/25068725#25068725
+		var tab = document.getElementById('tab');
+		var boxSizes = [];
+
+		// saves the boxes' sizes and forces them to not change while replacing the content
+		tab.querySelectorAll('dd').forEach(function(dd){
+			var h = window.getComputedStyle(dd, null).height;
+			boxSizes.push(h);
+			dd.style.height = h;
+			dd.style.maxHeight = h;
+		});
+
+		requestAnimationFrame(function(){
+			tab.innerHTML = r[1];
+
+			// gets the new <dd>s and applies the previous saved sizes
+			var dds = tab.querySelectorAll('dd');
+			dds.forEach(function(dd, i){
+				dd.style.height = boxSizes[i] || '';
+				dd.style.maxHeight = boxSizes[i] || '';
+			});
+
+			// waits for the previous css to get actually applied,
+			// and removes the hardcoded values
+			requestAnimationFrame(function(){
+				dds.forEach(function(dd){
+					dd.style.height = '';
+					dd.style.maxHeight = '';
+				});
+			});
+		});
 
 		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
 		if (t)
