@@ -36,7 +36,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (isset($_MULTIVIEW[2]))
 			$_POST['controls'] = explode('+', $_MULTIVIEW[2]);
 
-		$this->_userinputConfig['versions']['values'] = 
+		$this->_userinputConfig['versions']['values'] =
 			$this->_userinputConfig['controls']['values'] = PhpShell_Version::find('"isHelper" = false', [], ['name' => false])->getSimpleList('name', 'name');
 
 		parent::init();
@@ -47,27 +47,31 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (empty(Basic::$userinput['versions']) || count(Basic::$userinput['controls']) < 2)
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select at least one version and two controls');
 
-		$params = []; $joins=[]; $q = "true";
-		foreach (Basic::$userinput['versions'] as $i => $v)
-		{
-			$alias = 'v'.$i;
-			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
+		$this->entries = Basic::$cache->get(__CLASS__.'::'.md5(serialize($_POST)), function(){
+			$params = []; $joins=[]; $q = "true";
+			foreach (Basic::$userinput['versions'] as $i => $v)
+			{
+				$alias = 'v'.$i;
+				$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
 
-			array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-			array_push($params, PhpShell_Version::byName($v)->id);
-		}
+				array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
+				array_push($params, PhpShell_Version::byName($v)->id);
+			}
 
-		foreach (Basic::$userinput['controls'] as $i => $v)
-		{
-			$alias = 'c'.$i;
-			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
-			array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-			array_push($params, PhpShell_Version::byName($v)->id);
-		}
+			foreach (Basic::$userinput['controls'] as $i => $v)
+			{
+				$alias = 'c'.$i;
+				$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
+				array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
+				array_push($params, PhpShell_Version::byName($v)->id);
+			}
 
-		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
-		foreach ($joins as $join)
-			$this->entries->addJoin(...$join);
+			$entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
+			foreach ($joins as $join)
+				$entries->addJoin(...$join);
+
+			return iterator_to_array($entries->getPage(Basic::$userinput['page'], 25));
+		}, 48 * 3600);
 
 		return parent::run();
 	}

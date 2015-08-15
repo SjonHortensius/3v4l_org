@@ -17,7 +17,7 @@
 
 	<tbody>
 		{$count=0;}
-		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
+		{foreach ($this->entries as $this->result)}
 			{$count++;}
 		<tr>
 			<td>
