@@ -153,12 +153,12 @@ var evalOrg = {};
 
 		// by http://stackoverflow.com/users/4251625/abe, via http://chat.stackoverflow.com/transcript/message/25068725#25068725
 		var tab = document.getElementById('tab');
-		var boxSizes = [];
+		var boxSize = [], boxScroll = [];
 
 		// saves the boxes' sizes and forces them to not change while replacing the content
 		tab.querySelectorAll('dd').forEach(function(dd){
 			var h = window.getComputedStyle(dd, null).height;
-			boxSizes.push(h);
+			boxSize.push(h); boxScroll.push(dd.scrollTop);
 			dd.style.height = h;
 			dd.style.maxHeight = h;
 		});
@@ -169,16 +169,17 @@ var evalOrg = {};
 			// gets the new <dd>s and applies the previous saved sizes
 			var dds = tab.querySelectorAll('dd');
 			dds.forEach(function(dd, i){
-				dd.style.height = boxSizes[i] || '';
-				dd.style.maxHeight = boxSizes[i] || '';
+				dd.style.height = boxSize[i] || '';
+				dd.style.maxHeight = boxSize[i] || '';
 			});
 
 			// waits for the previous css to get actually applied,
 			// and removes the hardcoded values
 			requestAnimationFrame(function(){
-				dds.forEach(function(dd){
+				dds.forEach(function(dd, i){
 					dd.style.height = '';
 					dd.style.maxHeight = '';
+					dd.scrollTop = boxScroll[i] || 0;
 				});
 			});
 		});
@@ -187,7 +188,7 @@ var evalOrg = {};
 		if (t)
 			document.getElementById('tabs').innerHTML = t[1];
 
-		var pageHandler = 'handle'+ document.body.className.ucFirst();
+		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
 		if ('function' == typeof self[ pageHandler ])
 			self[ pageHandler ]();
 

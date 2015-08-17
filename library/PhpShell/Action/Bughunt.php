@@ -47,7 +47,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (empty(Basic::$userinput['versions']) || count(Basic::$userinput['controls']) < 2)
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select at least one version and two controls');
 
-		$this->entries = Basic::$cache->get(__CLASS__.'::'.md5(serialize($_POST)), function(){
+		$this->entries = Basic::$cache->get(__CLASS__.'::'.md5(serialize([$_POST, $_SERVER['REQUEST_URI']])), function(){
 			$params = []; $joins=[]; $q = "true";
 			foreach (Basic::$userinput['versions'] as $i => $v)
 			{
