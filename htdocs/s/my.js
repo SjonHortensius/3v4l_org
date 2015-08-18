@@ -80,7 +80,7 @@ var evalOrg = {};
 
 		textarea.style.display = 'none';
 
-		ace.config.set('basePath', 'http://cdn.jsdelivr.net/ace/1.1.9/min/')
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.1.9/min/')
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);

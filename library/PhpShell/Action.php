@@ -16,6 +16,9 @@ class PhpShell_Action extends Basic_Action
 				setcookie($name, '', strtotime('-1 day'));
 		}
 
+		header('Strict-Transport-Security: max-age=31536000');
+		header('X-Frame-Options: DENY');
+
 		if (0 && in_array($_SERVER['REMOTE_ADDR'], ['31.201.148.110']))
 		{
 			$wasOn = Basic::$config->PRODUCTION_MODE;
