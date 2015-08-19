@@ -10,7 +10,7 @@
 		{if (in_array($match['op'], ['E', 'SEND_VAL', 'SEND_VAR', 'RETURN', 'ECHO', 'ASSIGN', 'SEND_VAR'])) continue;}
 		{$vld = str_replace(' '. $match['op']. ' ', ' <a title="find all scripts that use this opcode" href="/search/'. $match['op'] .'">'. $match['op'] .'</a> ', $vld);}
 		{if (isset($match['operand']) && strlen($match['operand'])<32)}
-			{$vld = str_replace("'". $match['operand'] ."'", "'". '<a title="find all scripts that use this opcode / operand combination" href="/search/'. $match['op'] .'/'. $match['operand'] .'">'. $match['operand'] .'</a>'."'", $vld);}
+			{$vld = str_replace("'". $match['operand'] ."'", "'". '<a title="find all scripts that use this opcode / operand combination" href="/search/'. $match['op'] .'/'. rawurlencode($match['operand']) .'">'. $match['operand'] .'</a>'."'", $vld);}
 		{/}
 	{/}
 
