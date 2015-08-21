@@ -92,11 +92,11 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->updateOperations();
 
 		$this->showTab = [
-			'vld' => isset($this->input->operationCount),
-			'refs' => count($this->input->getRefs()) > 0,
-			'segfault' => count($this->input->getSegfault()) > 0,
-			'analyze' => count($this->input->getAnalyze()) > 0,
-			'bytecode' => count($this->input->getBytecode()) > 0,
+			'vld' =>		isset($this->input->operationCount),
+			'refs' =>		!empty(iterator_to_array($this->input->getRefs())),
+			'segfault' =>	!empty(iterator_to_array($this->input->getSegfault())),
+			'analyze' =>	!empty(iterator_to_array($this->input->getAnalyze())),
+			'bytecode' =>	!empty(iterator_to_array($this->input->getBytecode())),
 		];
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])

@@ -29,7 +29,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
 	);
-	protected $_cacheLength = '4 hours';
+	protected $_cacheLength = '24 hours';
 	public $noOperand;
 
 	public function init()

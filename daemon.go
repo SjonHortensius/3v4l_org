@@ -155,7 +155,9 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 
 	i.penalize("Total runtime", int(usage.Utime.Sec) + int(usage.Stime.Sec))
 
-	r.store()
+	if !(v.isHelper && exitCode == 255) {
+		r.store()
+	}
 
 	return r
 }
