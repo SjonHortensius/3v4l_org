@@ -262,16 +262,6 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->getResult($version);
 	}
 
-	public function getAnalyze()
-	{
-		$version = PhpShell_Version::byName('hhvm-analyze');
-		$emptyOutput = Basic::$cache->get(__CLASS__.'::analyzeEmpty', function(){
-			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('[]', true))])->getSingle();
-		});
-
-		return $this->getResult($version)->getSubset('"exitCode" = 0 AND output != ?', [$emptyOutput]);
-	}
-
 	protected function _checkPermissions($action)
 	{
 		if ($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title)

@@ -24,8 +24,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 				'refs' => 'References',
 //				'rel' => 'Related',
 				'segfault' => 'Segmentation fault',
-				'analyze' => 'HHVM analyze',
-				'bytecode' => 'HHVM Bytecode',
+				'bytecode' => 'HHVM bytecode',
 				'hhvm' => null, #legacy
 				'rfc' => 'RFC branches',
 			]
@@ -95,7 +94,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'vld' =>		isset($this->input->operationCount),
 			'refs' =>		!empty(iterator_to_array($this->input->getRefs())),
 			'segfault' =>	!empty(iterator_to_array($this->input->getSegfault())),
-			'analyze' =>	!empty(iterator_to_array($this->input->getAnalyze())),
 			'bytecode' =>	!empty(iterator_to_array($this->input->getBytecode())),
 		];
 
