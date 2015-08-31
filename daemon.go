@@ -53,6 +53,7 @@ func exitError(format string, v ...interface{}){
 
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
+	stats["penalty"] += p
 
 	if p < 1 {
 		return
@@ -90,6 +91,7 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
+	stats["inputs"]++
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s penalty = %d\n", this.short, state, this.penalty)
 	}
@@ -128,6 +130,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 		}
 	}
 
+	stats["outputs"]++
 	return o
 }
 
@@ -159,6 +162,7 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		r.store()
 	}
 
+	stats["results"]++
 	return r
 }
 
@@ -334,10 +338,28 @@ func doWork() {
 	}
 }
 
+func background() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		for range ticker.C {
+			refreshVersions()
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		for range ticker.C {
+			fmt.Printf("Stats %v", stats)
+			stats = make(map[string]int)
+		}
+	}()
+}
+
 var (
 	db *sql.DB
 	l *pq.Listener
 	versions []*Version
+	stats map[string]int
 )
 
 const (
@@ -367,6 +389,7 @@ func init() {
 		exitError("Could not setup Listener %s", err)
 	}
 
+	stats = make(map[string]int)
 	refreshVersions()
 
 	var limits = map[int]int{
@@ -396,11 +419,6 @@ func main() {
 		select {
 		case <-l.Notify:
 			go doWork()
-
-		//FIXME: doesn't run every 5mins, but only after 5mins of inactivity
-		case <-time.After(5 * time.Minute):
-			refreshVersions()
-
 		}
 	}
 }
