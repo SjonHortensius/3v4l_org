@@ -4,9 +4,9 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
+	"fmt"
 	"github.com/lib/pq"
 	"io"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -15,38 +15,38 @@ import (
 )
 
 type Version struct {
-	id			int
-	name		string
-	command		string
-	isHelper	bool
+	id       int
+	name     string
+	command  string
+	isHelper bool
 }
 
 type Input struct {
-	id				int
-	short			string
-	uniqueOutput	map[string]bool
-	penalty			int
-	run				int
+	id           int
+	short        string
+	uniqueOutput map[string]bool
+	penalty      int
+	run          int
 }
 
 type Output struct {
-	id			int
-	raw			string
-	hash		string
+	id   int
+	raw  string
+	hash string
 }
 
 type Result struct {
-	input		*Input
-	output		*Output
-	version		*Version
-	exitCode	int
-	created		time.Time
-	userTime	float64
-	systemTime	float64
-	maxMemory	int64
+	input      *Input
+	output     *Output
+	version    *Version
+	exitCode   int
+	created    time.Time
+	userTime   float64
+	systemTime float64
+	maxMemory  int64
 }
 
-func exitError(format string, v ...interface{}){
+func exitError(format string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
 	os.Exit(1)
 }
@@ -57,10 +57,6 @@ func (this *Input) penalize(r string, p int) {
 
 	if p < 1 {
 		return
-	}
-
-	if this.penalty > 256 {
-		fmt.Printf("Penalized %s: %d + %d for: %s\n", this.short, this.penalty, p, r)
 	}
 }
 
@@ -120,6 +116,8 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 		if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
 			exitError("Output: failed to retrieve after storing: %s", err)
 		}
+
+		stats["outputs"]++
 	}
 
 	if false == i.uniqueOutput[o.hash] {
@@ -130,7 +128,6 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 		}
 	}
 
-	stats["outputs"]++
 	return o
 }
 
@@ -146,17 +143,17 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 	}
 
 	r := &Result{
-		input:		i,
-		output:		newOutput(raw, i, v),
-		version:	v,
-		exitCode:	exitCode,
-		created:	time.Now(),
-		userTime:	float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
-		systemTime:	float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
-		maxMemory:	usage.Maxrss,
+		input:      i,
+		output:     newOutput(raw, i, v),
+		version:    v,
+		exitCode:   exitCode,
+		created:    time.Now(),
+		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
+		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
+		maxMemory:  usage.Maxrss,
 	}
 
-	i.penalize("Total runtime", int(usage.Utime.Sec) + int(usage.Stime.Sec))
+	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
 	if !(v.isHelper && exitCode == 255) {
 		r.store()
@@ -349,22 +346,22 @@ func background() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		for range ticker.C {
-			fmt.Printf("Stats %v", stats)
+			fmt.Printf("Stats %v\n", stats)
 			stats = make(map[string]int)
 		}
 	}()
 }
 
 var (
-	db *sql.DB
-	l *pq.Listener
+	db       *sql.DB
+	l        *pq.Listener
 	versions []*Version
-	stats map[string]int
+	stats    map[string]int
 )
 
 const (
 	RLIMIT_NPROC = 0x6
-	DSN = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
+	DSN          = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
 )
 
 func init() {
@@ -390,16 +387,17 @@ func init() {
 	}
 
 	stats = make(map[string]int)
+	go background()
 	refreshVersions()
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:		2,
-		syscall.RLIMIT_DATA:	256 * 1024 * 1024,
+		syscall.RLIMIT_DATA: 256 * 1024 * 1024,
 //		syscall.RLIMIT_FSIZE:	64 * 1024,
-		syscall.RLIMIT_FSIZE:	16 * 1024 * 1024,
-		syscall.RLIMIT_CORE:	0,
-		syscall.RLIMIT_NOFILE:	2048,
-		RLIMIT_NPROC:			64,
+		syscall.RLIMIT_FSIZE:  16 * 1024 * 1024,
+		syscall.RLIMIT_CORE:   0,
+		syscall.RLIMIT_NOFILE: 2048,
+		RLIMIT_NPROC:          64,
 	}
 
 	for key, value := range limits {
