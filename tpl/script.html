@@ -1,19 +1,19 @@
 <form method="post" action="/new">
 	<div>
-		<input type="text" name="title" id="title" size="48" maxlength="64" value="{if (isset($this->input->title))}{print htmlspecialchars($this->input->title);}{/}" placeholder="Untitled" />
-		<time datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
+		<input itemprop="name" type="text" name="title" id="title" size="48" maxlength="64" value="{if (isset($this->input->title))}{print htmlspecialchars($this->input->title);}{/}" placeholder="Untitled" />
+		<time itemprop="dateCreated" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
 	</div>
 
 	<div>
-		<code>{print htmlspecialchars(Basic::$action->code);}</code>
+		<code itemprop="articleBody">{print htmlspecialchars(Basic::$action->code);}</code>
 	</div>
 
 	{if (isset($this->input->source))}
-		<a href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
+		<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
 	{/}
 
 	{if (isset($this->input->user))}
-		<a rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
+		<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
 	{/}
 
 	{if (in_array($this->input->state, array('new', 'done', 'busy')))}
@@ -48,7 +48,7 @@
 		<li class="disabled" title="not available"><a>
 	{:}
 		{if ($this->link == Basic::$userinput['tab'])}
-			<li class="active">
+			<li itemprop="articleSection" class="active">
 		{:}
 			<li>
 		{/}
@@ -62,6 +62,6 @@
 
 </ul>
 
-<div id="tab">
+<div id="tab" itemprop="articleBody">
 	{$this->show('script/'.Basic::$userinput['tab']);}
 </div>
