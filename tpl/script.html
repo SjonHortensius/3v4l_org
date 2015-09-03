@@ -1,67 +1,76 @@
-<form method="post" action="/new">
-	<div>
-		<input itemprop="name" type="text" name="title" id="title" size="48" maxlength="64" value="{if (isset($this->input->title))}{print htmlspecialchars($this->input->title);}{/}" placeholder="Untitled" />
-		<time itemprop="dateCreated" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
-	</div>
-
-	<div>
-		<code itemprop="articleBody">{print htmlspecialchars(Basic::$action->code);}</code>
-	</div>
-
-	{if (isset($this->input->source))}
-		<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
-	{/}
-
-	{if (isset($this->input->user))}
-		<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
-	{/}
-
-	{if (in_array($this->input->state, array('new', 'done', 'busy')))}
-		<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" />
-	{/}
-</form>
-
-{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
-	<div class="alert error">
-		<h2>Abusive script</h2>
-		<p>This script was stopped while abusing our resources</p>
-	</div>
-{/}
-{if ($this->input->state == 'new')}
-	<div class="alert notice">
-		<h2>Oops, something is wrong</h2>
-		<p>Something has broken; if this happens frequently please let me know</p>
-	</div>
-{/}
-{if ($this->input->state == 'verbose')}
-	<div class="alert warning">
-		<h2>Verbose script</h2>
-		<p>This script was stopped because it was generating too much output</p>
-	</div>
-{/}
-
-<ul id="tabs"{if ('done' != $this->input->state)} class="{input->state}"{/}>
-{foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
-	{if (empty($this->name)) continue;}
-
-	{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
-		<li class="disabled" title="not available"><a>
+<div itemscope itemtype="http://schema.org/Article">
+	{if (isset($this->input->title))}
+		<meta itemprop="name" content="{%input->title}" />
 	{:}
-		{if ($this->link == Basic::$userinput['tab'])}
-			<li itemprop="articleSection" class="active">
-		{:}
-			<li>
+		<meta itemprop="name" content="{input->short}" />
+	{/}
+
+	<form method="post" action="/new">
+		<div>
+			<input type="text" name="title" id="title" size="48" maxlength="64" value="{%input->title}" placeholder="Untitled" />
+			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
+		</div>
+
+		<div>
+			<code itemprop="articleBody">{%code}</code>
+		</div>
+
+		{if (isset($this->input->source))}
+			<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
 		{/}
 
-		<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">
+		{if (isset($this->input->user))}
+			<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {%input->user->name}</a>
+		{/}
+
+		{if (in_array($this->input->state, array('new', 'done', 'busy')))}
+			<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" />
+		{/}
+	</form>
+
+	{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
+		<div class="alert error">
+			<h2>Abusive script</h2>
+			<p>This script was stopped while abusing our resources</p>
+		</div>
+	{/}
+	{if ($this->input->state == 'new')}
+		<div class="alert notice">
+			<h2>Oops, something is wrong</h2>
+			<p>Something has broken; if this happens frequently please let me know</p>
+		</div>
+	{/}
+	{if ($this->input->state == 'verbose')}
+		<div class="alert warning">
+			<h2>Verbose script</h2>
+			<p>This script was stopped because it was generating too much output</p>
+		</div>
 	{/}
 
-		{name}</a>
-	</li>
-{/}
+	<ul id="tabs"{if ('done' != $this->input->state)} class="{input->state}"{/}>
+	{foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
+		{if (empty($this->name)) continue;}
 
-</ul>
+		{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
+			<li class="disabled" title="not available"><a>
+		{:}
+			{if ($this->link == Basic::$userinput['tab'])}
+				<li itemprop="articleSection" class="active">
+			{:}
+				<li>
+			{/}
 
-<div id="tab" itemprop="articleBody">
-	{$this->show('script/'.Basic::$userinput['tab']);}
+			<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">
+		{/}
+
+			{name}</a>
+		</li>
+	{/}
+
+	</ul>
+
+	<div id="tab" itemprop="articleBody">
+		{$this->show('script/'.Basic::$userinput['tab']);}
+	</div>
+
 </div>
