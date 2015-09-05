@@ -26,7 +26,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			'inputType' => 'checkbox',
 			'default' => 0,
 			'values' => [
-				1 => 'run archived versions'
+				1 => 'run unsupported versions'
 			],
 		],
 	);
@@ -35,7 +35,6 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
-#throw new PhpShell_MaintenanceModeException('We are currently in maintenance, read-only mode', [], 503);
 
 		# count(expression) - number of input rows for which the value of expression is not null
 		$penalty = Basic::$database->query("

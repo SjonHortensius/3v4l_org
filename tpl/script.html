@@ -17,10 +17,9 @@
 		</div>
 
 		<div id="context">
-			{if (!$this->input->runArchived)}
-				<input class="valid" name="archived" id="archived_1" value="1" type="checkbox">
-				<label for="archived_1">run archived versions</label>
-			{/}
+			{!-- {if ($this->input->runArchived)} checked="checked"{/} ignore state here, we want all new submission not to have this flag --}
+			<input class="valid" name="archived" id="archived_1" value="1" type="checkbox" />
+			<label for="archived_1">run unsupported versions</label>
 
 			{if (isset($this->input->source))}
 				<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>

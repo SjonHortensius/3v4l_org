@@ -108,7 +108,10 @@ var evalOrg = {};
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
-		code.addEventListener('keydown', function(e){
+		document.getElementById('archived_1').addEventListener('change', function(){
+			document.querySelector('input[type=submit]').removeAttribute('disabled');
+		});
+		code.addEventListener('keydown', function(){
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
 		});
 	};
@@ -154,42 +157,46 @@ var evalOrg = {};
 
 	var _refresh = function()
 	{
+		var tab = document.getElementById('tab');
 		var r = this.responseText.match(/<div id="tab"[^>]+>([\s\S]*?)<\/div>/);
 		if (!r)
 			window.location.reload();
 
 		// by http://stackoverflow.com/users/4251625/abe, via http://chat.stackoverflow.com/transcript/message/25068725#25068725
-		var tab = document.getElementById('tab');
-		var boxSize = [], boxScroll = [];
+		if ('output' == document.body.classList[0].ucFirst())
+		{
+			var boxSize = [], boxScroll = [];
 
-		// saves the boxes' sizes and forces them to not change while replacing the content
-		tab.querySelectorAll('dd').forEach(function(dd){
-			var h = window.getComputedStyle(dd, null).height;
-			boxSize.push(h); boxScroll.push(dd.scrollTop);
-			dd.style.height = h;
-			dd.style.maxHeight = h;
-		});
-
-		requestAnimationFrame(function(){
-			tab.innerHTML = r[1];
-
-			// gets the new <dd>s and applies the previous saved sizes
-			var dds = tab.querySelectorAll('dd');
-			dds.forEach(function(dd, i){
-				dd.style.height = boxSize[i] || '';
-				dd.style.maxHeight = boxSize[i] || '';
+			// saves the boxes' sizes and forces them to not change while replacing the content
+			tab.querySelectorAll('dd').forEach(function(dd){
+				var h = window.getComputedStyle(dd, null).height;
+				boxSize.push(h); boxScroll.push(dd.scrollTop);
+				dd.style.height = h;
+				dd.style.maxHeight = h;
 			});
 
-			// waits for the previous css to get actually applied,
-			// and removes the hardcoded values
 			requestAnimationFrame(function(){
+				tab.innerHTML = r[1];
+
+				// gets the new <dd>s and applies the previous saved sizes
+				var dds = tab.querySelectorAll('dd');
 				dds.forEach(function(dd, i){
-					dd.style.height = '';
-					dd.style.maxHeight = '';
-					dd.scrollTop = boxScroll[i] || 0;
+					dd.style.height = boxSize[i] || '';
+					dd.style.maxHeight = boxSize[i] || '';
+				});
+
+				// waits for the previous css to get actually applied,
+				// and removes the hardcoded values
+				requestAnimationFrame(function(){
+					dds.forEach(function(dd, i){
+						dd.style.height = '';
+						dd.style.maxHeight = '';
+						dd.scrollTop = boxScroll[i] || 0;
+					});
 				});
 			});
-		});
+		} else
+			tab.innerHTML = r[1];
 
 		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
 		if (t)

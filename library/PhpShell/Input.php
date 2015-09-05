@@ -111,7 +111,7 @@ class PhpShell_Input extends PhpShell_Entity
 		{
 			// Calculate lowest version based on input.created instead of now [sexy time]
 			if (!$this->runArchived)
-				$version = Basic::$database->query("SELECT name FROM version WHERE released > ?::date - ?::interval", [$this->created, '3 years'])->fetchArray('name')[0];
+				$version = Basic::$database->query("SELECT name FROM version WHERE released > ?::date - ?::interval ORDER BY released ASC LIMIT 1", [$this->created, '3 years'])->fetchArray('name')[0];
 
 			Basic::$database->query("INSERT INTO queue VALUES (?, ?, ?)", [$this->short, isset($version) ? $version : null, (int)!$this->runArchived]);
 		}

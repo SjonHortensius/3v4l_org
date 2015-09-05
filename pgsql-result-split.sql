@@ -1,6 +1,6 @@
 ALTER TABLE result
-    DROP CONSTRAINT result_version_fkey,
-    DROP CONSTRAINT "inputVersionRun";
+	DROP CONSTRAINT result_version_fkey,
+	DROP CONSTRAINT "inputVersionRun";
 ALTER TABLE input DROP "quickVersion";
 
 /* select 'WHEN '||old_id||' THEN '||id from version where old_id!=id order by old_id asc */
@@ -193,44 +193,44 @@ CREATE TABLE result (LIKE result_org);
 
 GRANT SELECT ON TABLE result TO website;
 GRANT INSERT ON TABLE result TO daemon;
-GRANT INSERT ON TABLE result_archive TO daemon;
-GRANT INSERT ON TABLE result_current TO daemon;
 
 CREATE TABLE result_archive (CONSTRAINT "isArchive" CHECK (version >= 32 AND version <= 108)) INHERITS (result);
 CREATE TABLE result_current (CONSTRAINT "isCurrent" CHECK (version < 32 OR version > 108)) INHERITS (result);
 
+GRANT INSERT ON TABLE result_archive TO daemon;
+GRANT INSERT ON TABLE result_current TO daemon;
 GRANT SELECT ON TABLE result_current TO website;
 
 ALTER TABLE result_archive
-    ADD CONSTRAINT "inputVersionRunArchive" UNIQUE (input, version, run),
-    ADD CONSTRAINT result_archive_input_fkey FOREIGN KEY (input) REFERENCES input(id) ON UPDATE RESTRICT ON DELETE CASCADE,
-    ADD CONSTRAINT result_archive_output_fkey FOREIGN KEY (output) REFERENCES output(id) ON UPDATE RESTRICT ON DELETE CASCADE,
-    ADD CONSTRAINT result_archive_version_fkey FOREIGN KEY (version) REFERENCES version(id) ON UPDATE RESTRICT ON DELETE CASCADE;
+	ADD CONSTRAINT "inputVersionRunArchive" UNIQUE (input, version, run),
+	ADD CONSTRAINT result_archive_input_fkey FOREIGN KEY (input) REFERENCES input(id) ON UPDATE RESTRICT ON DELETE CASCADE,
+	ADD CONSTRAINT result_archive_output_fkey FOREIGN KEY (output) REFERENCES output(id) ON UPDATE RESTRICT ON DELETE CASCADE,
+	ADD CONSTRAINT result_archive_version_fkey FOREIGN KEY (version) REFERENCES version(id) ON UPDATE RESTRICT ON DELETE CASCADE;
 ALTER TABLE result_archive CLUSTER ON "inputVersionRunArchive";
 
 ALTER TABLE result_current
-    ADD CONSTRAINT "inputVersionRun" UNIQUE (input, version, run),
-    ADD CONSTRAINT result_current_input_fkey FOREIGN KEY (input) REFERENCES input(id) ON UPDATE RESTRICT ON DELETE CASCADE,
-    ADD CONSTRAINT result_current_output_fkey FOREIGN KEY (output) REFERENCES output(id) ON UPDATE RESTRICT ON DELETE CASCADE,
-    ADD CONSTRAINT result_current_version_fkey FOREIGN KEY (version) REFERENCES version(id) ON UPDATE RESTRICT ON DELETE CASCADE;
+	ADD CONSTRAINT "inputVersionRun" UNIQUE (input, version, run),
+	ADD CONSTRAINT result_current_input_fkey FOREIGN KEY (input) REFERENCES input(id) ON UPDATE RESTRICT ON DELETE CASCADE,
+	ADD CONSTRAINT result_current_output_fkey FOREIGN KEY (output) REFERENCES output(id) ON UPDATE RESTRICT ON DELETE CASCADE,
+	ADD CONSTRAINT result_current_version_fkey FOREIGN KEY (version) REFERENCES version(id) ON UPDATE RESTRICT ON DELETE CASCADE;
 ALTER TABLE result_current CLUSTER ON "inputVersionRun";
 
 CREATE FUNCTION result_insert_trigger()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF ( NEW.version < 32 OR NEW.version > 108 ) THEN
-        INSERT INTO result_current VALUES (NEW.*);
-    ELSE
-        INSERT INTO result_archive VALUES (NEW.*);
-    END IF;
-    RETURN NULL;
+	IF ( NEW.version < 32 OR NEW.version > 108 ) THEN
+		INSERT INTO result_current VALUES (NEW.*);
+	ELSE
+		INSERT INTO result_archive VALUES (NEW.*);
+	END IF;
+	RETURN NULL;
 END;
 $$
 LANGUAGE plpgsql;
 
 CREATE TRIGGER insert_result_trigger
-    BEFORE INSERT ON result
-    FOR EACH ROW EXECUTE PROCEDURE result_insert_trigger();
+	BEFORE INSERT ON result
+	FOR EACH ROW EXECUTE PROCEDURE result_insert_trigger();
 
 ALTER TABLE version ADD old_id smallint;
 
@@ -248,9 +248,9 @@ ALTER SEQUENCE version_id_seq RESTART WITH 215;
 INSERT INTO result_current SELECT * FROM result_org WHERE version < 32  OR version > 108;
 INSERT INTO result_archive SELECT * FROM result_org WHERE version > 32 AND version < 109;
 
-/* loosely related, introduce input.runArchived */
-ALTER TABLE input ADD runArchived boolean DEFAULT false;
-UPDATE input SET runArchived = true;
+/* introduce input.runArchived */
+ALTER TABLE input ADD "runArchived" boolean DEFAULT false;
+UPDATE input SET "runArchived" = true;
 GRANT UPDATE("runArchived") ON TABLE input TO website;
 
 ALTER TABLE queue ADD "untilVersion" boolean DEFAULT false NOT NULL;
