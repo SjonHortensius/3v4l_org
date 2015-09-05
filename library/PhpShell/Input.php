@@ -5,7 +5,6 @@ class PhpShell_Input extends PhpShell_Entity
 	protected static $_relations = [
 		'user' => PhpShell_User,
 		'source' => PhpShell_Input,
-		'quickVersion' => PhpShell_Version,
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
@@ -70,7 +69,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$extra['user'] = Basic::$action->user;
 
 		$input = parent::create(['short' => $short, 'hash' => $hash] + $extra);
-		$input->trigger($input->quickVersion);
+		$input->trigger();
 
 		return $input;
 	}
@@ -105,11 +104,17 @@ class PhpShell_Input extends PhpShell_Entity
 		// flush possible nginx fastcgi_cache, match levels=1:2, key="$request_method:$request_uri:$http_cookie";
 		$h = md5("GET:/{$this->short}:{$_SERVER['HTTP_COOKIE']}");
 		$cachePath = "/var/tmp/nginx/{$h[31]}/{$h[29]}{$h[30]}/$h";
-		if (is_writable($cachePath))
+		if (Basic::$config->PRODUCTION_MODE && is_writable($cachePath))
 			unlink($cachePath);
 
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, isset($version) ? $version->name : null]);
+		{
+			// Calculate lowest version based on input.created instead of now [sexy time]
+			if (!$this->runArchived)
+				$version = Basic::$database->query("SELECT name FROM version WHERE released > ?::date - ?::interval", [$this->created, '3 years'])->fetchArray('name')[0];
+
+			Basic::$database->query("INSERT INTO queue VALUES (?, ?, ?)", [$this->short, isset($version) ? $version : null, (int)!$this->runArchived]);
+		}
 
 		$i = 0;
 		do

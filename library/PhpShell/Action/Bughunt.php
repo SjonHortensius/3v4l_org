@@ -6,12 +6,15 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	public $formTitle = '3v4l.org<small> - Find scripts where one version differs from the others</small>';
 	protected $_userinputConfig = array(
 		'versions' => [
+			'description' => 'Select one version you want to focus on when comparing',
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
 			'required' => true,
 			'values' => [],
 			'options' => ['multiple' => true],
 		],
 		'controls' => [
+			'description' => 'Select two versions to compare against. Output from all controls must match, '.
+				'this eliminates scripts that have a high variance (caused by time based or random output)',
 //			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
 			'required' => true,
 			'values' => [],
@@ -36,42 +39,38 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (isset($_MULTIVIEW[2]))
 			$_POST['controls'] = explode('+', $_MULTIVIEW[2]);
 
-		$this->_userinputConfig['versions']['values'] =
-			$this->_userinputConfig['controls']['values'] = PhpShell_Version::find('"isHelper" = false', [], ['name' => false])->getSimpleList('name', 'name');
+		$this->_userinputConfig['versions']['values'] = $this->_userinputConfig['controls']['values'] =
+			PhpShell_Version::find('"isHelper" = false AND now() - released < \'1 year\'', [], ['order' => false])->getSimpleList('name', 'name');
 
 		parent::init();
 	}
 
 	public function run()
 	{
-		if (empty(Basic::$userinput['versions']) || count(Basic::$userinput['controls']) < 2)
-			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select at least one version and two controls');
+		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
+			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
 
-		$this->entries = Basic::$cache->get(__CLASS__.'::'.md5(serialize([$_POST, $_SERVER['REQUEST_URI']])), function(){
-			$params = []; $joins=[]; $q = "true";
-			foreach (Basic::$userinput['versions'] as $i => $v)
-			{
-				$alias = 'v'.$i;
-				$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
+		$params = []; $joins=[]; $q = "true";
+		foreach (Basic::$userinput['versions'] as $i => $v)
+		{
+			$alias = 'v'.$i;
+			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
 
-				array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-				array_push($params, PhpShell_Version::byName($v)->id);
-			}
+			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
+			array_push($params, PhpShell_Version::byName($v)->id);
+		}
 
-			foreach (Basic::$userinput['controls'] as $i => $v)
-			{
-				$alias = 'c'.$i;
-				$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
-				array_push($joins, ['result', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-				array_push($params, PhpShell_Version::byName($v)->id);
-			}
+		foreach (Basic::$userinput['controls'] as $i => $v)
+		{
+			$alias = 'c'.$i;
+			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
+			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
+			array_push($params, PhpShell_Version::byName($v)->id);
+		}
 
-			$entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
-			foreach ($joins as $join)
-				$entries->addJoin(...$join);
-
-			return iterator_to_array($entries->getPage(Basic::$userinput['page'], 25));
-		}, 48 * 3600);
+		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
+		foreach ($joins as $join)
+			$this->entries->addJoin(...$join);
 
 		return parent::run();
 	}

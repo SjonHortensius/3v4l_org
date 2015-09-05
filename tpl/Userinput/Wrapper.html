@@ -6,4 +6,8 @@
 	<label for="{input->source['key']}">{input->name}</label>
 
 	{userInputHtml}
+
+	{if (!empty($this->input->description))}
+		<p>{input->description}</p>
+	{/}
 </div>

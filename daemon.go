@@ -164,15 +164,13 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 }
 
 func (this *Result) store() {
-	r, err := db.Exec("INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)",
+	_, err := db.Exec("INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)",
 		this.input.id, this.output.id, this.version.id, this.exitCode, this.created,
 		this.userTime, this.systemTime, this.maxMemory, this.input.run,
 	)
 
 	if err != nil {
 		fmt.Println("Result: failed to store input=%s,version=%s,run=%d: %s", this.input.short, this.version.name, this.input.run, err)
-	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		exitError("Result: failed to store: %d, %s", a, err)
 	}
 }
 
@@ -300,7 +298,7 @@ func refreshVersions() {
 }
 
 func doWork() {
-	rs, err := db.Query("DELETE FROM queue RETURNING input, version")
+	rs, err := db.Query("DELETE FROM queue RETURNING input, version, \"untilVersion\"")
 
 	if err != nil {
 		exitError("doWork: error in DELETE query: %s", err)
@@ -308,11 +306,11 @@ func doWork() {
 
 	for rs.Next() {
 		input := &Input{}
-
 		input.uniqueOutput = map[string]bool{}
-		var qVersion sql.NullString
+		var version sql.NullString
+		var isUntil bool
 
-		if err := rs.Scan(&input.short, &qVersion); err != nil {
+		if err := rs.Scan(&input.short, &version, &isUntil); err != nil {
 			exitError("doWork: error fetching work: %s", err)
 		}
 
@@ -320,11 +318,21 @@ func doWork() {
 			exitError("doWork: error verifying input: %s", err)
 		}
 
-		input.setBusy(!qVersion.Valid)
+		if isUntil && !version.Valid {
+			fmt.Printf("Consistency error, cannot have untilVersion=true with version=null, skipping\n")
+			continue
+		}
 
+		input.setBusy(!version.Valid || isUntil)
+
+		untilReached := false
 		for _, v := range versions {
-			if !qVersion.Valid || qVersion.String == v.name {
+			if !version.Valid || (isUntil && !untilReached) || (!isUntil && version.String == v.name) {
 				input.execute(v)
+
+				if isUntil && version.String == v.name {
+					untilReached = true
+				}
 			}
 		}
 

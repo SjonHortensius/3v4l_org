@@ -21,6 +21,14 @@ class PhpShell_Action_New extends PhpShell_Action
 			'default' => "<?php\n\n",
 			'required' => true,
 		],
+		'archived' => [
+			'valueType' => 'integer',
+			'inputType' => 'checkbox',
+			'default' => 0,
+			'values' => [
+				1 => 'run archived versions'
+			],
+		],
 	);
 
 	public function run()
@@ -32,9 +40,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		# count(expression) - number of input rows for which the value of expression is not null
 		$penalty = Basic::$database->query("
 			SELECT
-				SUM(submit.count) * 8 * COUNT(input.\"quickVersion\") +
-				SUM(submit.count) * 64 * (COUNT(*)-COUNT(input.\"quickVersion\")) +
-				AVG(penalty)/128 p
+				SUM(submit.count) * 64 + AVG(penalty)/128 p
 			FROM submit
 			JOIN input ON (input.id = submit.input)
 			WHERE ip = ? AND now() - submit.created < '24 hour'
@@ -42,7 +48,6 @@ class PhpShell_Action_New extends PhpShell_Action
 
 #		if ($penalty > 150*1000)
 #			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
-
 		sleep($penalty/100000);
 
 		try
@@ -51,6 +56,9 @@ class PhpShell_Action_New extends PhpShell_Action
 
 			if ($input->state == 'busy')
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
+
+			if (!$input->runArchived && Basic::$userinput['archived'])
+				$input->save(['runArchived' => 1]);
 
 			$input->trigger();
 		}
@@ -70,7 +78,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				#care
 			}
 
-			$input = PhpShell_Input::create($code, ['source' => $source, 'title' => Basic::$userinput['title']]);
+			$input = PhpShell_Input::create($code, ['source' => $source, 'title' => Basic::$userinput['title'], 'runArchived' => Basic::$userinput['archived']]);
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);

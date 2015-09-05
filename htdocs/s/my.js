@@ -7,10 +7,17 @@
 ga('create', 'UA-31015527-1', 'auto');
 ga('send', 'pageview');
 
-NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function(cb) {
+NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function (cb){
+	Array.prototype.forEach.call(this, cb);
+}
+
+HTMLOptionsCollection.prototype.getSelected = function(){
+	var s = [];
 	for (var i = 0; i < this.length; i++) {
-		cb(this.item(i), i);
+		if (this[i].selected)
+			s.push(this[i].value);
 	}
+	return s;
 }
 
 String.prototype.ucFirst = function(){
@@ -147,7 +154,7 @@ var evalOrg = {};
 
 	var _refresh = function()
 	{
-		var r = this.responseText.match(/<div id="tab">([\s\S]*?)<\/div>/);
+		var r = this.responseText.match(/<div id="tab"[^>]+>([\s\S]*?)<\/div>/);
 		if (!r)
 			window.location.reload();
 
@@ -327,6 +334,18 @@ var evalOrg = {};
 
 		if (document.querySelector('svg'))
 			this.handleTagcloud();
+	};
+
+	this.handleBughunt = function()
+	{
+		document.forms[0].addEventListener('submit', function(e){
+			e.preventDefault();
+
+			var url = '/bughunt/'
+				+ document.getElementById('versions').options.getSelected().join('+')
+				+ '/'+ document.getElementById('controls').options.getSelected().join('+');
+			window.location.href = url;
+		});
 	};
 
 	this.handleTagcloud = function()

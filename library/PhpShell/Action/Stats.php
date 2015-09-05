@@ -28,16 +28,14 @@ WHERE now() - created < '1 week';")));
 			SELECT
 				count(*), ip,
 				SUM(submit.count),
-				SUM(submit.count) * 8 * COUNT(input.\"quickVersion\") ||'+'||
-				SUM(submit.count) * 64 * (COUNT(*)-COUNT(input.\"quickVersion\")) ||'+'||
-				AVG(penalty)/128 p
+				SUM(submit.count) * 64 + AVG(penalty)/128 p
 			FROM submit
 
 JOIN input ON (input.id = submit.input)
 WHERE now()-submit.created < '24 hour'
-group by ip
-order by SUM(submit.count)*256 + AVG(penalty)/128 desc
-limit 30;")->show();
+GROUP BY ip
+ORDER BY SUM(submit.count)*64 + AVG(penalty)/128 desc
+LIMIT 30;")->show();
 
 		return parent::run();
 //Basic::debug(iterator_to_array($this->submitPerWeek));

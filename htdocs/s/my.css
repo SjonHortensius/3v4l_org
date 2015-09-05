@@ -25,6 +25,7 @@ form h1
 input#title
 {
 	font-size: 20px;
+	width: 770px;
 }
 
 form > a
@@ -46,9 +47,19 @@ form label
 	width: 10em;
 }
 
+label[for=archived_1]
+{
+	width: auto;
+}
+
 form > div
 {
 	margin: 0.5em 0 1.5em 0;
+}
+
+form p
+{
+	margin-left: 12em;
 }
 
 input[type=text],
@@ -155,6 +166,17 @@ textarea
 {
 	height: 150px;
 	overflow: auto;
+}
+
+#context:not(:empty)
+{
+	float: right;
+	padding: 0.5em 1em 0.5em;
+	margin: 0;
+	margin-top: -1.5em;
+	border-radius: 0 0 4px 4px;
+	border: 1px solid #ddd;
+	border-bottom-color: top;
 }
 
 /* code after js has run */
@@ -291,10 +313,9 @@ input[type=submit]
 	padding: 9px 14px;
 	border-radius: 5px;
 	font-size: 15px;
-	margin-left: 0;
+	margin-left: 10em;
 	transition: border linear 0.2s, box-shadow linear 0.2s;
 	cursor: pointer;
-	margin-top: 1em;
 }
 
 input[type=submit]:not([disabled])
@@ -440,9 +461,9 @@ nav a
 }
 
 /* page specific styles */
-body.index label[for=code]
+body.index input#title
 {
-	display: none;
+	width: 957px;
 }
 
 body.index time
@@ -450,14 +471,31 @@ body.index time
 	font-style: italic;
 }
 
-body.search input[type=submit]
+body.index input[type=submit],
+body.script input[type=submit]
 {
-	margin-left: 10em;
+	margin-left: 0;
+}
+
+body.search input[type=text]
+{
+	width: 450px;
 }
 
 body.search input.noOperand
 {
 	opacity: 0.3;
+}
+
+body.bughunt select
+{
+	width: 450px;
+	height: 100px;
+}
+
+body.bughunt form p
+{
+	max-width: 450px;
 }
 
 body.output dt a

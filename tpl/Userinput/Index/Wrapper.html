@@ -1,3 +1,6 @@
-<div>
+<div{if ($this->nextInputsAreContextual)} id="context"{/}>
 	{userInputHtml}
 </div>
+
+{!-- this is somewhat generic so we can add multiple checkboxes in the future --}
+{$this->nextInputsAreContextual = $this->nextInputsAreContextual || "code" == $this->input->source['key'];}

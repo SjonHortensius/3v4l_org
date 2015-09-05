@@ -5,7 +5,8 @@
 		<meta itemprop="name" content="{input->short}" />
 	{/}
 
-	<form method="post" action="/new">
+	{!-- render form for Action_New manually --}
+	<form method="post" action="/new" id="userinput">
 		<div>
 			<input type="text" name="title" id="title" size="48" maxlength="64" value="{%input->title}" placeholder="Untitled" />
 			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
@@ -15,13 +16,20 @@
 			<code itemprop="articleBody">{%code}</code>
 		</div>
 
-		{if (isset($this->input->source))}
-			<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
-		{/}
+		<div id="context">
+			{if (!$this->input->runArchived)}
+				<input class="valid" name="archived" id="archived_1" value="1" type="checkbox">
+				<label for="archived_1">run archived versions</label>
+			{/}
 
-		{if (isset($this->input->user))}
-			<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {%input->user->name}</a>
-		{/}
+			{if (isset($this->input->source))}
+				<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
+			{/}
+
+			{if (isset($this->input->user))}
+				<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {%input->user->name}</a>
+			{/}
+		</div>
 
 		{if (in_array($this->input->state, array('new', 'done', 'busy')))}
 			<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" />
@@ -60,7 +68,7 @@
 				<li>
 			{/}
 
-			<a href="/{input->short}{if ($this->link != 'output')}/{link}#tabs{/}">
+			<a href="/{input->short}{if ($this->link != 'output')}/{link}{/}#tabs">
 		{/}
 
 			{name}</a>
@@ -72,5 +80,4 @@
 	<div id="tab" itemprop="articleBody">
 		{$this->show('script/'.Basic::$userinput['tab']);}
 	</div>
-
 </div>
