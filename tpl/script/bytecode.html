@@ -1,10 +1,6 @@
 {$r = $this->input->getBytecode();}
 
-{if (0 == count($r))}
-	No HHVM output found, please wait for process to complete.
-{:}
-	{$this->raw = $r->getSingle()->output->getRaw($this->input, 'hhvm-bytecode');}
-	{$o = strpos($this->raw, "Pseudo-main at "); if (false !== $o) $this->raw = substr($this->raw, $o);}
-	<pre>{print htmlspecialchars($this->raw);}</pre>
-	<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHVM 3.9.0</p>
-{/}
+{$this->raw = $r->getSingle()->output->getRaw($this->input, 'hhvm-bytecode');}
+{$o = strpos($this->raw, "Pseudo-main at "); if (false !== $o) $this->raw = substr($this->raw, $o);}
+<pre>{print htmlspecialchars($this->raw);}</pre>
+<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHVM 3.9.0</p>

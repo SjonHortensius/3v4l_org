@@ -32,7 +32,7 @@
 				<td>{print round($this->row->userTime, 2);} s</td>
 				<td>{print round($this->row->systemTime, 2);} s</td>
 				<td>{print round($this->row->maxMemory/1024);} MiB</td>
-				<td>{row->run}</td>
+				<td>{if ($this->row->runArchived)}<i>{/}{row->run}{if ($this->row->runArchived)}</i>{/}</td>
 				<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
 				<td>{row->variance}</td>
 			</tr>

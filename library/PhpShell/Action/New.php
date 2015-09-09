@@ -26,7 +26,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			'inputType' => 'checkbox',
 			'default' => 0,
 			'values' => [
-				1 => 'run unsupported versions'
+				1 => 'run <span title="Include PHP versions that are older then 3 years">unsupported</span> versions'
 			],
 		],
 	);
@@ -36,18 +36,15 @@ class PhpShell_Action_New extends PhpShell_Action
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
 
-		# count(expression) - number of input rows for which the value of expression is not null
 		$penalty = Basic::$database->query("
-			SELECT
-				SUM(submit.count) * 64 + AVG(penalty)/128 p
+			SELECT SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) p
 			FROM submit
 			JOIN input ON (input.id = submit.input)
-			WHERE ip = ? AND now() - submit.created < '24 hour'
-		", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
+			WHERE ip = ? AND now() - submit.created < '1 day'", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
 
 #		if ($penalty > 150*1000)
 #			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
-		sleep($penalty/100000);
+		usleep($penalty);
 
 		try
 		{

@@ -1,9 +1,4 @@
 {$r = $this->input->getVld();}
+{$vld = $r->getSingle()->output->getRaw($this->input, 'vld');}
 
-{if (0 == count($r))}
-	"vld": null
-{:}
-	{$vld = $r->getSingle()->output->getRaw($this->input, 'vld');}
-
-	"vld": {print json_encode($vld);}
-{/}
+"vld": {print json_encode($vld);}

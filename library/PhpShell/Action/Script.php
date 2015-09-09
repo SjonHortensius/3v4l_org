@@ -80,9 +80,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 		{
 			// Attempt to retrigger the daemon
 			$this->input->trigger();
-
-			// Refresh state
-			$this->input = PhpShell_Input::find("id = ?", [$this->input->id])->getSingle();
 		}
 
 		$this->code = $this->input->getCode();
@@ -98,7 +95,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		];
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
-			http_response_code(404);
+			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no ouput for requested tab `%s`", [Basic::$userinput['tab']], 404);
 
 		parent::run();
 	}

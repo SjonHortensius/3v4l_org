@@ -2,7 +2,7 @@
 <html dir="ltr" lang="en-US">
 <head>
 	<title>{title}Online PHP shell | 150+ versions + stats + vld + hhvm</title>
-	<base href="{baseHref}" />
+	<base href="{baseHref}"/>
 	<meta name="keywords" content="php,test,run,execute,online,interactive,shell,console,codepad,fiddle,xdebug,vld,performance,hhvm"/>
 	<meta name="description" content="Execute your php code; get performance statistics and compare output from all versions"/>
 	<meta name="author" content="Sjon Hortensius - root@3v4l.org"/>
@@ -13,24 +13,25 @@
 </head>
 
 <body{if (isset(Basic::$action->bodyClass))} class="{action->bodyClass}"{/}>
-	<nav>
-		<header>
-			<a href="/">
-				3v4l.org - <small>run code in 150+ php &amp; hhvm versions</small>
-			</a>
-		</header>
+	<header>
+		<a href="/">
+			<h1>3v4l.org</h1>
+			<span>run code in 150+ php &amp; hhvm versions</span>
+		</a>
 
-		<ul>
-			<li><a href="/bughunt">bughunt</a></li>
-			<li><a href="/search">search</a></li>
-			<li><a href="/last">recent</a></li>
-			<li><a href="/about">about</a></li>
+		<nav>
+			<ul>
+				<!--li><a href="/bughunt">bughunt</a></li-->
+				<li><a href="/search">search</a></li>
+				<li><a href="/last">recent</a></li>
+				<li><a href="/about">about</a></li>
 {if (isset($this->user))}
-			<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
-			<li><a href="/logout">logout</a></li>
+				<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
+				<li><a href="/logout">logout</a></li>
 {/}
-		</ul>
-	</nav>
+			</ul>
+		</nav>
+	</header>
 
 	<div id="uvTab">
 		<a href="https://3v4l.uservoice.com/forums/219058-general">

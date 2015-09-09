@@ -26,15 +26,16 @@ WHERE now() - created < '1 week';")));
 
 		echo Basic::$database->query("
 			SELECT
-				count(*), ip,
-				SUM(submit.count),
-				SUM(submit.count) * 64 + AVG(penalty)/128 p
+				ip,
+				SUM(submit.count) submits,
+				AVG(penalty) penalty,
+				SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) / 1000000 sleep
 			FROM submit
 
 JOIN input ON (input.id = submit.input)
 WHERE now()-submit.created < '24 hour'
 GROUP BY ip
-ORDER BY SUM(submit.count)*64 + AVG(penalty)/128 desc
+ORDER BY SUM(submit.count)*AVG(penalty) DESC
 LIMIT 30;")->show();
 
 		return parent::run();

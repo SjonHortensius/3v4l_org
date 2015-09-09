@@ -4,6 +4,7 @@ ALTER TABLE result
 ALTER TABLE input DROP "quickVersion";
 
 /* select 'WHEN '||old_id||' THEN '||id from version where old_id!=id order by old_id asc */
+/* FIXME: this was stupid, the same mapping should have been applied to version. On actual run, version.id was off a little bit and all versions were incorrect */
 UPDATE result SET version = (CASE version
 	WHEN   5 THEN 3
 	WHEN  14 THEN 1

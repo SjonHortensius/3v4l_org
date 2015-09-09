@@ -108,10 +108,11 @@ var evalOrg = {};
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
-		document.getElementById('archived_1').addEventListener('change', function(){
+		code.addEventListener('keydown', function(){
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
 		});
-		code.addEventListener('keydown', function(){
+
+		document.getElementById('archived_1').addEventListener('change', function(){
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
 		});
 	};

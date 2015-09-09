@@ -1,14 +1,9 @@
 {$refs = $this->input->getRefs();}
 
-{if (0 == count($refs))}
-	No references found, please wait for process to complete.
-	Parser errors will also stop VLD from functioning
-{:}
-	<ul>
-		{foreach ($refs as $r)}
-		<li>
-			<a href="{print htmlspecialchars($r['link']);}" rel="external">{print htmlspecialchars($r['name']);}</a>
-		</li>
-		{/}
-	</ul>
-{/}
+<ul>
+	{foreach ($refs as $r)}
+	<li>
+		<a href="{print htmlspecialchars($r['link']);}" rel="external">{print htmlspecialchars($r['name']);}</a>
+	</li>
+	{/}
+</ul>
