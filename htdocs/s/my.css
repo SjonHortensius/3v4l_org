@@ -17,7 +17,7 @@ form
 	box-shadow: inset 1px 1px 1px rgba(0,0,0, 0.1);
 }
 
-form h1
+form h2
 {
 	margin-top: 0;
 }
@@ -52,7 +52,7 @@ label[for=archived_1]
 	width: auto;
 }
 
-form > div
+form > div:not(:first-child)
 {
 	margin: 0.5em 0 1.5em 0;
 }
@@ -65,6 +65,7 @@ form p
 input[type=text],
 select
 {
+	width: 450px;
 	height: 34px;
 	padding: 0 6px;
 	color: #555;
@@ -410,13 +411,13 @@ header
 header h1
 {
 	float: left;
-	width: 75px;
+	width: 86px;
 	height: 45px;
 	overflow: hidden;
 	color: transparent;
 	margin: 0;
 
-	background: url(/s/logo.png) no-repeat 0px;
+	background: url(/s/logo.png) no-repeat center;
 	background-size: auto 21px;
 	transition: background-color 250ms ease-in;
 }
@@ -471,7 +472,8 @@ input + time
 }
 
 /* page specific styles */
-body.index input#title
+body.index input#title,
+body.new input#title
 {
 	width: 957px;
 }
@@ -487,11 +489,6 @@ body.script input[type=submit]
 	margin-left: 0;
 }
 
-body.search input[type=text]
-{
-	width: 450px;
-}
-
 body.search input.noOperand
 {
 	opacity: 0.3;
@@ -499,7 +496,6 @@ body.search input.noOperand
 
 body.bughunt select
 {
-	width: 450px;
 	height: 100px;
 }
 

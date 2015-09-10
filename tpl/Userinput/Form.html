@@ -1,6 +1,4 @@
 <form method="post" action="{formAction}" id="userinput"{if ($this->formContainsFile)} enctype="multipart/form-data"{/}{if ($this->hasBeenSubmitted)} class="submit-attempted"{/}>
-	<h2>{formTitle}</h2>
-
 	{foreach (Basic::$userinput as $this->input)}
 		{$this->inputs .= $this->input->getHtml();}
 	{/}

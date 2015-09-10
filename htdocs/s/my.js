@@ -159,25 +159,46 @@ var evalOrg = {};
 	var _refresh = function()
 	{
 		var tab = document.getElementById('tab');
+		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
 		var r = this.responseText.match(/<div id="tab"[^>]+>([\s\S]*?)<\/div>/);
-		if (!r)
+		if (!t || !r)
 			window.location.reload();
 
-		// by http://stackoverflow.com/users/4251625/abe, via http://chat.stackoverflow.com/transcript/message/25068725#25068725
-		if ('output' == document.body.classList[0].ucFirst())
-		{
-			var boxSize = [], boxScroll = [];
+		document.getElementById('tabs').innerHTML = t[1];
 
-			// saves the boxes' sizes and forces them to not change while replacing the content
-			tab.querySelectorAll('dd').forEach(function(dd){
-				var h = window.getComputedStyle(dd, null).height;
-				boxSize.push(h); boxScroll.push(dd.scrollTop);
-				dd.style.height = h;
+		if (document.body.classList.contains('output') && window.DOMParser)
+			self._refreshOutput(tab, r[1]);
+		else
+		{
+			tab.innerHTML = r[1];
+
+			var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
+			if ('function' == typeof self[ pageHandler ])
+				self[ pageHandler ]();
+		}
+
+		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
+		{
+			clearInterval(refreshTimer);
+			document.querySelector('input[type=submit].busy').classList.remove('busy');
+			document.querySelector('#tabs.busy').classList.remove('busy');
+		}
+	};
+
+	var _refreshOutput = function(tab, html)
+	{
+		var boxSize = [], boxScroll = [];
+
+		// saves the boxes' sizes and forces them to not change while replacing the content
+		tab.querySelectorAll('dd').forEach(function(dd){
+			var h = window.getComputedStyle(dd, null).height;
+			boxSize.push(h); boxScroll.push(dd.scrollTop);
+			dd.style.height = h;
 				dd.style.maxHeight = h;
 			});
 
 			requestAnimationFrame(function(){
-				tab.innerHTML = r[1];
+				tab.innerHTML = html;
 
 				// gets the new <dd>s and applies the previous saved sizes
 				var dds = tab.querySelectorAll('dd');
@@ -196,23 +217,6 @@ var evalOrg = {};
 					});
 				});
 			});
-		} else
-			tab.innerHTML = r[1];
-
-		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
-		if (t)
-			document.getElementById('tabs').innerHTML = t[1];
-
-		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
-		if ('function' == typeof self[ pageHandler ])
-			self[ pageHandler ]();
-
-		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
-		{
-			clearInterval(refreshTimer);
-			document.querySelector('input[type=submit].busy').classList.remove('busy');
-			document.querySelector('#tabs.busy').classList.remove('busy');
-		}
 	};
 
 	var perfAddHeader = function(el, name, sum)

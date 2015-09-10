@@ -22,7 +22,7 @@
 			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
 			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
 			<li>Opcodes performed by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'operations';")->fetchColumn());}</b></li>
-			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'result';")->fetchColumn());}</b></li>
+			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%';")->fetchColumn());}</b></li>
 			<li>Registered users:				 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
 		</ul>
 
@@ -39,14 +39,15 @@
 			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a>.</li>
 			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE, which I use to this date.</li>
 			<li><b>Apr 2015</b> - New layout, added top-menu which allowed me to introduce links to /last and /search.</li>
+			<li><b>Sep 2015</b> - Scripts no longer run in all versions by default, plus we also had a minor redesign for our first-ever logo.</li>
 		</ul>
 
 		<h2>Pro-tricks</h2>
 		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:
-			<pre>$ curl -H Accept:text/plain https://3v4l.org/nPpE7</pre>
+			<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>
 
 			Did you ever complain there is no API? Well, REST is an API too, and I offer json output for most pages:
-			<pre>$ curl -H Accept:application/json https://3v4l.org/nPpE7</pre>
+			<pre>$ curl -H Accept:application/json https://3v4l.org/uNUDC</pre>
 		</p>
 
 		<h2>Links</h2>
