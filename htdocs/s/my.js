@@ -11,7 +11,7 @@ NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function (cb){
 	Array.prototype.forEach.call(this, cb);
 }
 
-HTMLOptionsCollection.prototype.getSelected = function(){
+HTMLSelectElement.prototype.getSelected = function(){
 	var s = [];
 	for (var i = 0; i < this.length; i++) {
 		if (this[i].selected)
@@ -185,7 +185,7 @@ var evalOrg = {};
 		}
 	};
 
-	var _refreshOutput = function(tab, html)
+	this._refreshOutput = function(tab, html)
 	{
 		var boxSize = [], boxScroll = [];
 
@@ -350,12 +350,15 @@ var evalOrg = {};
 
 	this.handleBughunt = function()
 	{
+		if (0 == document.forms.length)
+			return;
+
 		document.forms[0].addEventListener('submit', function(e){
 			e.preventDefault();
 
 			var url = '/bughunt/'
-				+ document.getElementById('versions').options.getSelected().join('+')
-				+ '/'+ document.getElementById('controls').options.getSelected().join('+');
+				+ document.getElementById('versions').getSelected().join('+')
+				+ '/'+ document.getElementById('controls').getSelected().join('+');
 			window.location.href = url;
 		});
 	};
