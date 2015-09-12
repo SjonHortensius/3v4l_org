@@ -159,8 +159,8 @@ var evalOrg = {};
 	var _refresh = function()
 	{
 		var tab = document.getElementById('tab');
-		var t = this.responseText.match(/<ul id="tabs".*?>([\s\S]*?)<\/ul>/);
-		var r = this.responseText.match(/<div id="tab"[^>]+>([\s\S]*?)<\/div>/);
+		var t = this.responseText.match(/<ul id="tabs"[^>]*>([\s\S]*?)<\/ul>/);
+		var r = this.responseText.match(/<div id="tab"[^>]*>([\s\S]*?)<\/div>/);
 		if (!t || !r)
 			window.location.reload();
 
@@ -187,36 +187,45 @@ var evalOrg = {};
 
 	this._refreshOutput = function(tab, html)
 	{
-		var boxSize = [], boxScroll = [];
+		var p = new DOMParser, doc = p.parseFromString(html, 'text/html'),
+			dl = tab.getElementsByTagName('dl')[0],
+			o = dl.getElementsByTagName('dt'),
+			n = doc.getElementsByTagName('dt');
 
-		// saves the boxes' sizes and forces them to not change while replacing the content
-		tab.querySelectorAll('dd').forEach(function(dd){
-			var h = window.getComputedStyle(dd, null).height;
-			boxSize.push(h); boxScroll.push(dd.scrollTop);
-			dd.style.height = h;
-				dd.style.maxHeight = h;
-			});
+		var getVersion = function(dt){
+			return dt.textContent.split(' ').pop();
+		};
 
-			requestAnimationFrame(function(){
-				tab.innerHTML = html;
+		n.forEach(function(ndt, i){
+			if (o[i] && ndt.textContent == o[i].textContent)
+				return;
 
-				// gets the new <dd>s and applies the previous saved sizes
-				var dds = tab.querySelectorAll('dd');
-				dds.forEach(function(dd, i){
-					dd.style.height = boxSize[i] || '';
-					dd.style.maxHeight = boxSize[i] || '';
-				});
+			var ndd = document.importNode(ndt.nextSibling, true);
+				ndt = document.importNode(ndt, true);
 
-				// waits for the previous css to get actually applied,
-				// and removes the hardcoded values
-				requestAnimationFrame(function(){
-					dds.forEach(function(dd, i){
-						dd.style.height = '';
-						dd.style.maxHeight = '';
-						dd.scrollTop = boxScroll[i] || 0;
-					});
-				});
-			});
+			ndt.addEventListener('click', function(e){ window.location.hash = '#'+ ndt.id; });
+
+			if (o[i] && getVersion(ndt) == getVersion(o[i]))
+			{
+//console.log('update', o[i].textContent, 'to', ndt.textContent);
+				dl.replaceChild(ndt, o[i]);
+			}
+			else
+			{
+//console.log('insert', ndt, o[i]?'before':'at the end', o[i]);
+
+				if (!o[i])
+				{
+					dl.appendChild(ndt);
+					dl.appendChild(ndd);
+				}
+				else
+				{
+					dl.insertBefore(ndt, o[i]);
+					dl.insertBefore(ndd, ndt.nextSibling);
+				}
+			}
+		});
 	};
 
 	var perfAddHeader = function(el, name, sum)
