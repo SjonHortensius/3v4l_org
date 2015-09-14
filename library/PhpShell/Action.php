@@ -17,8 +17,33 @@ class PhpShell_Action extends Basic_Action
 		}
 
 		header('Strict-Transport-Security: max-age=31536000');
-		# http://stackoverflow.com/questions/30023608/how-to-use-frame-src-and-child-src-in-firefox-and-other-browsers
-		header('Content-Security-Policy-Report-Only: default-src \'none\'; script-src \'self\' cdn.jsdelivr.net www.google-analytics.com blob:; child-src \'self\' cdn.jsdelivr.net blob:; frame-src \'self\' cdn.jsdelivr.net blob:; connect-src \'self\'; img-src \'self\' www.google-analytics.com data:; style-src \'self\' \'unsafe-inline\'; report-uri /cspReport');
+		$cspDirectives = [
+			'script-src' => [
+				"'self'",
+				'cdn.jsdelivr.net',
+				'www.google-analytics.com',
+				'blob:', # for ace worker
+				"'unsafe-inline'", # tmp for /perf, /search and tagcloud
+			],
+			'child-src' => [
+				"'self'",
+				'cdn.jsdelivr.net',
+				'blob:', # for ace worker @ chrome
+			],
+			'connect-src' => ["'self'"],
+			'img-src' => ["'self'", 'www.google-analytics.com', 'data:',],
+			'style-src' => [
+				"'self'",
+				"'unsafe-inline'", # for ace-editor
+			]
+		];
+		$cspDirectives['frame-src'] = $cspDirectives['child-src']; # b/c
+
+		$csp = "default-src 'none'; ";
+		foreach ($cspDirectives as $directive => $settings)
+			$csp .= $directive .' '.implode(' ', $settings). '; ';
+
+		header('Content-Security-Policy-Report-Only: '. $csp .'report-uri /cspReport');
 
 		if (0 && in_array($_SERVER['REMOTE_ADDR'], ['31.201.148.110']))
 		{
