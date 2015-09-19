@@ -418,7 +418,6 @@ header h1
 	margin: 0;
 
 	background: url(/s/logo.png) no-repeat center;
-	background-size: auto 21px;
 	transition: background-color 250ms ease-in;
 }
 

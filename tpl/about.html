@@ -16,7 +16,7 @@
 		<img src="/s/ga-sessions.png" width="150" height="18" /> - we've served 450k sessions to 300k users.</p>
 
 		<h2>Statistics</h2>
-		<p>I started in april 2012 and have been adding features ever since. If you like numbers, here are a some from the database: </p>
+		<p>I started in april 2012 and have been adding features ever since. If you like numbers, here are a some from the database:</p>
 		<ul>
 			<li>Versions (including helpers):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
 			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
@@ -43,12 +43,11 @@
 		</ul>
 
 		<h2>Pro-tricks</h2>
-		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:
-			<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>
+		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:</p>
+		<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>
 
-			Did you ever complain there is no API? Well, REST is an API too, and I offer json output for most pages:
-			<pre>$ curl -H Accept:application/json https://3v4l.org/uNUDC</pre>
-		</p>
+		<p>Did you ever complain there is no API? Well, REST is an API too, and I offer json output for most pages:</p>
+		<pre>$ curl -H Accept:application/json https://3v4l.org/uNUDC</pre>
 
 		<h2>Links</h2>
 		<ul>

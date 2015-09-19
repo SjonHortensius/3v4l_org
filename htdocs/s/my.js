@@ -36,30 +36,13 @@ var evalOrg = {};
 
 	this.initialize = function()
 	{
-		this.richEditor();
-
-		if (document.querySelector('input[type=submit].busy'))
-			refreshTimer = setInterval(this.refresh, 1000);
-
 		document.querySelectorAll('a[href^="http"]').forEach(function (el){
 			el.setAttribute('target', '_blank');
 		});
 
-		if (document.forms.length > 0)
-		{
-			document.body.addEventListener('keydown', function(e){
-				if (13 != e.keyCode || !e.ctrlKey)
-					return;
-
-				document.getElementsByName('code')[0].value = this.editor.getValue();
-				// Won't trigger submit-event!
-				document.forms[0].submit();
-			}.bind(this));
-		}
-
-		localTime(function(el, d){
-			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
-		}, 'input + time');
+		// script is the superclass for all tab handlers such as handlePerf/Output
+		if (document.body.classList.contains('script'))
+			this.handleScript();
 
 		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
 		if ('function' == typeof this[ pageHandler ])
@@ -69,10 +52,6 @@ var evalOrg = {};
 	this.richEditor = function()
 	{
 		var code = document.getElementsByTagName('code')[0];
-
-		if (!code)
-			return;
-
 		var textarea = document.createElement('textarea');
 		textarea.name = 'code';
 		textarea.value = code.textContent;
@@ -117,20 +96,31 @@ var evalOrg = {};
 		});
 	};
 
+	this.handleScript = function()
+	{
+		this.richEditor();
+
+		if (document.querySelector('input[type=submit].busy'))
+			refreshTimer = setInterval(this.refresh, 1000);
+
+		document.body.addEventListener('keydown', function(e){
+			if (13 != e.keyCode || !e.ctrlKey)
+				return;
+
+			document.getElementsByName('code')[0].value = this.editor.getValue();
+			// Won't trigger submit-event!
+			document.forms[0].submit();
+		}.bind(this));
+
+		localTime(function(el, d){
+			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
+		}, 'input + time');
+	};
+
 	this.handleRfc = function()
 	{
 		return this.handleOutput();
-	},
-
-	this.handleQuick = function()
-	{
-		document.querySelector('button[name=versions]').addEventListener('click', function(e){
-			document.forms[0].action = '/new';
-			var title = prompt('Please enter an optional title for this script');
-			if (title != 'undefined' && title != 'false')
-				document.querySelector('input[name=title]').value = title;
-		});
-	},
+	};
 
 	this.handleOutput = function()
 	{
@@ -154,7 +144,7 @@ var evalOrg = {};
 		xhr.onload = _refresh;
 		xhr.open('get', window.location.pathname);
 		xhr.send();
-	}
+	};
 
 	var _refresh = function()
 	{
@@ -270,6 +260,7 @@ var evalOrg = {};
 	var localTime = function(cb, sel)
 	{
 		sel = sel || 'time';
+		cb = cb || function(){};
 
 		document.querySelectorAll(sel).forEach(function (el){
 			var d = new Date(el.getAttribute('datetime'));
@@ -280,7 +271,7 @@ var evalOrg = {};
 
 	this.handleIndex = function()
 	{
-		localTime(function(){}, 'time');
+		localTime();
 	};
 
 	this.handleLast = function()
@@ -389,7 +380,7 @@ var evalOrg = {};
 	var btcAmountReceived = function()
 	{
 		return 0;
-		// https://blockchain.info/q/getreceivedbyaddress/3DJhjy98RiQRc7751B4PPugMkG3BGVogrX / 100000000
+		// https://blockchain.info/q/getreceivedbyaddress/xyz / 100000000
 	};
 }).apply(evalOrg);
 
