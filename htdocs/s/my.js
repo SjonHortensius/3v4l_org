@@ -87,7 +87,7 @@ var evalOrg = {};
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
-		code.addEventListener('keydown', function(){
+		this.editor.on('change', function(){
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
 		});
 
