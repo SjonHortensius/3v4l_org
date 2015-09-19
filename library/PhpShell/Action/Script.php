@@ -38,7 +38,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public function init()
 	{
 		if (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
-			$this->bodyClass = $GLOBALS['_MULTIVIEW'][1]. ' script';
+			$this->bodyClass .= ' '.$GLOBALS['_MULTIVIEW'][1];
 
 		parent::init();
 	}

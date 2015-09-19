@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Index extends PhpShell_Action_New
 {
-	public $bodyClass = 'index';
+	public $bodyClass = 'script';
 	public $lastModified = 'now';
 	protected $_cacheLength = '45 seconds';
 

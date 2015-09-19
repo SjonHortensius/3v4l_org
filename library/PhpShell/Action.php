@@ -61,7 +61,7 @@ class PhpShell_Action extends Basic_Action
 
 		// Since we resolve everything to 'script'; prevent random strings in bodyClass
 		if (! Basic::$action instanceof PhpShell_Action_Script)
-			$this->bodyClass = Basic::$userinput['action'];
+			$this->bodyClass .= ' '.Basic::$userinput['action'];
 
 		parent::init();
 	}

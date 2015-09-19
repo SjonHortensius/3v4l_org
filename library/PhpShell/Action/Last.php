@@ -11,7 +11,6 @@ class PhpShell_Action_Last extends PhpShell_Action
 		],
 	);
 	public $entries;
-	public $bodyClass = 'last';
 
 	public function run()
 	{
