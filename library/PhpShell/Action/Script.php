@@ -33,7 +33,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $code;
 	public $input;
 	public $showTab = [];
-	public $bodyClass = 'output script';
+	public $bodyClass = 'script';
 
 	public function init()
 	{

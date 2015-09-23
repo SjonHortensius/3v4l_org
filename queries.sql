@@ -9,13 +9,18 @@ HAVING COUNT(DISTINCT output) < 3
 LIMIT 30;
 
 # archive a version. First up archive limit, then update trigger + move rows, then up current limit.
-# Example here moves limit from 108 to 109
-ALTER TABLE result_archive (ALTER CONSTRAINT "isArchive" CHECK (version >= 32 AND version <= 109)) INHERITS (result);
+# determine maximum version in _current (from Input::trigger): SELECT * FROM version WHERE released > now() - '2 years'::interval ORDER BY released ASC LIMIT 1;
+# move others to archive, eg. above returns 139 so we move 110 to archive
 
-REPLACE FUNCTION result_insert_trigger()
+BEGIN;
+  ALTER TABLE result_archive DROP CONSTRAINT "isArchive";
+  ALTER TABLE result_archive ADD CONSTRAINT "isArchive" CHECK (version >= 32 AND version < 139);
+COMMIT;
+
+CREATE OR REPLACE FUNCTION result_insert_trigger()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF ( NEW.version < 32 OR NEW.version > 109 ) THEN
+    IF ( NEW.version < 32 OR NEW.version >= 139 ) THEN
         INSERT INTO result_current VALUES (NEW.*);
     ELSE
         INSERT INTO result_archive VALUES (NEW.*);
@@ -26,10 +31,11 @@ $$
 LANGUAGE plpgsql;
 
 BEGIN;
-INSERT INTO result_archive SELECT * FROM result_current WHERE version = 108;
-DELETE FROM result_current WHERE version = 108;
+  INSERT INTO result_archive SELECT * FROM result_current WHERE (version >= 32 AND version < 139);
+  DELETE FROM result_current WHERE (version >= 32 AND version < 139);
 COMMIT;
 
-# redeploy with new PhpShell_Input::trigger
-
-ALTER TABLE result_current (ALTER CONSTRAINT "isCurrent" CHECK (version < 32 OR version > 109)) INHERITS (result);
+BEGIN;
+  ALTER TABLE result_current DROP CONSTRAINT "isCurrent";
+  ALTER TABLE result_current ADD CONSTRAINT "isCurrent" CHECK (version < 32 OR version >= 139);
+COMMIT;

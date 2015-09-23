@@ -26,7 +26,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			'inputType' => 'checkbox',
 			'default' => 0,
 			'values' => [
-				1 => '<span title="Include PHP versions that are older then 3 years">+ unsupported versions</span>'
+				1 => '<span title="Include PHP versions that are older than 3 years">+ unsupported versions</span>'
 			],
 		],
 	);

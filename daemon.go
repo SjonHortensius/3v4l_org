@@ -46,6 +46,12 @@ type Result struct {
 	maxMemory  int64
 }
 
+type QueueItem struct {
+	input   *Input
+	version sql.NullString
+	isUntil bool
+}
+
 func exitError(format string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
 	os.Exit(1)
@@ -298,45 +304,53 @@ func refreshVersions() {
 }
 
 func doWork() {
+// online	rs, err := db.Query("DELETE FROM queue WHERE \"untilVersion\" = true OR version ISNULL RETURNING input, version, \"untilVersion\"")
+// batches	rs, err := db.Query("DELETE FROM queue WHERE \"untilVersion\" = false AND NOT version ISNULL RETURNING input, version, \"untilVersion\"")
 	rs, err := db.Query("DELETE FROM queue RETURNING input, version, \"untilVersion\"")
 
 	if err != nil {
 		exitError("doWork: error in DELETE query: %s", err)
 	}
 
+	// read entire queue so we don't keep the connection open
+	queue := []QueueItem{}
 	for rs.Next() {
-		input := &Input{}
-		input.uniqueOutput = map[string]bool{}
-		var version sql.NullString
-		var isUntil bool
+		q := QueueItem{
+			input: &Input{},
+		}
+		q.input.uniqueOutput = map[string]bool{}
 
-		if err := rs.Scan(&input.short, &version, &isUntil); err != nil {
+		if err := rs.Scan(&q.input.short, &q.version, &q.isUntil); err != nil {
 			exitError("doWork: error fetching work: %s", err)
 		}
 
-		if err := db.QueryRow("SELECT id FROM input WHERE short = $1", input.short).Scan(&input.id); err != nil {
-			exitError("doWork: error verifying input: %s", err)
-		}
-
-		if isUntil && !version.Valid {
+		if q.isUntil && !q.version.Valid {
 			fmt.Printf("Consistency error, cannot have untilVersion=true with version=null, skipping\n")
 			continue
 		}
 
-		input.setBusy(!version.Valid || isUntil)
+		queue = append(queue, q)
+	}
+
+	for _, q := range queue {
+		if err := db.QueryRow("SELECT id FROM input WHERE short = $1", q.input.short).Scan(&q.input.id); err != nil {
+			exitError("doWork: error verifying input: %s", err)
+		}
+
+		q.input.setBusy(!q.version.Valid || q.isUntil)
 
 		untilReached := false
 		for _, v := range versions {
-			if !version.Valid || (isUntil && !untilReached) || (!isUntil && version.String == v.name) {
-				input.execute(v)
+			if !q.version.Valid || (q.isUntil && !untilReached) || (!q.isUntil && q.version.String == v.name) {
+				q.input.execute(v)
 
-				if isUntil && version.String == v.name {
+				if q.isUntil && q.version.String == v.name {
 					untilReached = true
 				}
 			}
 		}
 
-		input.setDone()
+		q.input.setDone()
 
 		// Make depend on loadavg
 		time.Sleep(250 * time.Millisecond)
@@ -375,6 +389,7 @@ const (
 func init() {
 	var err error
 	db, err = sql.Open("postgres", DSN)
+	db.SetMaxOpenConns(16)
 
 	if err != nil {
 		exitError("Failed connect to db: %s", err)

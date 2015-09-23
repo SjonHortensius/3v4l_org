@@ -7,7 +7,9 @@
 ga('create', 'UA-31015527-1', 'auto');
 ga('send', 'pageview');
 
-NodeList.prototype.forEach = HTMLCollection.prototype.forEach = function (cb){
+NodeList.prototype.forEach =
+ HTMLCollection.prototype.forEach =
+ DOMTokenList.prototype.forEach = function (cb){
 	Array.prototype.forEach.call(this, cb);
 }
 
@@ -40,17 +42,17 @@ var evalOrg = {};
 			el.setAttribute('target', '_blank');
 		});
 
-		// script is the superclass for all tab handlers such as handlePerf/Output
-		if (document.body.classList.contains('script'))
-			this.handleScript();
-
-		var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
-		if ('function' == typeof this[ pageHandler ])
-			this[ pageHandler ]();
+		document.body.classList.forEach(function(c){
+			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
+				this[ 'handle'+c.ucFirst() ]();
+		}.bind(this));
 	};
 
 	this.richEditor = function()
 	{
+		if (document.getElementsByName('code').length > 0)
+			return;
+
 		var code = document.getElementsByTagName('code')[0];
 		var textarea = document.createElement('textarea');
 		textarea.name = 'code';
@@ -98,6 +100,9 @@ var evalOrg = {};
 
 	this.handleScript = function()
 	{
+		if ('undefined' != typeof refreshTimer)
+			return;
+
 		this.richEditor();
 
 		if (document.querySelector('input[type=submit].busy'))
@@ -107,9 +112,15 @@ var evalOrg = {};
 			if (13 != e.keyCode || !e.ctrlKey)
 				return;
 
-			document.getElementsByName('code')[0].value = this.editor.getValue();
-			// Won't trigger submit-event!
-			document.forms[0].submit();
+			// Trigger submitEvent manually
+			var event = new Event('submit', {
+				'view': window,
+				'bubbles': true,
+				'cancelable': true
+			});
+			// None of the handlers called preventDefault.
+			if (document.getElementsByName('code')[0].dispatchEvent(event))
+				document.forms[0].submit();
 		}.bind(this));
 
 		localTime(function(el, d){
@@ -127,14 +138,14 @@ var evalOrg = {};
 		document.getElementsByTagName('dt').forEach(function(el){
 			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
 		});
-
+/*
 		document.querySelectorAll('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
 				//FIXME xhr submit
 				e.preventDefault();
 			});
 		});
-	};
+*/	};
 
 	this.refresh = function()
 	{
@@ -162,9 +173,10 @@ var evalOrg = {};
 		{
 			tab.innerHTML = r[1];
 
-			var pageHandler = 'handle'+ document.body.classList[0].ucFirst();
-			if ('function' == typeof self[ pageHandler ])
-				self[ pageHandler ]();
+			document.body.classList.forEach(function(c){
+				if ('function' == typeof this[ 'handle'+c.ucFirst() ])
+					this[ 'handle'+c.ucFirst() ]();
+			}.bind(self));
 		}
 
 		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
