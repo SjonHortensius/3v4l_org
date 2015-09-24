@@ -29,6 +29,7 @@ WHERE now() - created < '1 week';")));
 				ip,
 				SUM(submit.count) submits,
 				AVG(penalty) penalty,
+				JSON_AGG(input.short) inputs,
 				SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) / 1000000 sleep
 			FROM submit
 

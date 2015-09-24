@@ -264,7 +264,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		$version = PhpShell_Version::byName('hhvm-bytecode');
 
-		return $this->getResult($version);
+		return $this->getResult($version)->getSubset('"exitCode" = 0');
 	}
 
 	protected function _checkPermissions($action)
