@@ -76,6 +76,9 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		}
 
 		$this->entries = new PhpShell_SearchScriptsList(PhpShell_Input, $q, $params, ['input.id' => !true]);
+		//this produces incomplete variance and ~time but is ~4 times faster
+		$this->entries->addJoin('result_current', "result_current.input = input.id AND result_current.version >= 32");
+		$this->entries->addJoin('operations', "operations.input = input.id");
 
 		return parent::run();
 	}

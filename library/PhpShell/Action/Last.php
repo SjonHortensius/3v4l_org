@@ -15,6 +15,7 @@ class PhpShell_Action_Last extends PhpShell_Action
 	public function run()
 	{
 		$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0', [], ['id' => false]);
+		$this->entries->addJoin('result', "result.input = input.id AND result.version >= 32");
 
 		parent::run();
 	}

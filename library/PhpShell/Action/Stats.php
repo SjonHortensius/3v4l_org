@@ -36,7 +36,7 @@ WHERE now() - created < '1 week';")));
 JOIN input ON (input.id = submit.input)
 WHERE now()-submit.created < '24 hour'
 GROUP BY ip
-ORDER BY SUM(submit.count)*AVG(penalty) DESC
+ORDER BY SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) DESC
 LIMIT 30;")->show();
 
 		return parent::run();

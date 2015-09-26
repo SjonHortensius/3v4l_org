@@ -133,6 +133,8 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getOutput()
 	{
 		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->id, $this->run), ['version.order' => true]);
+		$results->addJoin('output', "output.id = result.output");
+		$results->addJoin('version', "version.id = result.version");
 
 		$abbrMax = function($name)
 		{
