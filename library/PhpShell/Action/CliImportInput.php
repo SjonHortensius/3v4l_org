@@ -1,9 +1,12 @@
 <?php
 
-class PhpShell_Action_ImportInput extends PhpShell_Action
+class PhpShell_Action_CliImportInput extends PhpShell_Action
 {
 	public function init()
 	{
+		if (php_sapi_name() != 'cli')
+			throw new PhpShell_Action_CliImportInput_CliNotDetectedException('This action can only be run from the cli');
+
 		Basic::$config->PRODUCTION_MODE = true;
 		Basic::$config->Template->cachePath = '/tmp';
 
