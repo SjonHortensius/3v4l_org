@@ -269,6 +269,28 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->getResult($version)->getSubset('"exitCode" = 0');
 	}
 
+	public function listOperations()
+	{
+		$operations = [
+			'FETCH_CLASS',
+			'DO_FCALL',
+		];
+
+		// We ignore $operation here for now
+		$ops = [];
+		foreach ($this->getRelated('PhpShell_Operation')->getSubset("operation IN('".implode("','", $operations)."')") as $row)
+			$ops[ $row->operand ] += $row->count;
+
+		arsort($ops);
+		return substr(implode(', ', array_keys($ops)), 0, 65);
+	}
+
+	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
+	{
+		$dt = new DateTime($this->created);
+		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
+	}
+
 	protected function _checkPermissions($action)
 	{
 		if ($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title)
@@ -278,11 +300,5 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 
 		return true;
-	}
-
-	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
-	{
-		$dt = new DateTime($this->created);
-		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
 	}
 }

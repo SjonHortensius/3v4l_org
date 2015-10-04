@@ -8,12 +8,10 @@
 		<tr>
 			<th>name</th>
 			<th>created</th>
-			<th>~ userTime</th>
-			<th>~ systemTime</th>
-			<th>~ maxMemory</th>
 			<th># runs</th>
 			<th># operations</th>
 			<th>% variance</th>
+			<th>operations</th>
 		</tr>
 		</thead>
 
@@ -29,12 +27,10 @@
 					 <a href="/{row->short}">{row->short}</a>{if (isset($this->row->title))} <i>{row->title}</i>{/}
 				</td>
 				<td><time datetime="{row->getCreatedUtc()}">{print $this->row->getCreatedUtc('H:i:s');}</time></td>
-				<td>{print round($this->row->userTime, 2);} s</td>
-				<td>{print round($this->row->systemTime, 2);} s</td>
-				<td>{print round($this->row->maxMemory/1024);} MiB</td>
 				<td>{if ($this->row->runArchived)}<i>{/}{row->run}{if ($this->row->runArchived)}</i>{/}</td>
 				<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
 				<td>{row->variance}</td>
+				<td>{row->listOperations()}</td>
 			</tr>
 
 			{$this->prevrow = $this->row;}

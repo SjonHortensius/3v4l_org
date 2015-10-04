@@ -299,6 +299,12 @@ td:not(:first-child)
 	text-align: right;
 }
 
+td:last-child
+{
+	text-overflow: ellipsis;
+	text-align: left;
+}
+
 td
 {
 	padding: 4px;
