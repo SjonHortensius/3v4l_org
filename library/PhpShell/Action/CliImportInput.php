@@ -8,7 +8,7 @@ class PhpShell_Action_CliImportInput extends PhpShell_Action
 			throw new PhpShell_Action_CliImportInput_CliNotDetectedException('This action can only be run from the cli');
 
 		Basic::$config->PRODUCTION_MODE = true;
-		Basic::$config->Template->cachePath = '/tmp';
+		Basic::$config->Template->cachePath = '/tmp/';
 
 		parent::init();
 	}

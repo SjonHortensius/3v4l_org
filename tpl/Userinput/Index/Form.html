@@ -37,7 +37,17 @@
 </div>
 
 <div class="column">
-	<h2>Recent submissions</h2>
+{if (!empty($this->popular))}
+	<h2>Popular</h2>
+	<ul>
+		{foreach ($this->popular as $this->url => $this->count)}
+			<li>
+				<a href="{url}">{url}</a>
+			</li>
+		{/}
+	</ul>
+{:}
+	<h2>Recent</h2>
 	<ul>
 		{foreach ($this->last->getPage(1, 5) as $this->row)}
 			<li>
@@ -57,4 +67,5 @@
 			</li>
 		{/}
 	</ul>
+{/}
 </div>
