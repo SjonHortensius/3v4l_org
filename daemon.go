@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -19,6 +21,7 @@ type Version struct {
 	name     string
 	command  string
 	isHelper bool
+	released time.Time
 }
 
 type Input struct {
@@ -26,6 +29,7 @@ type Input struct {
 	short        string
 	uniqueOutput map[string]bool
 	penalty      int
+	created      time.Time
 	run          int
 }
 
@@ -66,13 +70,13 @@ func (this *Input) setBusy(newRun bool) {
 		incRun = 1
 	}
 
-	if r, err := db.Exec("UPDATE input SET run = run + $2, state = 'busy' WHERE short = $1", this.short, incRun); err != nil {
+	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE short = $1`, this.short, incRun); err != nil {
 		exitError("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		exitError("Input: failed to update run+state; %d rows affected, %s", a, err)
 	}
 
-	if err := db.QueryRow("SELECT id, run FROM input WHERE short = $1", this.short).Scan(&this.id, &this.run); err != nil {
+	if err := db.QueryRow(`SELECT id, run FROM input WHERE short = $1`, this.short).Scan(&this.id, &this.run); err != nil {
 		exitError("Input: failed to fetch run: %s", err)
 	}
 }
@@ -83,7 +87,9 @@ func (this *Input) setDone() {
 		state = "abusive"
 	}
 
-	if _, err := db.Exec("UPDATE input SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3 WHERE short = $1 AND state = 'busy'", this.short, this.penalty, state); err != nil {
+	if _, err := db.Exec(`UPDATE input
+		SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3
+		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state); err != nil {
 		exitError("Input: failed to update: %s", err)
 	}
 
@@ -106,14 +112,14 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 
 	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
-	if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
+	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
 		var duplicateKey = "pq: duplicate key value violates unique constraint \"output_hash_key\""
-		if _, err := db.Exec("INSERT INTO output VALUES ($1, $2)", o.hash, o.raw); err != nil && err.Error() != duplicateKey {
+		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2)`, o.hash, o.raw); err != nil && err.Error() != duplicateKey {
 			exitError("Output: failed to store: %s", err)
 		}
 
 		// LastInsertId doesn't work
-		if err := db.QueryRow("SELECT id FROM output WHERE hash = $1", o.hash).Scan(&o.id); err != nil {
+		if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
 			exitError("Output: failed to retrieve after storing: %s", err)
 		}
 
@@ -164,13 +170,13 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 }
 
 func (this *Result) store() {
-	_, err := db.Exec("INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)",
+	_, err := db.Exec(`INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		this.input.id, this.output.id, this.version.id, this.exitCode, this.created,
 		this.userTime, this.systemTime, this.maxMemory, this.input.run,
 	)
 
 	if err != nil {
-		fmt.Println("Result: failed to store input=%s,version=%s,run=%d: %s", this.input.short, this.version.name, this.input.run, err)
+		fmt.Printf("Result: failed to store input=%s,version=%s,run=%d: %s\n", this.input.short, this.version.name, this.input.run, err)
 	}
 }
 
@@ -190,7 +196,7 @@ func (this *Input) execute(v *Version) *Result {
 		"USERNAME=nobody",
 		"HOME=/",
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{99, 99, []uint32{}}}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
 
 	/*
 	 * Channels are meant to communicate between routines. We create a channel
@@ -278,7 +284,7 @@ func (this *Input) execute(v *Version) *Result {
 func refreshVersions() {
 	newVersions := []*Version{}
 
-	rs, err := db.Query("SELECT id, name, command, \"isHelper\" FROM version ORDER BY \"order\" DESC")
+	rs, err := db.Query(`SELECT id, name, command, COALESCE(released, '1900-01-01'), "isHelper" FROM version ORDER BY "order" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
@@ -287,7 +293,7 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.command, &v.isHelper); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.command, &v.released, &v.isHelper); err != nil {
 			exitError("Error fetching version: %s", err)
 		}
 
@@ -297,9 +303,101 @@ func refreshVersions() {
 	versions = newVersions
 }
 
+func canBatch(doSleep bool) (bool, error) {
+	file, err := os.Open("/proc/loadavg")
+	if err != nil {
+		return false, err
+	}
+
+	data := make([]byte, 64)
+	if c, err := file.Read(data); err != nil || c < 8 {
+		return false, err
+	}
+
+	loadAvg := strings.Split(string(data), " ")
+
+	if l, err := strconv.ParseFloat(loadAvg[0], 32); doSleep && err == nil {
+		time.Sleep(time.Duration(int(l*10)/runtime.NumCPU()) * time.Second)
+	}
+
+	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
+		return false, err
+	} else if int(l) > runtime.NumCPU()/2 {
+		fmt.Printf("Load %v seems high (for %d cpus), skipping batch", l, runtime.NumCPU())
+		return false, nil
+	}
+
+	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
+		return false, err
+	} else if int(l) > runtime.NumCPU()/2 {
+		fmt.Printf("Load %v seems high (for %d cpus), skipping batch", l, runtime.NumCPU())
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// func batchScheduleNewVersions
+
+func batchRefreshRandomScripts() {
+	for {
+		if c, err := canBatch(false); err != nil {
+			exitError("Unable to query load: %s\n", err)
+		} else if !c {
+			return
+		}
+
+		rs, err := db.Query(`SELECT short, created, "runArchived" FROM input WHERE penalty < 50 AND NOW() - created > '1 month'::interval ORDER BY random() LIMIT 999`)
+		if err != nil {
+			exitError("doBatch: error in SELECT query: %s", err)
+		}
+
+		var runArchived bool
+		for rs.Next() {
+			input := &Input{uniqueOutput: map[string]bool{}}
+			if err := rs.Scan(&input.short, &input.created, &runArchived); err != nil {
+				exitError("doBatch: error fetching work: %s", err)
+			}
+
+			if c, err := canBatch(true); err != nil {
+				exitError("Unable to check load: %s\n", err)
+			} else if !c {
+				rs.Close()
+				return
+			}
+
+			if err := db.QueryRow(`SELECT id FROM input WHERE short = $1`, input.short).Scan(&input.id); err != nil {
+				exitError("doBatch: error verifying input: %s", err)
+			}
+
+			fmt.Printf("Debug: resetting https://3v4l.org/%s\n", input.short)
+
+			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
+				exitError("doBatch: could not delete existing results: %s", err)
+			}
+			if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
+				exitError("doBatch: could not reset input.run: %s", err)
+			}
+
+			input.setBusy(true)
+
+			y, m, d := input.created.Date()
+			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
+			for _, v := range versions {
+				if runArchived || v.isHelper || v.released.After(minArchDate) {
+					input.execute(v)
+				}
+			}
+
+			input.setDone()
+		}
+
+		time.Sleep(1 * time.Minute)
+	}
+}
+
 func doWork() {
-//	rs, err := db.Query("DELETE FROM queue WHERE \"untilVersion\" = true OR version ISNULL RETURNING input, version, \"untilVersion\"")
-	rs, err := db.Query("DELETE FROM queue WHERE \"untilVersion\" = false AND NOT version ISNULL RETURNING input, version, \"untilVersion\"")
+	rs, err := db.Query(`DELETE FROM queue RETURNING input, version, "untilVersion"`)
 
 	if err != nil {
 		exitError("doWork: error in DELETE query: %s", err)
@@ -320,7 +418,7 @@ func doWork() {
 			continue
 		}
 
-		if err := db.QueryRow("SELECT id FROM input WHERE short = $1", input.short).Scan(&input.id); err != nil {
+		if err := db.QueryRow(`SELECT id FROM input WHERE short = $1`, input.short).Scan(&input.id); err != nil {
 			exitError("doWork: error verifying input: %s", err)
 		}
 
@@ -338,9 +436,6 @@ func doWork() {
 		}
 
 		input.setDone()
-
-		// Make depend on loadavg
-		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -359,6 +454,8 @@ func background() {
 			stats = make(map[string]int)
 		}
 	}()
+
+	go batchRefreshRandomScripts()
 }
 
 var (
@@ -369,6 +466,7 @@ var (
 )
 
 const (
+	WORK_BREAK   = 150 * time.Millisecond
 	RLIMIT_NPROC = 0x6
 	DSN          = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
 )
@@ -392,13 +490,14 @@ func init() {
 		}
 	})
 
-	if err := l.Listen("daemon"); err != nil {
-		exitError("Could not setup Listener %s", err)
+	if h, err := os.Hostname(); err == nil && h == "3v4l.org" {
+		if err := l.Listen("daemon"); err != nil {
+			exitError("Could not setup Listener %s", err)
+		}
+	} else {
+		db, err = sql.Open("postgres", DSN+" port=5434")
+		db.SetMaxOpenConns(16)
 	}
-
-	stats = make(map[string]int)
-	go background()
-	refreshVersions()
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:    2,
@@ -411,16 +510,21 @@ func init() {
 	}
 
 	for key, value := range limits {
-		if err := syscall.Setrlimit(key, &syscall.Rlimit{uint64(value), uint64(float64(value) * 1.25)}); err != nil {
+		if err := syscall.Setrlimit(key, &syscall.Rlimit{Cur: uint64(value), Max: uint64(float64(value) * 1.25)}); err != nil {
 			exitError("Failed to set resourceLimit: %d to %d: %s", key, value, err)
 		}
 	}
+
+	stats = make(map[string]int)
+	refreshVersions()
 }
 
 func main() {
+	go background()
+
 	fmt.Printf("Daemon ready\n")
 
-	// Process pending work first
+	// Process pending work
 	doWork()
 
 	for {
