@@ -84,7 +84,18 @@ memory_limit = 64M<br/>
 enable_dl = Off<br/>
 <br/>
 ; for consistency of older versions<br/>
-allow_call_time_pass_reference Europe/Amsterdam
+allow_call_time_pass_reference = Off<br/>
+html_errors = Off<br/>
+<br/>
+; show all errors by default, if we'd lower this in the script we'll miss some parser notices<br/>
+error_reporting = -1<br/>
+display_errors = On<br/>
+display_startup_errors = On<br/>
+log_errors = Off<br/>
+report_memleaks = On<br/>
+<br/>
+[Date]<br/>
+date.timezone = Europe/Amsterdam<br/>
 		</pre>
 
 		<p>When I started in 2012, this site was nothing more than a small bash script that looped through all installed PHP binaries and stored the output in <i>/out/</i>.

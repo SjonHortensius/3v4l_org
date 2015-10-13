@@ -317,20 +317,20 @@ func canBatch(doSleep bool) (bool, error) {
 	loadAvg := strings.Split(string(data), " ")
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); doSleep && err == nil {
-		time.Sleep(time.Duration(int(l*10)/runtime.NumCPU()) * time.Second)
+		time.Sleep(time.Duration(int(l*5)/runtime.NumCPU()) * time.Second)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load %v seems high (for %d cpus), skipping batch", l, runtime.NumCPU())
+		fmt.Printf("Load %.1f seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load %v seems high (for %d cpus), skipping batch", l, runtime.NumCPU())
+		fmt.Printf("Load %.1f seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
@@ -341,12 +341,6 @@ func canBatch(doSleep bool) (bool, error) {
 
 func batchRefreshRandomScripts() {
 	for {
-		if c, err := canBatch(false); err != nil {
-			exitError("Unable to query load: %s\n", err)
-		} else if !c {
-			return
-		}
-
 		rs, err := db.Query(`SELECT short, created, "runArchived" FROM input WHERE penalty < 50 AND NOW() - created > '1 month'::interval ORDER BY random() LIMIT 999`)
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
@@ -363,7 +357,7 @@ func batchRefreshRandomScripts() {
 				exitError("Unable to check load: %s\n", err)
 			} else if !c {
 				rs.Close()
-				return
+				break
 			}
 
 			if err := db.QueryRow(`SELECT id FROM input WHERE short = $1`, input.short).Scan(&input.id); err != nil {
@@ -391,8 +385,6 @@ func batchRefreshRandomScripts() {
 
 			input.setDone()
 		}
-
-		time.Sleep(1 * time.Minute)
 	}
 }
 
@@ -473,7 +465,11 @@ const (
 
 func init() {
 	var err error
-	db, err = sql.Open("postgres", DSN)
+	if h, err := os.Hostname(); err == nil && h == "3v4l.org" {
+		db, err = sql.Open("postgres", DSN)
+	} else {
+		db, err = sql.Open("postgres", DSN+" port=5434")
+	}
 	db.SetMaxOpenConns(16)
 
 	if err != nil {
@@ -494,9 +490,6 @@ func init() {
 		if err := l.Listen("daemon"); err != nil {
 			exitError("Could not setup Listener %s", err)
 		}
-	} else {
-		db, err = sql.Open("postgres", DSN+" port=5434")
-		db.SetMaxOpenConns(16)
 	}
 
 	var limits = map[int]int{
