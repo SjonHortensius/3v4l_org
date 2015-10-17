@@ -300,6 +300,10 @@ func refreshVersions() {
 		newVersions = append(newVersions, &v)
 	}
 
+/*	if len(newVersions) > len(versions) {
+		go batchScheduleNewVersions(newVersions[len(newVersions)-1])
+	}
+*/
 	versions = newVersions
 }
 
@@ -317,39 +321,44 @@ func canBatch(doSleep bool) (bool, error) {
 	loadAvg := strings.Split(string(data), " ")
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); doSleep && err == nil {
-		time.Sleep(time.Duration(int(l*5)/runtime.NumCPU()) * time.Second)
+		time.Sleep(time.Duration(int(l*100)/runtime.NumCPU()) * time.Millisecond)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load %.1f seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
+		fmt.Printf("Load [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load %.1f seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
+		fmt.Printf("Load [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
 	return true, nil
 }
 
-// func batchScheduleNewVersions
-
-func batchRefreshRandomScripts() {
-	for {
-		rs, err := db.Query(`SELECT short, created, "runArchived" FROM input WHERE penalty < 50 AND NOW() - created > '1 month'::interval ORDER BY random() LIMIT 999`)
+func batchScheduleNewVersions(target *Version) {
+	found := 1
+	for found > 0 {
+		rs, err := db.Query(`
+			SELECT id, short, i.run
+			FROM input i
+			LEFT JOIN result r ON (r.input=i.id AND r.run=i.run AND r.version=$1)
+			WHERE state = 'done' AND version ISNULL
+			LIMIT 999;`, target.id)
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
 
-		var runArchived bool
+		found = 0
 		for rs.Next() {
+			found++
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.short, &input.created, &runArchived); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.run); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -360,8 +369,35 @@ func batchRefreshRandomScripts() {
 				break
 			}
 
-			if err := db.QueryRow(`SELECT id FROM input WHERE short = $1`, input.short).Scan(&input.id); err != nil {
-				exitError("doBatch: error verifying input: %s", err)
+			input.execute(target)
+		}
+	}
+}
+
+func batchRefreshRandomScripts() {
+	for {
+		rs, err := db.Query(`
+			SELECT id, short, created, "runArchived"
+			FROM input
+			WHERE penalty < 50 AND NOW() - created > '1 month'::interval
+			ORDER BY random()
+			LIMIT 999`)
+		if err != nil {
+			exitError("doBatch: error in SELECT query: %s", err)
+		}
+
+		var runArchived bool
+		for rs.Next() {
+			input := &Input{uniqueOutput: map[string]bool{}}
+			if err := rs.Scan(&input.id, &input.short, &input.created, &runArchived); err != nil {
+				exitError("doBatch: error fetching work: %s", err)
+			}
+
+			if c, err := canBatch(true); err != nil {
+				exitError("Unable to check load: %s\n", err)
+			} else if !c {
+				rs.Close()
+				break
 			}
 
 			fmt.Printf("Debug: resetting https://3v4l.org/%s\n", input.short)
@@ -447,7 +483,16 @@ func background() {
 		}
 	}()
 
-	go batchRefreshRandomScripts()
+	go func() {
+		for _, v := range versions {
+			// exitCode=255 won't be stored, this'd result in ~500K useless execs
+			if !v.isHelper {
+				batchScheduleNewVersions(v)
+			}
+		}
+
+		batchRefreshRandomScripts()
+	}()
 }
 
 var (
