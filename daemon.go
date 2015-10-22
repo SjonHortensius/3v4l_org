@@ -327,14 +327,14 @@ func canBatch(doSleep bool) (bool, error) {
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
+		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
+		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		return false, nil
 	}
 
@@ -362,11 +362,10 @@ func batchScheduleNewVersions(target *Version) {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			if c, err := canBatch(true); err != nil {
-				exitError("Unable to check load: %s\n", err)
-			} else if !c {
-				rs.Close()
-				break
+			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+				if err != nil {
+					exitError("Unable to check load: %s\n", err)
+				}
 			}
 
 			input.execute(target)
@@ -393,14 +392,11 @@ func batchRefreshRandomScripts() {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			if c, err := canBatch(true); err != nil {
-				exitError("Unable to check load: %s\n", err)
-			} else if !c {
-				rs.Close()
-				break
+			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+				if err != nil {
+					exitError("Unable to check load: %s\n", err)
+				}
 			}
-
-			fmt.Printf("Debug: resetting https://3v4l.org/%s\n", input.short)
 
 			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 				exitError("doBatch: could not delete existing results: %s", err)
@@ -483,6 +479,10 @@ func background() {
 		}
 	}()
 
+	if !isBatch {
+		return
+	}
+
 	go func() {
 		for _, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
@@ -500,6 +500,7 @@ var (
 	l        *pq.Listener
 	versions []*Version
 	stats    map[string]int
+	isBatch  bool
 )
 
 const (
@@ -510,10 +511,12 @@ const (
 
 func init() {
 	var err error
-	if h, err := os.Hostname(); err == nil && h == "3v4l.org" {
-		db, err = sql.Open("postgres", DSN)
-	} else {
+	isBatch = len(os.Args) > 1 && os.Args[1] == "--batch"
+
+	if isBatch {
 		db, err = sql.Open("postgres", DSN+" port=5434")
+	} else {
+		db, err = sql.Open("postgres", DSN)
 	}
 	db.SetMaxOpenConns(16)
 
@@ -531,7 +534,7 @@ func init() {
 		}
 	})
 
-	if h, err := os.Hostname(); err == nil && h == "3v4l.org" {
+	if !isBatch {
 		if err := l.Listen("daemon"); err != nil {
 			exitError("Could not setup Listener %s", err)
 		}
