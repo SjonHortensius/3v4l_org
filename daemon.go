@@ -31,6 +31,7 @@ type Input struct {
 	penalty      int
 	created      time.Time
 	run          int
+	runArchived  bool
 }
 
 type Output struct {
@@ -327,8 +328,8 @@ func canBatch(doSleep bool) (bool, error) {
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
-		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
-		return false, nil
+		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), sleeping...\n", l, runtime.NumCPU())
+		time.Sleep(time.Duration(3 * l) * time.Second)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
@@ -345,7 +346,7 @@ func batchScheduleNewVersions(target *Version) {
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
-			SELECT id, short, i.run
+			SELECT id, short, i.run, created, "runArchived"
 			FROM input i
 			LEFT JOIN result r ON (r.input=i.id AND r.run=i.run AND r.version=$1)
 			WHERE state = 'done' AND version ISNULL
@@ -358,7 +359,7 @@ func batchScheduleNewVersions(target *Version) {
 		for rs.Next() {
 			found++
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.id, &input.short, &input.run); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.run, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -368,7 +369,11 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
-			input.execute(target)
+			y, m, d := input.created.Date()
+			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
+			if input.runArchived || target.isHelper || target.released.After(minArchDate) {
+				input.execute(target)
+			}
 		}
 	}
 }
@@ -385,10 +390,9 @@ func batchRefreshRandomScripts() {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
 
-		var runArchived bool
 		for rs.Next() {
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.id, &input.short, &input.created, &runArchived); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -410,7 +414,7 @@ func batchRefreshRandomScripts() {
 			y, m, d := input.created.Date()
 			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
 			for _, v := range versions {
-				if runArchived || v.isHelper || v.released.After(minArchDate) {
+				if input.runArchived || v.isHelper || v.released.After(minArchDate) {
 					input.execute(v)
 				}
 			}
