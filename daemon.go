@@ -343,14 +343,18 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions(target *Version) {
+	y, m, d := target.released.Date()
+	maxCreated := time.Date(y+3, m, d, 0, 0, 0, 0, time.UTC)
+	stats["batchVersion"] = target.order
+
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
-			SELECT id, short, i.run, created, "runArchived"
+			SELECT id, short, i.run
 			FROM input i
 			LEFT JOIN result r ON (r.input=i.id AND r.run=i.run AND r.version=$1)
-			WHERE state = 'done' AND version ISNULL
-			LIMIT 999;`, target.id)
+			WHERE state = 'done' AND version ISNULL AND (i."runArchived" OR i.created < $2::date)
+			LIMIT 999;`, target.id, maxCreated.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
@@ -359,7 +363,7 @@ func batchScheduleNewVersions(target *Version) {
 		for rs.Next() {
 			found++
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.id, &input.short, &input.run, &input.created, &input.runArchived); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.run); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -369,11 +373,7 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
-			y, m, d := input.created.Date()
-			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
-			if input.runArchived || target.isHelper || target.released.After(minArchDate) {
-				input.execute(target)
-			}
+			input.execute(target)
 		}
 	}
 }
@@ -396,12 +396,6 @@ func batchRefreshRandomScripts() {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
-				if err != nil {
-					exitError("Unable to check load: %s\n", err)
-				}
-			}
-
 			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 				exitError("doBatch: could not delete existing results: %s", err)
 			}
@@ -414,6 +408,12 @@ func batchRefreshRandomScripts() {
 			y, m, d := input.created.Date()
 			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
 			for _, v := range versions {
+				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+					if err != nil {
+						exitError("Unable to check load: %s\n", err)
+					}
+				}
+
 				if input.runArchived || v.isHelper || v.released.After(minArchDate) {
 					input.execute(v)
 				}
