@@ -81,10 +81,8 @@ textarea:focus,
 input:focus,
 select:focus
 {
-/*	border-color: rgba(126, 239, 104, 0.8);
-*/	border-color: #66afe9;
-/*	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6);
-*/	box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
+	border-color: #66afe9;
+	box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
 	outline: 0 none;
 }
 
@@ -297,12 +295,6 @@ td:first-child
 td:not(:first-child)
 {
 	text-align: right;
-}
-
-td:last-child
-{
-	text-overflow: ellipsis;
-	text-align: left;
 }
 
 td
@@ -538,11 +530,6 @@ body.perf tr.header
 	cursor: pointer;
 }
 
-body.perf td
-{
-	padding-right: 60px;
-}
-
 body.perf meter
 {
 	float: right;
@@ -565,7 +552,7 @@ body.perf tr.header:not(.open) ~ tr:not(.header)
 
 body.perf tr:not(.header) td:first-child
 {
-	padding-left: 20px;
+	padding-left: 23px;
 }
 
 body.about pre
@@ -573,4 +560,10 @@ body.about pre
 	background-color: #ddd;
 	overflow: auto;
 	padding: 0.5em;
+}
+
+body.last td:last-child
+{
+	text-overflow: ellipsis;
+	text-align: left;
 }

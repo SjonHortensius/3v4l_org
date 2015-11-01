@@ -1,6 +1,6 @@
 <div itemscope itemtype="http://schema.org/Article">
 	{if (isset($this->input->title))}
-		<meta itemprop="name" content="{%input->title}" />
+		<meta itemprop="name" content="{input->title}" />
 	{:}
 		<meta itemprop="name" content="{input->short}" />
 	{/}
@@ -8,12 +8,12 @@
 	{!-- render form for Action_New manually --}
 	<form method="post" action="/new" id="userinput">
 		<div>
-			<input type="text" name="title" id="title" size="48" maxlength="64" value="{%input->title}" placeholder="Untitled" />
+			<input type="text" name="title" id="title" size="48" maxlength="64" value="{input->title}" placeholder="Untitled" />
 			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
 		</div>
 
 		<div>
-			<code itemprop="articleBody">{%code}</code>
+			<code itemprop="articleBody">{code}</code>
 		</div>
 
 		<div id="context">
@@ -26,7 +26,7 @@
 			{/}
 
 			{if (isset($this->input->user))}
-				<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {%input->user->name}</a>
+				<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
 			{/}
 		</div>
 

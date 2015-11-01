@@ -3,7 +3,7 @@
 	{$this->id = @array_shift(explode(' ', str_replace(',', ' ', strip_tags($this->versions))));}
 
 	<dt id="v{print str_replace('.', '', $this->id);}">
-		Output for {versions}
+		Output for {*versions}
 
 		{if (isset($this->user))}
 			{!-- POSTME --}

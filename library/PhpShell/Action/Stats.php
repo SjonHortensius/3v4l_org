@@ -27,6 +27,7 @@ WHERE now() - created < '1 week';")));
 		echo Basic::$database->query("
 			SELECT
 				ip,
+				MAX(submit.created) lastSeen,
 				SUM(submit.count) submits,
 				AVG(penalty) penalty,
 				JSON_AGG(input.short) inputs,

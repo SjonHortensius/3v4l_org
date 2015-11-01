@@ -6,7 +6,7 @@
 	{if (empty($this->inputs))}
 		{throw new PhpShell_MissingInputException('Missing parameters', null, 404);}
 	{:}
-		{inputs}
+		{*inputs}
 		{unset($this->input);}
 	{/}
 

@@ -1,9 +1,9 @@
 {$refs = $this->input->getRefs();}
 
 <ul>
-	{foreach ($refs as $r)}
+	{foreach ($refs as $this->ref)}
 	<li>
-		<a href="{print htmlspecialchars($r['link']);}" rel="external">{print htmlspecialchars($r['name']);}</a>
+		<a href="{ref['link']}" rel="external">{ref['name']}</a>
 	</li>
 	{/}
 </ul>
