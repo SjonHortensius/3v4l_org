@@ -22,6 +22,7 @@ type Version struct {
 	command  string
 	isHelper bool
 	released time.Time
+	order    int
 }
 
 type Input struct {
@@ -285,7 +286,8 @@ func (this *Input) execute(v *Version) *Result {
 func refreshVersions() {
 	newVersions := []*Version{}
 
-	rs, err := db.Query(`SELECT id, name, command, COALESCE(released, '1900-01-01'), "isHelper" FROM version ORDER BY "order" DESC`)
+	// name, released, "order", command, "isHelper", id
+	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "order" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
@@ -294,7 +296,7 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.command, &v.released, &v.isHelper); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.released, &v.order, &v.command, &v.isHelper); err != nil {
 			exitError("Error fetching version: %s", err)
 		}
 
