@@ -383,7 +383,7 @@ func batchRefreshRandomScripts() {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
 			FROM input
-			WHERE penalty < 50 AND NOW() - created > '1 month'::interval
+			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version)
 			ORDER BY random()
 			LIMIT 999`)
 		if err != nil {
