@@ -398,8 +398,10 @@ func batchRefreshRandomScripts() {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
+			if r, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 				exitError("doBatch: could not delete existing results: %s", err)
+		    } else if a, err := r.RowsAffected(); err != nil {
+				stats["resultsDeleted"] += int(a)
 			}
 			if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
 				exitError("doBatch: could not reset input.run: %s", err)
@@ -490,10 +492,13 @@ func background() {
 	}
 
 	go func() {
-		for _, v := range versions {
+		rCount := make(map[int]int)
+		for i, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
-			if !v.isHelper {
+			if !v.isHelper && (i<3 || rCount[i]+rCount[i-1]+rCount[i-2] >3) {
+				pre := stats["results"]
 				batchScheduleNewVersions(v)
+				rCount[i] = stats["results"]-pre
 			}
 		}
 
@@ -510,7 +515,6 @@ var (
 )
 
 const (
-	WORK_BREAK   = 150 * time.Millisecond
 	RLIMIT_NPROC = 0x6
 	DSN          = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
 )
