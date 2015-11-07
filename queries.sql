@@ -10,7 +10,6 @@ LIMIT 30;
 
 # archive a version. First up archive limit, then update trigger + move rows, then up current limit.
 # determine maximum version in _current (from Input::trigger): SELECT * FROM version WHERE released > now() - '2 years'::interval ORDER BY released ASC LIMIT 1;
-# move others to archive, eg. above returns 139 so we move 110 to archive
 
 BEGIN;
   ALTER TABLE result_archive DROP CONSTRAINT "isArchive";

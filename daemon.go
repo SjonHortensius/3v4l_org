@@ -287,7 +287,7 @@ func refreshVersions() {
 	newVersions := []*Version{}
 
 	// name, released, "order", command, "isHelper", id
-	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "order" DESC`)
+	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
@@ -495,7 +495,13 @@ func background() {
 		rCount := make(map[int]int)
 		for i, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
-			if !v.isHelper && (i<3 || rCount[i]+rCount[i-1]+rCount[i-2] >3) {
+			if !v.isHelper {
+				// skip 4 versions then see if we have one that produces new results
+				if i>4+3 && rCount[i-1]+rCount[i-2]+rCount[i-3]+rCount[i-4] > 3 {
+					rCount[i] = 1
+					continue
+				}
+
 				pre := stats["results"]
 				batchScheduleNewVersions(v)
 				rCount[i] = stats["results"]-pre
