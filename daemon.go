@@ -392,16 +392,18 @@ func batchRefreshRandomScripts() {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
 
+		var resCount int
 		for rs.Next() {
 			input := &Input{uniqueOutput: map[string]bool{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			if r, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
+			if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
+				stats["resultsDeleted"] += resCount
+			}
+			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 				exitError("doBatch: could not delete existing results: %s", err)
-		    } else if a, err := r.RowsAffected(); err != nil {
-				stats["resultsDeleted"] += int(a)
 			}
 			if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
 				exitError("doBatch: could not reset input.run: %s", err)
