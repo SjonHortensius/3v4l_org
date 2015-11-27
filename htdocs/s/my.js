@@ -194,20 +194,16 @@ var evalOrg = {};
 			o = dl.getElementsByTagName('dt'),
 			n = doc.getElementsByTagName('dt');
 
-		var getVersion = function(dt){
-			return dt.textContent.split(' ').pop();
-		};
-
 		n.forEach(function(ndt, i){
 			if (o[i] && ndt.textContent == o[i].textContent)
 				return;
 
-			var ndd = document.importNode(ndt.nextSibling, true);
+			var ndd = document.importNode(ndt.nextSibling, true),
 				ndt = document.importNode(ndt, true);
 
 			ndt.addEventListener('click', function(e){ window.location.hash = '#'+ ndt.id; });
 
-			if (o[i] && getVersion(ndt) == getVersion(o[i]))
+			if (o[i] && ndd.textContent == o[i].nextSibling.textContent)
 			{
 //console.log('update', o[i].textContent, 'to', ndt.textContent);
 				dl.replaceChild(ndt, o[i]);
@@ -215,7 +211,6 @@ var evalOrg = {};
 			else
 			{
 //console.log('insert', ndt, o[i]?'before':'at the end', o[i]);
-
 				if (!o[i])
 				{
 					dl.appendChild(ndt);
