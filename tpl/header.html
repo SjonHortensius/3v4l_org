@@ -21,7 +21,7 @@
 
 		<nav>
 			<ul>
-{if ($this->user->id>0)}
+{if (isset($this->user))}
 				<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
 				<li><a href="/logout">logout</a></li>
 {:}
