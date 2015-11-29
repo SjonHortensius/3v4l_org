@@ -21,14 +21,18 @@
 
 		<nav>
 			<ul>
+{if ($this->user->id>0)}
+				<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
+				<li><a href="/logout">logout</a></li>
+{:}
+{!--
+				<li><a href="/login">login</a></li>
+--}
+{/}
 				<li><a href="/bughunt">bughunt</a></li>
 				<li><a href="/search">search</a></li>
 				<li><a href="/last">recent</a></li>
 				<li><a href="/about">about</a></li>
-{if (isset($this->user))}
-				<li>logged in as <i><a href="/user/{user->name}">{user->name}</a></i></li>
-				<li><a href="/logout">logout</a></li>
-{/}
 			</ul>
 		</nav>
 	</header>

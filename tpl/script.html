@@ -17,16 +17,15 @@
 		</div>
 
 		<div id="context">
-			{!-- {if ($this->input->runArchived)} checked="checked"{/} ignore state here, we want all new submission not to have this flag --}
 			<input class="valid" name="archived" id="archived_1" value="1" type="checkbox" />
-			<label for="archived_1" title="Include PHP versions that are older than 3 years">+ unsupported versions</label>
+			<label for="archived_1" title="{if ($this->input->runArchived)}[v] {/}Include PHP versions that are older than 3 years">+ unsupported versions</label>
 
 			{if (isset($this->input->source))}
 				<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
 			{/}
 
 			{if (isset($this->input->user))}
-				<a itemprop="author" rel="external" href="https://twitter.com/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
+				<a itemprop="author" rel="external" href="/u/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
 			{/}
 		</div>
 

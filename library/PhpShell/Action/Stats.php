@@ -41,6 +41,5 @@ ORDER BY SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (
 LIMIT 30;")->show();
 
 		return parent::run();
-//Basic::debug(iterator_to_array($this->submitPerWeek));
 	}
 }
