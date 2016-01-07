@@ -74,7 +74,12 @@ class PhpShell_Action_New extends PhpShell_Action
 				#care
 			}
 
-			$input = PhpShell_Input::create($code, ['source' => $source, 'title' => Basic::$userinput['title'], 'runArchived' => Basic::$userinput['archived']]);
+			$input = PhpShell_Input::create([
+				'code' => $code,
+				'source' => $source,
+				'title' => Basic::$userinput['title'],
+				'runArchived' => Basic::$userinput['archived']
+			]);
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);

@@ -42,12 +42,12 @@ class PhpShell_Input extends PhpShell_Entity
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
-	public static function create($code, $extra = [])
+	public static function create(array $data = array())
 	{
-		if (false !== strpos($code, 'pcntl_fork(') || false !== strpos($code, ':|:&') || false !== strpos($code, ':|: &'))
+		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
 
-		$hash = self::getHash($code);
+		$hash = self::getHash($data['code']);
 		$len = 5;
 
 		do
@@ -63,12 +63,12 @@ class PhpShell_Input extends PhpShell_Entity
 			throw new PhpShell_Input_DuplicateScriptException('Duplicate script, this shouldn\'t happen');
 
 		umask(0022);
-		file_put_contents(self::PATH. $short, $code);
+		file_put_contents(self::PATH. $short, $data['code']);
 
 		if (isset(Basic::$action->user))
-			$extra['user'] = Basic::$action->user;
+			$data['user'] = Basic::$action->user;
 
-		$input = parent::create(['short' => $short, 'hash' => $hash] + $extra);
+		$input = parent::create(['short' => $short, 'hash' => $hash] + $data);
 		$input->trigger();
 
 		return $input;
