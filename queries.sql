@@ -13,13 +13,13 @@ LIMIT 30;
 
 BEGIN;
   ALTER TABLE result_archive DROP CONSTRAINT "isArchive";
-  ALTER TABLE result_archive ADD CONSTRAINT "isArchive" CHECK (version >= 32 AND version < 139);
+  ALTER TABLE result_archive ADD CONSTRAINT "isArchive" CHECK (version >= 32 AND version < 146);
 COMMIT;
 
 CREATE OR REPLACE FUNCTION result_insert_trigger()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF ( NEW.version < 32 OR NEW.version >= 139 ) THEN
+    IF ( NEW.version < 32 OR NEW.version >= 146 ) THEN
         INSERT INTO result_current VALUES (NEW.*);
     ELSE
         INSERT INTO result_archive VALUES (NEW.*);
@@ -30,11 +30,11 @@ $$
 LANGUAGE plpgsql;
 
 BEGIN;
-  INSERT INTO result_archive SELECT * FROM result_current WHERE (version >= 32 AND version < 139);
-  DELETE FROM result_current WHERE (version >= 32 AND version < 139);
+  INSERT INTO result_archive SELECT * FROM result_current WHERE (version >= 32 AND version < 146);
+  DELETE FROM result_current WHERE (version >= 32 AND version < 146);
 COMMIT;
 
 BEGIN;
   ALTER TABLE result_current DROP CONSTRAINT "isCurrent";
-  ALTER TABLE result_current ADD CONSTRAINT "isCurrent" CHECK (version < 32 OR version >= 139);
+  ALTER TABLE result_current ADD CONSTRAINT "isCurrent" CHECK (version < 32 OR version >= 146);
 COMMIT;
