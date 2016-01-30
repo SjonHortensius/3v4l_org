@@ -64,6 +64,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		umask(0022);
 		file_put_contents(self::PATH. $short, $data['code']);
+		unset($data['code']);
 
 		if (isset(Basic::$action->user))
 			$data['user'] = Basic::$action->user;
