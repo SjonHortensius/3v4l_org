@@ -338,6 +338,7 @@ func canBatch(doSleep bool) (bool, error) {
 		return false, err
 	} else if int(l) > runtime.NumCPU()/2 {
 		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
+		time.Sleep(time.Duration(30 * l) * time.Second)
 		return false, nil
 	}
 
