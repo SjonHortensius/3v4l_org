@@ -10,7 +10,7 @@ echo -ne "Downloading...\r"
 [[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
 
 echo -ne "Extracting...\r"
-tar xjf php-$version.tar.bz2 -C ../root/
+tar xjf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2
 cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"

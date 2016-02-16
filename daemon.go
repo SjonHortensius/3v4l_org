@@ -355,8 +355,10 @@ func batchScheduleNewVersions(target *Version) {
 		rs, err := db.Query(`
 			SELECT id, short, i.run
 			FROM input i
-			LEFT JOIN result r ON (r.input=i.id AND r.run=i.run AND r.version=$1)
-			WHERE state = 'done' AND version ISNULL AND (i."runArchived" OR i.created < $2::date)
+			WHERE
+				state = 'done'
+				AND (i."runArchived" OR i.created < $2::date)
+				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
 			LIMIT 999;`, target.id, maxCreated.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
