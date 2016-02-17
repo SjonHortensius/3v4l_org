@@ -358,7 +358,7 @@ func batchScheduleNewVersions(target *Version) {
 			WHERE
 				state = 'done'
 				AND (i."runArchived" OR i.created < $2::date)
-				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
+				AND id NOT IN (SELECT input FROM result WHERE version = $1)
 			LIMIT 999;`, target.id, maxCreated.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
@@ -388,8 +388,8 @@ func batchRefreshRandomScripts() {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
 			FROM input
-			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version)
-			ORDER BY random()
+			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version) AND (run>1 OR NOW()-created>'1 year')
+			ORDER BY run DESC, RANDOM()
 			LIMIT 999`)
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
