@@ -4,6 +4,8 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 {
 	public $bodyClass = 'script';
 	public $lastModified = 'now';
+	public $last;
+	public $popular;
 	protected $_cacheLength = '45 seconds';
 
 	public function init()

@@ -1,0 +1,23 @@
+<ul id="tabs">
+	<li class="active"><a href="/versions">Installed versions</a></li>
+</ul>
+
+<div>
+	<table>
+	<thead>
+		<tr>
+			<th>name</th>
+			<th>release date</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		{foreach ($this->versions as $this->version)}
+		<tr>
+			<td>{version->name}</td>
+			<td>{version->released}</td>
+		</tr>
+		{/}
+	</tbody>
+	</table>
+</div>

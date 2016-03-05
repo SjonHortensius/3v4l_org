@@ -119,7 +119,7 @@ var evalOrg = {};
 				'cancelable': true
 			});
 			// None of the handlers called preventDefault.
-			if (document.getElementsByName('code')[0].dispatchEvent(event))
+			if (document.forms[0].dispatchEvent(event))
 				document.forms[0].submit();
 		}.bind(this));
 
