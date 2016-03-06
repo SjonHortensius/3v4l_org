@@ -23,6 +23,7 @@ type Version struct {
 	isHelper bool
 	released time.Time
 	order    int
+	eol      time.Time
 }
 
 type Input struct {
@@ -286,8 +287,7 @@ func (this *Input) execute(v *Version) *Result {
 func refreshVersions() {
 	newVersions := []*Version{}
 
-	// name, released, "order", command, "isHelper", id
-	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC`)
+	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
@@ -296,7 +296,7 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.released, &v.order, &v.command, &v.isHelper); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.isHelper); err != nil {
 			exitError("Error fetching version: %s", err)
 		}
 
@@ -346,8 +346,6 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions(target *Version) {
-	y, m, d := target.released.Date()
-	maxCreated := time.Date(y+3, m, d, 0, 0, 0, 0, time.UTC)
 	stats["batchVersion"] = target.order
 
 	found := 1
@@ -359,7 +357,7 @@ func batchScheduleNewVersions(target *Version) {
 				state = 'done'
 				AND (i."runArchived" OR i.created < $2::date)
 				AND id NOT IN (SELECT input FROM result WHERE version = $1)
-			LIMIT 999;`, target.id, maxCreated.Format("2006-01-02"))
+			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
@@ -414,8 +412,6 @@ func batchRefreshRandomScripts() {
 
 			input.setBusy(true)
 
-			y, m, d := input.created.Date()
-			minArchDate := time.Date(y-3, m, d, 0, 0, 0, 0, time.UTC)
 			for _, v := range versions {
 				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 					if err != nil {
@@ -423,7 +419,7 @@ func batchRefreshRandomScripts() {
 					}
 				}
 
-				if input.runArchived || v.isHelper || v.released.After(minArchDate) {
+				if input.runArchived || v.isHelper || v.eol.After(input.created) {
 					input.execute(v)
 				}
 			}
@@ -434,41 +430,30 @@ func batchRefreshRandomScripts() {
 }
 
 func doWork() {
-	rs, err := db.Query(`DELETE FROM queue RETURNING input, version, "untilVersion"`)
+	rs, err := db.Query(`DELETE FROM queue RETURNING input, version`)
 
 	if err != nil {
 		exitError("doWork: error in DELETE query: %s", err)
 	}
 
 	var version sql.NullString
-	var isUntil bool
 
 	for rs.Next() {
 		input := &Input{uniqueOutput: map[string]bool{}}
 
-		if err := rs.Scan(&input.short, &version, &isUntil); err != nil {
+		if err := rs.Scan(&input.short, &version); err != nil {
 			exitError("doWork: error fetching work: %s", err)
 		}
 
-		if isUntil && !version.Valid {
-			fmt.Printf("Consistency error, cannot have untilVersion=true with version=null, skipping\n")
-			continue
-		}
-
-		if err := db.QueryRow(`SELECT id FROM input WHERE short = $1`, input.short).Scan(&input.id); err != nil {
+		if err := db.QueryRow(`SELECT id, created, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.runArchived); err != nil {
 			exitError("doWork: error verifying input: %s", err)
 		}
 
-		input.setBusy(!version.Valid || isUntil)
+		input.setBusy(!version.Valid)
 
-		untilReached := false
 		for _, v := range versions {
-			if !version.Valid || (isUntil && !untilReached) || (!isUntil && version.String == v.name) {
+			if v.isHelper || (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v)
-
-				if isUntil && version.String == v.name {
-					untilReached = true
-				}
 			}
 		}
 
@@ -497,19 +482,15 @@ func background() {
 	}
 
 	go func() {
-		rCount := make(map[int]int)
-		for i, v := range versions {
+		for _, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
 			if !v.isHelper {
-				// skip 4 versions then see if we have one that produces new results
-				if i>4+3 && rCount[i-1]+rCount[i-2]+rCount[i-3]+rCount[i-4] > 3 {
-					rCount[i] = 1
-					continue
-				}
-
 				pre := stats["results"]
 				batchScheduleNewVersions(v)
-				rCount[i] = stats["results"]-pre
+
+				if stats["results"]-pre == 0 {
+					break
+				}
 			}
 		}
 

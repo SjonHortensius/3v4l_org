@@ -109,13 +109,7 @@ class PhpShell_Input extends PhpShell_Entity
 			unlink($cachePath);
 
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-		{
-			// Calculate lowest version based on input.created [sexy time]
-			if (!$this->runArchived)
-				$version = Basic::$database->query("SELECT name FROM version WHERE released > ?::date - ?::interval ORDER BY released ASC LIMIT 1", [$this->created, '3 years'])->fetchArray('name')[0];
-
-			Basic::$database->query("INSERT INTO queue VALUES (?, ?, ?)", [$this->short, isset($version) ? $version : null, (int)!$this->runArchived]);
-		}
+			Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
 
 		$i = 0;
 		do
