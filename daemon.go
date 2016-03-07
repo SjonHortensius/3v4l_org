@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"sync"
 )
 
 type Version struct {
@@ -60,7 +61,7 @@ func exitError(format string, v ...interface{}) {
 
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
-	stats["penalty"] += p
+	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
 
 	if p < 1 {
 		return
@@ -96,7 +97,7 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
-	stats["inputs"]++
+	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s penalty = %d\n", this.short, state, this.penalty)
 	}
@@ -126,7 +127,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 			exitError("Output: failed to retrieve after storing: %s", err)
 		}
 
-		stats["outputs"]++
+		stats.Lock(); stats.c["outputs"]++; stats.Unlock()
 	}
 
 	if false == i.uniqueOutput[o.hash] {
@@ -168,7 +169,7 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		r.store()
 	}
 
-	stats["results"]++
+	stats.Lock(); stats.c["results"]++; stats.Unlock()
 	return r
 }
 
@@ -346,7 +347,7 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions(target *Version) {
-	stats["batchVersion"] = target.order
+	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
 	found := 1
 	for found > 0 {
@@ -356,7 +357,7 @@ func batchScheduleNewVersions(target *Version) {
 			WHERE
 				state = 'done'
 				AND (i."runArchived" OR i.created < $2::date)
-				AND id NOT IN (SELECT input FROM result WHERE version = $1)
+				AND id NOT IN (SELECT DISTINCT input FROM result_current WHERE version = $1)
 			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
@@ -401,7 +402,7 @@ func batchRefreshRandomScripts() {
 			}
 
 			if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
-				stats["resultsDeleted"] += resCount
+				stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
 			}
 			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 				exitError("doBatch: could not delete existing results: %s", err)
@@ -472,8 +473,8 @@ func background() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		for range ticker.C {
-			fmt.Printf("Stats %v\n", stats)
-			stats = make(map[string]int)
+			fmt.Printf("Stats %v\n", stats.c)
+			stats.Lock(); stats.c = make(map[string]int); stats.Unlock()
 		}
 	}()
 
@@ -485,10 +486,11 @@ func background() {
 		for _, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
 			if !v.isHelper {
-				pre := stats["results"]
+				stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
 				batchScheduleNewVersions(v)
+				stats.RLock(); post := stats.c["results"]; stats.RUnlock()
 
-				if stats["results"]-pre == 0 {
+				if post-pre < 9999 {
 					break
 				}
 			}
@@ -502,8 +504,11 @@ var (
 	db       *sql.DB
 	l        *pq.Listener
 	versions []*Version
-	stats    map[string]int
 	isBatch  bool
+	stats    = struct{
+sync.RWMutex
+c map[string]int
+}{c: make(map[string]int)}
 )
 
 const (
@@ -558,7 +563,6 @@ func init() {
 		}
 	}
 
-	stats = make(map[string]int)
 	refreshVersions()
 }
 

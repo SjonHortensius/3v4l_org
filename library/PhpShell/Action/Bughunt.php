@@ -40,7 +40,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			$_POST['controls'] = explode('+', $_MULTIVIEW[2]);
 
 		$this->_userinputConfig['versions']['values'] = $this->_userinputConfig['controls']['values'] =
-			PhpShell_Version::find('"isHelper" = false AND now() - released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
+			PhpShell_Version::find('"isHelper" = false AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
 
 		parent::init();
 	}
