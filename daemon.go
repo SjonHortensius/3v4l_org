@@ -165,7 +165,8 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 
 	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
-	if !(v.isHelper && exitCode == 255) {
+	// quick hack for rfc branches that are allowed exitCode 255
+	if !(v.isHelper && exitCode == 255 && v.released.After(time.Now())) {
 		r.store()
 	}
 
