@@ -54,6 +54,12 @@ type Result struct {
 	maxMemory  int64
 }
 
+type ResourceLimit struct {
+	packets int
+	runtime int
+	output  int
+}
+
 func exitError(format string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", v...)
 	os.Exit(1)
@@ -185,7 +191,7 @@ func (this *Result) store() {
 	}
 }
 
-func (this *Input) execute(v *Version) *Result {
+func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	cmdArgs := strings.Split(v.command, " ")
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
@@ -235,7 +241,7 @@ func (this *Input) execute(v *Version) *Result {
 			buffer = buffer[:n]
 
 			// 32 KiB is the length of phpinfo() output
-			if len(output) < 32*1024 || (v.isHelper && len(output) < 256*1024) {
+			if len(output) < l.output || (v.isHelper && len(output) < 256*1024) {
 				output = append(output, buffer...)
 				continue
 			}
@@ -266,7 +272,7 @@ func (this *Input) execute(v *Version) *Result {
 	var output string
 
 	select {
-	case <-time.After(2500 * time.Millisecond):
+	case <-time.After(time.Duration(l.runtime) * time.Millisecond):
 		if err := cmd.Process.Kill(); err != nil {
 			fmt.Printf("Kill after timeout resulted in : %s\n", err)
 
@@ -350,6 +356,9 @@ func canBatch(doSleep bool) (bool, error) {
 func batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
+	//fixme
+	l := ResourceLimit{0, 2500, 32768}
+
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
@@ -378,12 +387,15 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
-			input.execute(target)
+			input.execute(target, &l)
 		}
 	}
 }
 
 func batchRefreshRandomScripts() {
+	//fixme
+	l := ResourceLimit{0, 2500, 32768}
+
 	for {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
@@ -422,7 +434,7 @@ func batchRefreshRandomScripts() {
 				}
 
 				if input.runArchived || v.isHelper || v.eol.After(input.created) {
-					input.execute(v)
+					input.execute(v, &l)
 				}
 			}
 
@@ -432,7 +444,7 @@ func batchRefreshRandomScripts() {
 }
 
 func doWork() {
-	rs, err := db.Query(`DELETE FROM queue RETURNING input, version`)
+	rs, err := db.Query(`DELETE FROM queue WHERE "maxPackets" = 0 RETURNING *`)
 
 	if err != nil {
 		exitError("doWork: error in DELETE query: %s", err)
@@ -442,8 +454,9 @@ func doWork() {
 
 	for rs.Next() {
 		input := &Input{uniqueOutput: map[string]bool{}}
+		rMax := &ResourceLimit{}
 
-		if err := rs.Scan(&input.short, &version); err != nil {
+		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
 			exitError("doWork: error fetching work: %s", err)
 		}
 
@@ -455,7 +468,7 @@ func doWork() {
 
 		for _, v := range versions {
 			if v.isHelper || (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
-				input.execute(v)
+				input.execute(v, rMax)
 			}
 		}
 
@@ -474,8 +487,10 @@ func background() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		for range ticker.C {
+			stats.Lock();
 			fmt.Printf("Stats %v\n", stats.c)
-			stats.Lock(); stats.c = make(map[string]int); stats.Unlock()
+			stats.c = make(map[string]int);
+			stats.Unlock()
 		}
 	}()
 
@@ -487,13 +502,15 @@ func background() {
 		for _, v := range versions {
 			// exitCode=255 won't be stored, this'd result in ~500K useless execs
 			if !v.isHelper {
+				fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
 				stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
 				batchScheduleNewVersions(v)
 				stats.RLock(); post := stats.c["results"]; stats.RUnlock()
 
 				if post-pre < 9999 {
-					break
+//					break
 				}
+
 			}
 		}
 
@@ -506,10 +523,10 @@ var (
 	l        *pq.Listener
 	versions []*Version
 	isBatch  bool
-	stats    = struct{
-sync.RWMutex
-c map[string]int
-}{c: make(map[string]int)}
+	stats    struct{
+		sync.RWMutex
+		c map[string]int
+	}
 )
 
 const (
@@ -547,6 +564,8 @@ func init() {
 			exitError("Could not setup Listener %s", err)
 		}
 	}
+
+	stats.c = make(map[string]int);
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:    2,
