@@ -36,5 +36,6 @@ make -j10 &>build-make.log
 strip sapi/cli/php modules/*.so && upx -qq ./sapi/cli/php
 mv -v sapi/cli/php ../../out/php-$version
 mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
+rm -R `dirname $0`/root/php-$version/
 
 echo  -e "Done...       \r"
