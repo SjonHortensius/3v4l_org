@@ -93,9 +93,10 @@ var evalOrg = {};
 			document.querySelector('input[type=submit]').removeAttribute('disabled');
 		});
 
-		document.getElementById('archived_1').addEventListener('change', function(){
-			document.querySelector('input[type=submit]').removeAttribute('disabled');
-		});
+		if (document.getElementById('archived_1'))
+			document.getElementById('archived_1').addEventListener('change', function(){
+				document.querySelector('input[type=submit]').removeAttribute('disabled');
+			});
 	};
 
 	this.handleScript = function()
@@ -292,7 +293,7 @@ var evalOrg = {};
 	this.handlePerf = function()
 	{
 		if (!perfAggregates)
-			return setTimeout('this.handlePerf', 100);
+			return false
 
 		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
 		document.querySelector('#tab table tbody').childNodes.forEach(function (tr){
@@ -381,6 +382,22 @@ var evalOrg = {};
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
 			el.parentNode.replaceChild(w, el);
+		});
+	};
+
+	this.handleQuick = function()
+	{
+		document.querySelector('button[name=versions]').addEventListener('click', function(e){
+			document.forms[0].action = 'new';
+			var title = prompt('Please enter an optional title for this script');
+			if (title != 'undefined' && title != 'false')
+				document.querySelector('input[name=title]').value = title;
+		});
+
+		document.getElementById('version').addEventListener('change', function(){
+			document.querySelector('input[type=submit]').removeAttribute('disabled');
+
+			document.forms[0].action = 'quick/'+ document.getElementById('version').value;
 		});
 	};
 

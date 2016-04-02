@@ -36,6 +36,13 @@ make -j10 &>build-make.log
 strip sapi/cli/php modules/*.so && upx -qq ./sapi/cli/php
 mv -v sapi/cli/php ../../out/php-$version
 mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
-rm -R `dirname $0`/root/php-$version/
+cd ../..
+rm -R root/php-$version/
 
-echo  -e "Done...       \r"
+echo -e "Done...       \r"
+echo -n "Publish? [Yn]"; read p
+
+[[ $p == "N" || $p == "n"  ]] && exit 0
+
+scp out/php-$version root@3v4l.org:/srv/http/3v4l.org/bin/
+rsync -xva out/exts/ root@3v4l.org:/srv/http/3v4l.org/usr_lib_php/

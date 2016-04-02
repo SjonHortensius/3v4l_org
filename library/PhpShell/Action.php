@@ -24,6 +24,7 @@ class PhpShell_Action extends Basic_Action
 				'www.google-analytics.com',
 				'blob:', # for ace worker
 				"'unsafe-inline'", # tmp for /perf, /search and tagcloud
+				"data:", # for google-analytics
 			],
 			'child-src' => [
 				"'self'",
@@ -45,7 +46,7 @@ class PhpShell_Action extends Basic_Action
 
 		header('Content-Security-Policy-Report-Only: '. $csp .'report-uri /cspReport');
 
-		if (0 && in_array($_SERVER['REMOTE_ADDR'], ['31.201.148.110']))
+		if (0 && $_GET['waa']=='meukee')
 		{
 			$wasOn = Basic::$config->PRODUCTION_MODE;
 			Basic::$config->PRODUCTION_MODE = false;

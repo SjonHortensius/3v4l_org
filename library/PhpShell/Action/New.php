@@ -40,7 +40,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			SELECT SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) p
 			FROM submit
 			JOIN input ON (input.id = submit.input)
-			WHERE ip = ? AND now() - submit.created < '1 day'", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
+			WHERE ip = ? AND now() - submit.created < '1 day' AND \"runQuick\" ISNULL", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
 
 #		if ($penalty > 150*1000)
 #			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
@@ -55,6 +55,9 @@ class PhpShell_Action_New extends PhpShell_Action
 
 			if (!$input->runArchived && Basic::$userinput['archived'])
 				$input->save(['runArchived' => 1]);
+
+			if (isset($input->runQuick))
+				$input->save(['runQuick' => null]);
 
 			$input->trigger();
 		}

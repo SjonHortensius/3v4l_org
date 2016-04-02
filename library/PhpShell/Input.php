@@ -5,6 +5,7 @@ class PhpShell_Input extends PhpShell_Entity
 	protected static $_relations = [
 		'user' => PhpShell_User,
 		'source' => PhpShell_Input,
+		'runQuick' => PhpShell_Version,
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
@@ -45,7 +46,7 @@ class PhpShell_Input extends PhpShell_Entity
 	public static function create(array $data = array())
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
-			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service');
+			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service', [], 402);
 
 		$hash = self::getHash($data['code']);
 		$len = 5;
@@ -70,7 +71,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$data['user'] = Basic::$action->user;
 
 		$input = parent::create(['short' => $short, 'hash' => $hash] + $data);
-		$input->trigger();
+		$input->trigger($input->runQuick);
 
 		return $input;
 	}
@@ -109,8 +110,15 @@ class PhpShell_Input extends PhpShell_Entity
 			unlink($cachePath);
 
 		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-			Basic::$database->query("INSERT INTO queue VALUES (?, null)", [$this->short]);
+			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
 
+		$this->waitUntilNoLonger('new');
+
+		usleep(100 * 1000);
+	}
+
+	public function waitUntilNoLonger($state)
+	{
 		$i = 0;
 		do
 		{
@@ -120,9 +128,7 @@ class PhpShell_Input extends PhpShell_Entity
 			foreach ($input as $k => $v)
 				$this->$k = $v;
 		}
-		while (++$i < 15 && $this->state == 'new');
-
-		usleep(100 * 1000);
+		while (++$i < 15 && $this->state == $state);
 	}
 
 	public function getOutput()

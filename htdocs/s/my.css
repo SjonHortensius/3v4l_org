@@ -314,7 +314,6 @@ input[type=submit]
 	font-size: 15px;
 	margin-left: 10em;
 	transition: border linear 0.2s, box-shadow linear 0.2s;
-	cursor: pointer;
 }
 
 input[type=submit]:not([disabled])
@@ -323,6 +322,12 @@ input[type=submit]:not([disabled])
 	background-color: #0074CC;
 	background-repeat: repeat-x;
 	color: white;
+	cursor: pointer;
+}
+
+.quick button[type=submit]
+{
+	cursor: pointer;
 }
 
 input.busy
