@@ -274,7 +274,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		$operations = [
 			'FETCH_CLASS',
-			'DO_FCALL',
+			'INIT_FCALL',
 		];
 
 		// We ignore $operation here for now

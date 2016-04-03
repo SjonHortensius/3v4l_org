@@ -27,19 +27,20 @@
 		</ul>
 
 		<h2>Historic events</h2>
-		<p>I have been adding features ever since I started. Here is a list with some major changes I made over the years</p>
+		<p>I have been adding features ever since I started. Here is a list with some major changes I made over the years:</p>
 
 		<ul>
-			<li><b>Apr 2012</b> - launch</li>
-			<li><b>Oct 2012</b> - the site got some great exposure, including <a href="https://twitter.com/i0n1c/status/258688195158487040">one of my favorite replies</a>.</li>
-			<li><b>Nov 2012</b> - added vld support and better layout, plus I also added the performance overview</li>
-			<li><b>May 2013</b> - added links to manual and php-source-code</li>
-			<li><b>Jul 2013</b> - moved from c+sqlite to go+postgresql</li>
-			<li><b>May 2014</b> - added HHVM. This was actually a huge change, the chroot went from ~ 250 MiB to ~ 1.5 GiB due to the number of dependencies. It fortunately turned out to be a popular feature</li>
-			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a>.</li>
-			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE, which I use to this date.</li>
-			<li><b>Apr 2015</b> - New layout, added top-menu which allowed me to introduce links to /last and /search.</li>
+			<li><b>Mar 2016</b> - All binaries were recompiled so I could add the <i>intl</i> and <i>bcmath</i> extensions</li>
 			<li><b>Sep 2015</b> - Scripts no longer run in all versions by default, plus we also had a minor redesign for our first-ever logo.</li>
+			<li><b>Apr 2015</b> - New layout, added top-menu which allowed me to introduce links to /last and /search.</li>
+			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE.</li>
+			<li><b>May 2014</b> - added HHVM. This was actually a huge change, the chroot went from ~ 250 MiB to ~ 1.5 GiB due to the number of dependencies. It fortunately turned out to be a popular feature.</li>
+			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a>.</li>
+			<li><b>Jul 2013</b> - moved backend from c+sqlite to go+postgresql</li>
+			<li><b>May 2013</b> - added links to manual and php-source-code</li>
+			<li><b>Nov 2012</b> - added vld support and better layout, plus I also added the performance overview</li>
+			<li><b>Oct 2012</b> - the site got some great exposure, including <a href="https://twitter.com/i0n1c/status/258688195158487040">one of my favorite replies</a>.</li>
+			<li><b>Apr 2012</b> - launch</li>
 		</ul>
 
 		<h2>Pro-tricks</h2>
@@ -62,14 +63,14 @@
 		<h2>Technology</h2>
 
 		<h3>Backend</h3>
-		<p>This site started out on a server with just 256 MiB, which was enough to run some one script at the time, as well as the site itself. However, when I added HHVM,
+		<p>This site started out on a server with 256 MiB memory, which was enough to run one script at the time, as well as the site itself. However, when I added HHVM,
 		 it needed a lot more memory, so I upgraded to a 1 GiB machine. Because of dropping prices, the site current runs on a 4 GiB machine.</p>
 
 		<p>I use a setup where scripts are executed in a small virtual machine. For security reasons this machine has no network and only a minimal filesystem.
-		 Scripts are executed by a daemon (written in <a href="http://golang.org/">Golang</a>) and results as well as statistics are reported to
+		 Scripts are executed by a daemon (written in <a href="http://golang.org/">Golang</a>) and results (with statistics) are reported to
 		 a <a href="http://www.postgresql.org/">PostgreSQL</a> database. All results are stored and used to provide averages for the performance overview.</p>
 
-		<p>All binaries are compiled using the same settings; are stripped and then compiled with <a href="http://upx.sourceforge.net/">upx</a> to keep their filesize down.</p>
+		<p>All binaries are compiled using the same settings; they are stripped and then compiled with <a href="http://upx.sourceforge.net/">upx</a> to keep their filesize down.</p>
 
 		<p>I use the following php.ini settings for the scripts:</p>
 		<pre>

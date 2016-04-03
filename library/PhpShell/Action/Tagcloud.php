@@ -27,7 +27,7 @@ class PhpShell_Action_Tagcloud extends PhpShell_Action
 			return iterator_to_array(Basic::$database->query("
 	SELECT operand AS text, SUM(operations.count) AS size
 	FROM operations
-	WHERE operation = 'DO_FCALL' AND operand NOT IN ('var_dump', 'print_r')
+	WHERE operation = 'INIT_FCALL' AND operand NOT IN ('var_dump', 'print_r')
 	GROUP BY operand
 	ORDER BY size DESC
 	LIMIT 150"));

@@ -20,15 +20,15 @@ confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enabl
 [[ `vercmp $version 5.4.14` -gt 0 ]] && confFlags="$confFlags --with-openssl"
 
 EXTENSION_DIR=/usr/lib/php/$version/modules; export EXTENSION_DIR
-for ext in intl bcmath curl gmp iconv mcrypt; do
-	confFlags="$confFlags --enable-$ext=shared"
-done
+for ext in intl bcmath; do confFlags="$confFlags --enable-$ext=shared"; done
+for ext in curl gmp iconv mcrypt; do confFlags="$confFlags --with-$ext=shared"; done
 
 echo -ne "Configuring...\r"
 ./configure $confFlags &>build-configure.log
 
 echo -ne "Making...     \r"
-make -j10 &>build-make.log
+# remove directories but leave logs
+make -j10 &>build-make.log || { rm -R */; exit 1; }
 
 # verify correct build
 ./sapi/cli/php -i >/dev/null

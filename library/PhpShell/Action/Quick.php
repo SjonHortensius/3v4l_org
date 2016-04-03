@@ -27,6 +27,7 @@ class PhpShell_Action_Quick extends PhpShell_Action
 
 	public function init()
 	{
+		//FIXME: support multiple=multiple?
 		$this->_userinputConfig['version']['values'] = PhpShell_Version::find("eol>NOW() OR NOT name IN('segfault', 'hhvm-bytecode')", [], ['name' => false])->getSimpleList('name', 'name');
 
 		if (isset($GLOBALS['_MULTIVIEW'][1]))
