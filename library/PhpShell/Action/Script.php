@@ -78,11 +78,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		// Rerun caching logic now that we have input.lastModified
 		parent::_handleLastModified();
 
+		// Attempt to retrigger the daemon
 		if ($this->input->state == 'new')
-		{
-			// Attempt to retrigger the daemon
 			$this->input->trigger();
-		}
 
 		$this->code = $this->input->getCode();
 
@@ -90,7 +88,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->updateOperations();
 
 		$this->showTab = [
-			'vld' =>		isset($this->input->operationCount),
+			'vld' =>		isset($this->input->operationCount) && $this->input->operationCount>0,
 			'refs' =>		!empty(iterator_to_array($this->input->getRefs())),
 			'segfault' =>	!empty(iterator_to_array($this->input->getSegfault())),
 			'bytecode' =>	!empty(iterator_to_array($this->input->getBytecode())),

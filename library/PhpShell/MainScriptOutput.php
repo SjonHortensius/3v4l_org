@@ -18,11 +18,11 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 		{
 			$entity->output = PhpShell_Output::getStub([
 				'hash' => $entity->{'output$hash'},
-				'raw' => $entity->{'output$raw'}
+				'raw' =>  $entity->{'output$raw'}
 			]);
 			$entity->version = PhpShell_Version::getStub([
-				'name' => $entity->{'version$name'},
-				'order' => $entity->{'version$order'},
+				'name' =>     $entity->{'version$name'},
+				'order' =>    $entity->{'version$order'},
 				'released' => $entity->{'version$released'}
 			]);
 
