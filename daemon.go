@@ -171,9 +171,13 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 
 	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
-	// quick hack for rfc branches that are allowed exitCode 255
-	if !(v.isHelper && exitCode == 255 && v.released.After(time.Now())) {
-		r.store()
+	switch v.name {
+		case "vld":				if exitCode == 0 {  r.store(); }
+		case "hhvm-bytecode":	if exitCode == 0 {  r.store(); }
+		case "segfault":		if exitCode == 139{ r.store(); }
+
+		default:
+			r.store()
 	}
 
 	stats.Lock(); stats.c["results"]++; stats.Unlock()
@@ -500,17 +504,18 @@ func background() {
 
 	go func() {
 		for _, v := range versions {
-			// exitCode=255 won't be stored, this'd result in ~500K useless execs
-			if !v.isHelper {
-				fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
-				stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
-				batchScheduleNewVersions(v)
-				stats.RLock(); post := stats.c["results"]; stats.RUnlock()
+			// ignore helpers, they don't store all results
+			if v.isHelper {
+				continue
+			}
 
-				if post-pre < 9999 {
-//					break
-				}
+			fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
+			stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
+			batchScheduleNewVersions(v)
+			stats.RLock(); post := stats.c["results"]; stats.RUnlock()
 
+			if post-pre < 9999 {
+				break
 			}
 		}
 
