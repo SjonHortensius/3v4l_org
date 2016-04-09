@@ -87,6 +87,8 @@ class PhpShell_Input extends PhpShell_Entity
 			return;
 		}
 
+		Basic::$database->query("DELETE FROM ". Basic_Database::escapeTable(PhpShell_Operation::getTable()) ." WHERE input = ?", [$this->id]);
+
 		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
 		$this->save(['operationCount' => count($operations)]);

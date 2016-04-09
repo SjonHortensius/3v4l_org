@@ -84,7 +84,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		$this->code = $this->input->getCode();
 
-		if (!isset($this->input->operationCount))
+		if (!isset($this->input->operationCount) || mt_rand(0,9)<1)
 			$this->input->updateOperations();
 
 		$this->showTab = [
