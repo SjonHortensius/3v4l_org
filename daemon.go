@@ -371,7 +371,7 @@ func batchScheduleNewVersions(target *Version) {
 			WHERE
 				state = 'done'
 				AND (i."runArchived" OR i.created < $2::date)
-				AND id NOT IN (SELECT DISTINCT input FROM result_current WHERE version = $1)
+				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
 			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
