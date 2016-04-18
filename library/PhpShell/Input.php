@@ -133,6 +133,15 @@ class PhpShell_Input extends PhpShell_Entity
 		while (++$i < 15 && $this->state == $state);
 	}
 
+	public function getRfcOutput()
+	{
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', array($this->id, $this->run), ['version.released' => true]);
+		$results->addJoin('output', "output.id = result.output");
+		$results->addJoin('version', "version.id = result.version");
+
+		return $results;
+	}
+
 	public function getOutput()
 	{
 		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->id, $this->run), ['version.order' => true]);

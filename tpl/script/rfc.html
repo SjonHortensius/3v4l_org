@@ -1,21 +1,21 @@
-<p>Shows output from various feature-branches currently under review from the php developers. Contact me to have additional branches featured.</p>
+<p>Shows result from various feature-branches currently under review from the php developers. Contact me to have additional branches featured.</p>
 
 <dl>
-{$r = $this->input->getResult(PhpShell_Version::byName('rfc-typed_properties'));}
-{if (1 == count($r))}
-<dt id="rfc-typed_properties">Output for rfc-typed_properties | <a href="https://wiki.php.net/rfc/typed-properties">rfc</a></dt>
+{foreach ($this->input->getRfcOutput() as $this->result)}
+	{$rfc = null;}
+	{if ($this->result->version->name == 'rfc-func_interfaces'	)}{$rfc = 'functional-interfaces';}{/}
+	{if ($this->result->version->name == 'rfc-typed_properties'	)}{$rfc = 'typed-properties';}{/}
+	{if ($this->result->version->name == 'rfc-short_closures'	)}{$rfc = 'short_closures';}{/}
+	{if ($this->result->version->name == 'rfc-callable_typehint')}{$rfc = null;}{/}
 
+	<dt id="{result->version->name}">
+		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));}
+		{if (isset($rfc))}
+			| <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
+		{/}
+	</dt>
 	<dd>
-		{print htmlspecialchars($r->getSingle()->output->getRaw($this->input, 'rfc-typed_properties'));}
-	</dd>
-{/}
-
-{$r = $this->input->getResult(PhpShell_Version::byName('rfc-short_closures'));}
-{if (1 == count($r))}
-	<dt id="rfc-short_closures">Output for rfc-short_closures | <a href="https://wiki.php.net/rfc/short_closures">rfc</a></dt>
-
-	<dd>
-		{print htmlspecialchars($r->getSingle()->output->getRaw($this->input, 'rfc-short_closures'));}
+		{print htmlspecialchars($this->result->output->getRaw($this->input, $result->name));}
 	</dd>
 {/}
 </dl>
