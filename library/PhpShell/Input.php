@@ -135,7 +135,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getRfcOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', array($this->id, $this->run), ['version.released' => true]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', array($this->id, $this->run), ['version.released' => false]);
 		$results->addJoin('output', "output.id = result.output");
 		$results->addJoin('version', "version.id = result.version");
 

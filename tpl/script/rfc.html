@@ -11,7 +11,7 @@
 	<dt id="{result->version->name}">
 		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));}
 		{if (isset($rfc))}
-			| <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
+			 | <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
 		{/}
 	</dt>
 	<dd>
