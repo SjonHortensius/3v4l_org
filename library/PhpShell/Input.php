@@ -162,13 +162,12 @@ class PhpShell_Input extends PhpShell_Entity
 			$slot =& $outputs[ $hash ];
 
 			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
-			$isNg = (false !== strpos($result->version->name, '@201'));
 
 			$result->version->name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
 			if (!isset($slot))
 				$slot = array('min' => $result->version->name, 'versions' => [], 'order' => 0);
-			elseif ($hash != $prevHash || ($isNg && !$prevNg) || ($isHhvm && !$prevHhvm))
+			elseif ($hash != $prevHash || ($isHhvm && !$prevHhvm) || (!$isHhvm && $prevHhvm))
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -195,7 +194,6 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$prevHash = $hash;
 			$prevHhvm = $isHhvm;
-			$prevNg = $isNg;
 		}
 
 		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
@@ -294,7 +292,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$ops[ $row->operand ] += $row->count;
 
 		arsort($ops);
-		return substr(implode(', ', array_keys($ops)), 0, 65);
+		return substr(implode(', ', array_filter(array_keys($ops))), 0, 65);
 	}
 
 	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
