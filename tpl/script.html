@@ -34,6 +34,17 @@
 		{/}
 	</form>
 
+	{if (in_array($this->input->short, ['ji79d', 'VhEtd']))}
+		<div class="alert notice">
+			<h2>Looking for PHP 7.0.6 bugs?</h2>
+			<p>
+				Version 7.0.6 was released twice by the PHP Team. We're using the latest version; <br/>
+				meaning this script no longer shows the bug which the original release had.<br/><br/>
+				The bugs that were fixed in the second release are <a href="https://bugs.php.net/72116">72116</a> and <a href="https://bugs.php.net/72119">72119</a>.
+			</p>
+		</div>
+	{/}
+
 	{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
 		<div class="alert error">
 			<h2>Abusive script</h2>

@@ -29,6 +29,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	);
 	protected $_cacheLength = '4 hours';
 	public $entries;
+	public $blackList = ['time', 'date'];
 
 	public function init()
 	{
@@ -67,6 +68,8 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
 			array_push($params, PhpShell_Version::byName($v)->id);
 		}
+
+		$q .= "\nAND input.id NOT IN (SELECT DISTINCT input FROM operations WHERE operation IN('DO_FCALL', 'INIT_FCALL') AND operand IN ('". implode($this->blackList, "', '"). "'))\n";
 
 		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
 		foreach ($joins as $join)

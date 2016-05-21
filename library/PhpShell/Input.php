@@ -15,7 +15,7 @@ class PhpShell_Input extends PhpShell_Entity
 		255 => 'Generic Error',
 	);
 	const PATH  = '/srv/http/3v4l.org/in/';
-	const VLD_MATCH = '~ *(?<line>\d*) *\d+[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
+	const VLD_MATCH = '~ *(?<line>\d*) *\d+ *[ E]?[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
 
 	public function getCode()
 	{
