@@ -4,7 +4,7 @@ class PhpShell_Operation extends PhpShell_Entity
 {
 	protected static $_primary = null;
 	protected static $_relations = [
-		'input' => PhpShell_Input,
+		'input' => PhpShell_Input::class,
 	];
 	protected static $_numerical = ['count'];
 

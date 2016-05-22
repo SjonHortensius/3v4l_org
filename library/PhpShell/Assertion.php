@@ -3,9 +3,9 @@
 class PhpShell_Assertion extends PhpShell_Entity
 {
 	protected static $_relations = [
-		'input' => PhpShell_Input,
-		'output' => PhpShell_Output,
-		'user' => PhpShell_User,
+		'input' => PhpShell_Input::class,
+		'output' => PhpShell_Output::class,
+		'user' => PhpShell_User::class,
 	];
 	protected static $_numerical = ['exitCode'];
 

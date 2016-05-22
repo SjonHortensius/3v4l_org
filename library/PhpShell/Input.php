@@ -3,9 +3,9 @@
 class PhpShell_Input extends PhpShell_Entity
 {
 	protected static $_relations = [
-		'user' => PhpShell_User,
-		'source' => PhpShell_Input,
-		'runQuick' => PhpShell_Version,
+		'user' => PhpShell_User::class,
+		'source' => PhpShell_Input::class,
+		'runQuick' => PhpShell_Version::class,
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
@@ -92,6 +92,7 @@ class PhpShell_Input extends PhpShell_Entity
 		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
 
 		$this->save(['operationCount' => count($operations)]);
+		$vld->output->removeCached();
 
 		foreach ($operations as $match)
 		{
