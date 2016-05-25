@@ -29,7 +29,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	);
 	protected $_cacheLength = '4 hours';
 	public $entries;
-	public $blackList = ['time', 'date', 'lcg_value', 'rand', 'mt_rand', 'microtime'];
+	public $blackList = ['time', 'date', 'lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage'];
 
 	public function init()
 	{

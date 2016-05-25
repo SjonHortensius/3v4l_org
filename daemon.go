@@ -107,8 +107,6 @@ func (this *Input) setDone() {
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s penalty = %d\n", this.short, state, this.penalty)
 	}
-
-	os.RemoveAll("/tmp/")
 }
 
 func newOutput(raw string, i *Input, v *Version) *Output {
@@ -210,6 +208,9 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		"USER=nobody",
 		"USERNAME=nobody",
 		"HOME=/",
+		// Extra, for date fixation
+		"TIME="+ string(this.created.Unix()),
+		"LD_PRELOAD=/usr/bin/daemon-preload.so",
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
 
@@ -292,6 +293,8 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	case state = <-procDone:
 		output = <-procOut
 	}
+
+	go os.RemoveAll("/tmp/")
 
 	return newResult(this, v, output, state)
 }
@@ -417,6 +420,8 @@ func batchRefreshRandomScripts() {
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
+
+			fmt.Printf("Rerunning %s\n", input.short)
 
 			if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
 				stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
