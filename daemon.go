@@ -208,11 +208,18 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		"USER=nobody",
 		"USERNAME=nobody",
 		"HOME=/",
-		// Extra, for date fixation
-		"TIME="+ string(this.created.Unix()),
-		"LD_PRELOAD=/usr/bin/daemon-preload.so",
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
+
+	// Perform date fixation
+	if this.created.Before(time.Date(2012, time.April, 18, 01, 17, 44, 0, time.UTC)) {
+		fmt.Printf("Warning; NOT fixating time on %s to %d\n", this.short, this.created.Unix());
+	} else {
+		cmd.Env = append(cmd.Env, []string{
+			"TIME="+ strconv.FormatInt(this.created.Unix(), 10),
+			"LD_PRELOAD=/usr/bin/daemon-preload.so",
+		}...)
+	}
 
 	/*
 	 * Channels are meant to communicate between routines. We create a channel
@@ -235,6 +242,11 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	}
 
 	go func(c *exec.Cmd, r io.Reader) {
+		limit := l.output
+		if v.isHelper {
+			limit = 256*1024
+		}
+
 		output := make([]byte, 0)
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
@@ -245,8 +257,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 
 			buffer = buffer[:n]
 
-			// 32 KiB is the length of phpinfo() output
-			if len(output) < l.output || (v.isHelper && len(output) < 256*1024) {
+			if len(output) < limit {
 				output = append(output, buffer...)
 				continue
 			}
@@ -254,6 +265,11 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 			if err := cmd.Process.Kill(); err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process" {
 				this.penalize("Didn't stop: "+err.Error(), 256)
 			}
+		}
+
+		// Make sure all output is exactly the same length
+		if len(output) > limit {
+			output = output[:limit]
 		}
 
 		if !v.isHelper {
@@ -339,19 +355,19 @@ func canBatch(doSleep bool) (bool, error) {
 	loadAvg := strings.Split(string(data), " ")
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); doSleep && err == nil {
-		time.Sleep(time.Duration(int(l*100)/runtime.NumCPU()) * time.Millisecond)
+		time.Sleep(time.Duration(int(l*10)/runtime.NumCPU()) * time.Millisecond)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
 		return false, err
-	} else if int(l) > runtime.NumCPU()/2 {
+	} else if int(l) > runtime.NumCPU() {
 		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), sleeping...\n", l, runtime.NumCPU())
 		time.Sleep(time.Duration(3 * l) * time.Second)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
 		return false, err
-	} else if int(l) > runtime.NumCPU()/2 {
+	} else if int(l) > runtime.NumCPU() {
 		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
 		time.Sleep(time.Duration(30 * l) * time.Second)
 		return false, nil
@@ -369,7 +385,7 @@ func batchScheduleNewVersions(target *Version) {
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
-			SELECT id, short, i.run
+			SELECT id, short, i.run, created
 			FROM input i
 			WHERE
 				state = 'done'
@@ -384,7 +400,7 @@ func batchScheduleNewVersions(target *Version) {
 		for rs.Next() {
 			found++
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.id, &input.short, &input.run); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.run, &input.created); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -408,6 +424,7 @@ func batchRefreshRandomScripts() {
 			SELECT id, short, created, "runArchived"
 			FROM input
 			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version) AND (run>1 OR NOW()-created>'1 year')
+			AND "operationCount">2
 			ORDER BY run DESC, RANDOM()
 			LIMIT 999`)
 		if err != nil {
@@ -420,8 +437,6 @@ func batchRefreshRandomScripts() {
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
-
-			fmt.Printf("Rerunning %s\n", input.short)
 
 			if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
 				stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
