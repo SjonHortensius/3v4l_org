@@ -310,7 +310,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		output = <-procOut
 	}
 
-	go os.RemoveAll("/tmp/")
+	os.RemoveAll("/tmp/")
 
 	return newResult(this, v, output, state)
 }
