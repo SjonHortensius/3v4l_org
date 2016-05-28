@@ -76,12 +76,6 @@ var evalOrg = {};
 		this.editor.session.setMode('ace/mode/php');
 		this.editor.session.setUseWrapMode(true);
 
-		if (document.body.classList.contains('index'))
-		{
-			this.editor.focus();
-			this.editor.gotoLine(this.editor.session.getLength());
-		}
-
 		if (document.querySelector('input[type=submit]'))
 			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
 
@@ -103,6 +97,17 @@ var evalOrg = {};
 	{
 		if ('undefined' != typeof refreshTimer)
 			return;
+
+		if (document.location.hash.length>1 && document.location.hash.match(/^#[a-z0-9.&=\-_]+$/i))
+		{
+			document.location.hash.substr(1).split('&').forEach(function(p){
+				var [id,val]= p.split('=');
+
+				// beware of injections
+				if (id.match(/^[a-z]+$/i) && document.querySelector('select[id='+id+']'))
+					document.getElementById(id).value = val;
+			});
+		}
 
 		this.richEditor();
 
@@ -279,6 +284,9 @@ var evalOrg = {};
 
 	this.handleIndex = function()
 	{
+		this.editor.focus();
+		this.editor.gotoLine(this.editor.session.getLength());
+
 		localTime();
 	};
 
@@ -296,10 +304,14 @@ var evalOrg = {};
 			return false
 
 		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
-		document.querySelector('#tab table tbody').childNodes.forEach(function (tr){
+
+		// Don't use foreach or cache n.length
+		var n = document.querySelector('#tab table tbody').childNodes;
+		for (var i=0, tr=n[i]; i<n.length; tr=n[++i])
+		{
 			// We modify the Node we traverse, not so smart...
 			if (tr.querySelector('meter'))
-				return;
+				continue;
 
 			version = tr.firstChild.textContent.substr(0,4).replace(/\.$/, '');
 
@@ -331,7 +343,7 @@ var evalOrg = {};
 			});
 
 			previous = version;
-		});
+		}
 
 		// Process last entry
 		perfAddHeader(header, previous, sum);
