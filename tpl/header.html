@@ -9,7 +9,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
+{if (Basic::$config->PRODUCTION_MODE)}
 	<link rel="stylesheet" href="/s/c.css"/>
+{:}
+	<link rel="stylesheet" href="/s/my.css"/>
+{/}
 </head>
 
 <body{if (isset(Basic::$action->bodyClass))} class="{action->bodyClass}"{/}>
