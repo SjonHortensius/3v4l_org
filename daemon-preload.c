@@ -1,7 +1,5 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
-#include <stdio.h>
-#include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <sys/timeb.h>

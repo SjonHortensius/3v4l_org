@@ -415,10 +415,28 @@ func batchScheduleNewVersions(target *Version) {
 	}
 }
 
-func batchRefreshRandomScripts() {
-	//fixme
-	l := ResourceLimit{0, 2500, 32768}
+func batchSingleFix() {
+	rs, err := db.Query(`
+		SELECT id, short, created, "runArchived"
+		FROM input
+		WHERE id IN( select distinct input from result where output in (select id from output where length(raw)>32768) )`)
+	if err != nil {
+		exitError("doBatch: error in SELECT query: %s", err)
+	}
 
+	for rs.Next() {
+		input := &Input{uniqueOutput: map[string]bool{}}
+		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
+			exitError("doBatch: error fetching work: %s", err)
+		}
+
+		_batchResetHard(input)
+	}
+
+	stats.RLock(); fmt.Printf("batchSingleFix: completed @ %v\n", stats.c); stats.RUnlock()
+}
+
+func batchRefreshRandomScripts() {
 	for {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
@@ -431,40 +449,47 @@ func batchRefreshRandomScripts() {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
 
-		var resCount int
 		for rs.Next() {
 			input := &Input{uniqueOutput: map[string]bool{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
-			if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
-				stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
-			}
-			if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
-				exitError("doBatch: could not delete existing results: %s", err)
-			}
-			if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
-				exitError("doBatch: could not reset input.run: %s", err)
-			}
-
-			input.setBusy(true)
-
-			for _, v := range versions {
-				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
-					if err != nil {
-						exitError("Unable to check load: %s\n", err)
-					}
-				}
-
-				if input.runArchived || v.isHelper || v.eol.After(input.created) {
-					input.execute(v, &l)
-				}
-			}
-
-			input.setDone()
+			_batchResetHard(input)
 		}
 	}
+}
+
+func _batchResetHard(input *Input){
+	//fixme
+	l := ResourceLimit{0, 2500, 32768}
+
+	var resCount int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
+		stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
+	}
+	if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
+		exitError("doBatch: could not delete existing results: %s", err)
+	}
+	if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
+		exitError("doBatch: could not reset input.run: %s", err)
+	}
+
+	input.setBusy(true)
+
+	for _, v := range versions {
+		for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+			if err != nil {
+				exitError("Unable to check load: %s\n", err)
+			}
+		}
+
+		if input.runArchived || v.isHelper || v.eol.After(input.created) {
+			input.execute(v, &l)
+		}
+	}
+
+	input.setDone()
 }
 
 func doWork() {
@@ -523,6 +548,8 @@ func background() {
 	}
 
 	go func() {
+		batchSingleFix()
+
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
 			if v.isHelper {
