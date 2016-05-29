@@ -128,14 +128,14 @@ ul#tabs li.disabled a
 
 ul#tabs li.active
 {
-	border-bottom-color: white;
+	border-bottom-color: #fff;
 }
 
 ul#tabs li.active a
 {
 	color: #555;
 	border: 1px solid #ddd;
-	border-bottom-color: white;
+	border-bottom-color: #fff;
 	cursor: default;
 }
 
@@ -157,7 +157,7 @@ textarea
 	display: block;
 	/* for users without js */
 	white-space: pre;
-	background: white;
+	background: #fff;
 }
 
 /* for touch-devices */
@@ -167,7 +167,7 @@ textarea
 	overflow: auto;
 }
 
-#context:not(:empty)
+#options:not(:empty)
 {
 	float: right;
 	padding: 0.5em 1em 0.5em;
@@ -176,6 +176,23 @@ textarea
 	border-radius: 0 0 4px 4px;
 	border: 1px solid #ddd;
 	border-bottom-color: top;
+}
+
+#options input[type=checkbox] + label
+{
+	position: relative;
+	top: -4px;
+	margin: 0;
+}
+
+#options div
+{
+	float: left;
+}
+
+#options div:not(:first-child)
+{
+	margin-left: 10px;
 }
 
 /* code after js has run */
@@ -222,6 +239,10 @@ dl
 dt
 {
 	font-size: 20px;
+}
+
+dt[id]
+{
 	cursor: pointer;
 }
 
@@ -325,9 +346,36 @@ input[type=submit]:not([disabled])
 	cursor: pointer;
 }
 
-.quick button[type=submit]
+select:disabled
 {
-	cursor: pointer;
+	background-color: #ccc;
+}
+
+input:disabled + label
+{
+	color: #ccc;
+}
+
+input:disabled + #previewForm
+{
+	display: none;
+}
+
+#previewForm
+{
+	background-color: #ccc;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+	padding: 0.5em 0 0.5em;
+	display: inline;
+	width: 200px;
+	margin-left: 20px;
+}
+
+#previewForm select#version
+{
+	width: 100px;
+	height: 25px;
 }
 
 input.busy
@@ -449,7 +497,7 @@ header li
 {
 	float: left;
 	padding: 0 10px;
-	border-left: 1px solid gray;
+	border-left: 1px solid #888;
 }
 
 header li:first-child
@@ -542,7 +590,7 @@ body.perf meter
 
 body.perf tr[data-unsuccessful]
 {
-	color: gray;
+	color: #888;
 }
 
 body.perf tr:not(.header).open

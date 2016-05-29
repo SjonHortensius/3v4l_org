@@ -29,7 +29,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	);
 	protected $_cacheLength = '4 hours';
 	public $entries;
-	public $blackList = ['time', 'date', 'lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage'];
+	public $blackList = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage'];
 
 	public function init()
 	{
@@ -55,7 +55,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		foreach (Basic::$userinput['versions'] as $i => $v)
 		{
 			$alias = 'v'.$i;
-			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
+			$q .= "\nAND {$alias}.\"exitCode\" NOT IN(255, 137) AND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
 
 			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
 			array_push($params, PhpShell_Version::byName($v)->id);
@@ -64,7 +64,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		foreach (Basic::$userinput['controls'] as $i => $v)
 		{
 			$alias = 'c'.$i;
-			$q .= "\nAND {$alias}.\"exitCode\" != 255 AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
+			$q .= "\nAND {$alias}.\"exitCode\" NOT IN(255, 137) AND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
 			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
 			array_push($params, PhpShell_Version::byName($v)->id);
 		}

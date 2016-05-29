@@ -6,7 +6,7 @@
 	{/}
 
 	{!-- render form for Action_New manually --}
-	<form method="post" action="/new" id="userinput">
+	<form method="post" action="/new" id="newForm">
 		<div>
 			<input type="text" name="title" id="title" size="48" maxlength="64" value="{input->title}" placeholder="Untitled" />
 			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
@@ -16,16 +16,26 @@
 			<code itemprop="articleBody">{code}</code>
 		</div>
 
-		<div id="context">
-			<input class="valid" name="archived" id="archived_1" value="1" type="checkbox" />
-			<label for="archived_1" title="{if ($this->input->runArchived)}[v] {/}Include PHP versions that are older than 3 years">+ unsupported versions</label>
+		<div id="options">
+			<div>
+				<select class="valid" name="version" id="version">
+					{foreach ($this->quickVersionList as $this->version)}
+						<option value="{version}">{version}</option>
+					{/}
+				</select>
+			</div>
+
+			<div>
+				<input class="valid" name="archived" id="archived_1" value="1" type="checkbox" />
+				<label for="archived_1" title="{if ($this->input->runArchived)}[v] {/}Include PHP versions that are older than 3 years">eol versions</label>
+			</div>
 
 			{if (isset($this->input->source) && !isset($this->input->source->runQuick))}
-				<a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a>
+				<div><a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a></div>
 			{/}
 
 			{if (isset($this->input->user))}
-				<a itemprop="author" rel="external" href="/u/{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a>
+				<div><a itemprop="author" rel="external" href="/~{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a></div>
 			{/}
 		</div>
 

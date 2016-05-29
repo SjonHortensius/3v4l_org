@@ -34,6 +34,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $input;
 	public $showTab = [];
 	public $bodyClass = 'script';
+	public $quickVersionList;
 
 	public function init()
 	{
@@ -41,6 +42,13 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->bodyClass .= ' output';
 		elseif (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
 			$this->bodyClass .= ' '.$GLOBALS['_MULTIVIEW'][1];
+
+		// copied from PhpShell_Action_New::init
+		$this->quickVersionList = Basic::$cache->get('quickVersionList', function(){
+			$v = PhpShell_Version::find("NOT name IN('segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
+
+			return $v->getSimpleList('name', 'name');
+		}, 30);
 
 		parent::init();
 	}

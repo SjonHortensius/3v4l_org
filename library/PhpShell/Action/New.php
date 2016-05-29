@@ -21,29 +21,45 @@ class PhpShell_Action_New extends PhpShell_Action
 			'default' => "<?php\n\n",
 			'required' => true,
 		],
+		'version' => [
+			'inputType' => 'select',
+			'values' => [],
+		],
 		'archived' => [
 			'valueType' => 'integer',
 			'inputType' => 'checkbox',
 			'default' => 0,
 			'values' => [
-				1 => '+ unsupported versions' //<span title="Include PHP versions that are older than 3 years">+ unsupported versions</span>'
+				1 => 'eol versions'
 			],
 		],
 	);
+
+	public function init()
+	{
+		$this->_userinputConfig['version']['values'] = Basic::$cache->get('quickVersionList', function(){
+			$v = PhpShell_Version::find("NOT name IN('segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
+
+			return $v->getSimpleList('name', 'name');
+		}, 30);
+
+		parent::init();
+	}
 
 	public function run()
 	{
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
 
+		if (isset(Basic::$userinput['version']))
+			$version = PhpShell_Version::byName(Basic::$userinput['version']);
+
 		$penalty = Basic::$database->query("
-			SELECT SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) p
+			SELECT SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END) p
 			FROM submit
 			JOIN input ON (input.id = submit.input)
-			WHERE ip = ? AND now() - submit.created < '1 day' AND \"runQuick\" ISNULL", [ $_SERVER['REMOTE_ADDR'] ])->fetchArray()[0]['p'];
+			WHERE ip = ? AND now() - submit.created < ?", [ $_SERVER['REMOTE_ADDR'], '1 day' ])->fetchArray()[0]['p'];
 
-#		if ($penalty > 150*1000)
-#			throw new PhpShell_LimitReachedException('You have reached your limit for now, find another free service to abuse', [], 402);
 		usleep($penalty);
 
 		try
@@ -56,10 +72,13 @@ class PhpShell_Action_New extends PhpShell_Action
 			if (!$input->runArchived && Basic::$userinput['archived'])
 				$input->save(['runArchived' => 1]);
 
-			if (isset($input->runQuick))
+			// Allow upgrading quick>full
+			if (isset($input->runQuick) && !isset($version))
 				$input->save(['runQuick' => null]);
 
-			$input->trigger();
+			// Prevent partially running a full script (because of duplicate result)
+			if (!isset($version) || 0 == $input->getResult($version)->getCount(null, true))
+				$input->trigger($version);
 		}
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
@@ -81,13 +100,27 @@ class PhpShell_Action_New extends PhpShell_Action
 				'code' => $code,
 				'source' => $source,
 				'title' => Basic::$userinput['title'],
-				'runArchived' => Basic::$userinput['archived']
+				'runArchived' => Basic::$userinput['archived'],
+				'runQuick' => $version,
 			]);
 		}
 
 		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
 
-		usleep(250 * 1000);
-		die(header('Location: /'. $input->short, 302));
+		if (!isset($version))
+		{
+			usleep(250 * 1000);
+			die(header('Location: /'. $input->short, 302));
+		}
+
+		//BUG? this will return directly for non-new inputs
+		$input->waitUntilNoLonger('busy');
+		usleep(150 * 1000);
+
+		$this->input = $input;
+		$this->result = $this->input->getResult($version)->getSingle();
+		$this->output = $this->result->output->getRaw($input, $version);
+
+		$this->showTemplate('quick');
 	}
 }

@@ -26,6 +26,13 @@ String.prototype.ucFirst = function(){
 	return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
+function $(s){
+	return document.querySelector(s);
+}
+function $$(s){
+	return document.querySelectorAll(s);
+}
+
 var evalOrg = {};
 (function()
 {
@@ -38,7 +45,7 @@ var evalOrg = {};
 
 	this.initialize = function()
 	{
-		document.querySelectorAll('a[href^="http"]').forEach(function (el){
+		$$('a[href^="http"]').forEach(function (el){
 			el.setAttribute('target', '_blank');
 		});
 
@@ -46,6 +53,18 @@ var evalOrg = {};
 			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
 				this[ 'handle'+c.ucFirst() ]();
 		}.bind(this));
+
+		// Allow #key=value pairs to specify defaults for certain form inputs
+		if (document.location.hash.length>1 && document.location.hash.match(/^#[a-z0-9.&=\-_]+$/i))
+		{
+			document.location.hash.substr(1).split('&').forEach(function(p){
+				p = p.split('=');
+
+				// beware of injections
+				if (p[0].match(/^[a-z]+$/i) && $('select#'+p[0]+' option[value="'+p[1]+'"]'))
+					$('select#'+p[0]).value = p[1];
+			});
+		}
 	};
 
 	this.richEditor = function()
@@ -76,20 +95,20 @@ var evalOrg = {};
 		this.editor.session.setMode('ace/mode/php');
 		this.editor.session.setUseWrapMode(true);
 
-		if (document.querySelector('input[type=submit]'))
-			document.querySelector('input[type=submit]').setAttribute('disabled', 'disabled');
+		if ($('input[type=submit]'))
+			$('input[type=submit]').setAttribute('disabled', 'disabled');
 
-		document.forms[0].addEventListener('submit', function(e){
+		$('#newForm').addEventListener('submit', function(e){
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
 		this.editor.on('change', function(){
-			document.querySelector('input[type=submit]').removeAttribute('disabled');
+			$('input[type=submit]').removeAttribute('disabled');
 		});
 
-		if (document.getElementById('archived_1'))
-			document.getElementById('archived_1').addEventListener('change', function(){
-				document.querySelector('input[type=submit]').removeAttribute('disabled');
+		if ($('#archived_1'))
+			$('#archived_1').addEventListener('change', function(){
+				$('input[type=submit]').removeAttribute('disabled');
 			});
 	};
 
@@ -98,23 +117,16 @@ var evalOrg = {};
 		if ('undefined' != typeof refreshTimer)
 			return;
 
-		if (document.location.hash.length>1 && document.location.hash.match(/^#[a-z0-9.&=\-_]+$/i))
-		{
-			document.location.hash.substr(1).split('&').forEach(function(p){
-				var [id,val]= p.split('=');
-
-				// beware of injections
-				if (id.match(/^[a-z]+$/i) && document.querySelector('select[id='+id+']'))
-					document.getElementById(id).value = val;
-			});
-		}
-
 		this.richEditor();
+		this.enablePreview();
 
-		if (document.querySelector('input[type=submit].busy'))
+		if ($('input[type=submit].busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
 		document.body.addEventListener('keydown', function(e){
+			if (13 == e.keyCode && e.altKey)
+				return this.preview();
+
 			if (13 != e.keyCode || !e.ctrlKey)
 				return;
 
@@ -125,8 +137,8 @@ var evalOrg = {};
 				'cancelable': true
 			});
 			// None of the handlers called preventDefault.
-			if (document.forms[0].dispatchEvent(event))
-				document.forms[0].submit();
+			if ($('#newForm').dispatchEvent(event))
+				$('#newForm').submit();
 		}.bind(this));
 
 		localTime(function(el, d){
@@ -141,17 +153,85 @@ var evalOrg = {};
 
 	this.handleOutput = function()
 	{
-		document.getElementsByTagName('dt').forEach(function(el){
+		$$('dt').forEach(function(el){
 			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
 		});
 /*
-		document.querySelectorAll('a[href^="/assert"][data-hash]').forEach(function (el){
+		$$('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
 				//FIXME xhr submit
 				e.preventDefault();
 			});
 		});
 */	};
+
+	this.enablePreview = function()
+	{
+		if (!$('div #version'))
+			return;
+
+		var p = document.createElement('form');
+		p.setAttribute('id', 'previewForm');
+
+		var b = document.createElement('button');
+		b.setAttribute('name', 'version');
+		b.setAttribute('type', 'button');
+		b.setAttribute('title', 'shortcut: alt+enter');
+		b.appendChild(document.createTextNode('preview in'));
+		b.addEventListener('click', this.preview.bind(this));
+		p.appendChild(b);
+
+		// Move existing select from #options to after submit button, remove original parent
+		var d = $('div #version').parentNode;
+		p.appendChild($('#version'));
+		d.parentNode.removeChild(d);
+
+		$('input[type=submit]').parentNode.insertBefore(p, null);
+	};
+
+	this.preview = function()
+	{
+		window.location.hash = '#version='+ $('#version').value;
+
+		var xhr = new XMLHttpRequest();
+		xhr.submittedData
+		xhr.onload = _preview;
+		xhr.open('post', '/new');
+
+		var data = new FormData($('#previewForm'));
+		data.append('code', this.editor.getValue());
+		xhr.send(data);
+
+		return false;
+	};
+
+	var _preview = function()
+	{
+		$$('#newForm ~ div, #newForm ~ ul').forEach(function(div){
+			div.parentNode.removeChild(div);
+		});
+
+		//fixme - this is functional but it all sucks
+
+		var t = this.responseText.match(/<ul id="tabs"[^>]*>([\s\S]*?)<\/ul>/);
+		var r = this.responseText.match(/<div id="tab"[^>]*>([\s\S]*?)<\/div>/);
+		if (!t || !r)
+		{
+			t = ['', '<li class="active"><a>Error</a></li>'];
+			r = this.responseText.match(/<body[^>]*>([\s\S]*?)<\/body>/);
+		}
+
+		if (!r)
+			return;
+
+		var ul = document.createElement('ul'); ul.setAttribute('id', 'tabs');
+		var tab = document.createElement('div'); tab.setAttribute('id', 'tab');
+
+		ul.innerHTML = t[1];
+		tab.innerHTML = r[1];
+		$('#newForm').parentNode.insertBefore(tab, $('#newForm').nextSibling);
+		$('#newForm').parentNode.insertBefore(ul, tab);
+	};
 
 	this.refresh = function()
 	{
@@ -165,13 +245,13 @@ var evalOrg = {};
 
 	var _refresh = function()
 	{
-		var tab = document.getElementById('tab');
+		var tab = $('#tab');
 		var t = this.responseText.match(/<ul id="tabs"[^>]*>([\s\S]*?)<\/ul>/);
 		var r = this.responseText.match(/<div id="tab"[^>]*>([\s\S]*?)<\/div>/);
 		if (!t || !r)
 			window.location.reload();
 
-		document.getElementById('tabs').innerHTML = t[1];
+		$('#tabs').innerHTML = t[1];
 
 		if (document.body.classList.contains('output') && window.DOMParser)
 			self._refreshOutput(tab, r[1]);
@@ -188,8 +268,8 @@ var evalOrg = {};
 		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
 		{
 			clearInterval(refreshTimer);
-			document.querySelector('input[type=submit].busy').classList.remove('busy');
-			document.querySelector('#tabs.busy').classList.remove('busy');
+			$('input[type=submit].busy').classList.remove('busy');
+			$('#tabs.busy').classList.remove('busy');
 		}
 	};
 
@@ -275,7 +355,7 @@ var evalOrg = {};
 		sel = sel || 'time';
 		cb = cb || function(){};
 
-		document.querySelectorAll(sel).forEach(function (el){
+		$$(sel).forEach(function (el){
 			var d = new Date(el.getAttribute('datetime'));
 			el.setAttribute('title', d.toString());
 			cb(el, d);
@@ -306,7 +386,7 @@ var evalOrg = {};
 		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
 
 		// Don't use foreach or cache n.length
-		var n = document.querySelector('#tab table tbody').childNodes;
+		var n = $('#tab table tbody').childNodes;
 		for (var i=0, tr=n[i]; i<n.length; tr=n[++i])
 		{
 			// We modify the Node we traverse, not so smart...
@@ -351,34 +431,34 @@ var evalOrg = {};
 
 	this.handleSearch = function()
 	{
-		document.forms[0].addEventListener('submit', function(e){
+		$('#searchForm').addEventListener('submit', function(e){
 			e.preventDefault();
 
-			var url = '/search/'+ encodeURIComponent(document.getElementById('operation').value);
-			if (document.getElementById('operand').value.length > 0)
-				url += '/'+ encodeURIComponent(document.getElementById('operand').value);
+			var url = '/search/'+ encodeURIComponent($('#operation').value);
+			if ($('#operand').value.length > 0)
+				url += '/'+ encodeURIComponent($('#operand').value);
 			window.location.href = url;
 		});
 
-		document.querySelector('select[name=operation]').addEventListener('change', function(e){
-			document.querySelector('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
+		$('select[name=operation]').addEventListener('change', function(e){
+			$('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
 		});
 
-		if (document.querySelector('svg'))
+		if ($('svg'))
 			this.handleTagcloud();
 	};
 
 	this.handleBughunt = function()
 	{
-		if (0 == document.forms.length)
-			return;
+		if (!$('#bughuntForm'))
+			return false;
 
-		document.forms[0].addEventListener('submit', function(e){
+		$('#bughuntForm').addEventListener('submit', function(e){
 			e.preventDefault();
 
 			var url = '/bughunt/'
-				+ document.getElementById('versions').getSelected().join('+')
-				+ '/'+ document.getElementById('controls').getSelected().join('+');
+				+ $('#versions').getSelected().join('+')
+				+ '/'+ $('#controls').getSelected().join('+');
 			window.location.href = url;
 		});
 	};
@@ -386,30 +466,14 @@ var evalOrg = {};
 	this.handleTagcloud = function()
 	{
 		var ns = 'http://www.w3.org/1999/xlink', svgNs = 'http://www.w3.org/2000/svg';
-		document.querySelector('svg').setAttribute('xmlns:xlink', ns);
+		$('svg').setAttribute('xmlns:xlink', ns);
 
-		document.querySelectorAll('g text').forEach(function (el){
+		$$('g text').forEach(function (el){
 			var w = document.createElementNS(svgNs, 'a');
 			w.setAttributeNS(ns, 'xlink:href', '/search/DO_FCALL/'+ el.textContent);
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
 			el.parentNode.replaceChild(w, el);
-		});
-	};
-
-	this.handleQuick = function()
-	{
-		document.querySelector('button[name=versions]').addEventListener('click', function(e){
-			document.forms[0].action = 'new';
-			var title = prompt('Please enter an optional title for this script');
-			if (title != 'undefined' && title != 'false')
-				document.querySelector('input[name=title]').value = title;
-		});
-
-		document.getElementById('version').addEventListener('change', function(){
-			document.querySelector('input[type=submit]').removeAttribute('disabled');
-
-			document.forms[0].action = 'quick/'+ document.getElementById('version').value;
 		});
 	};
 

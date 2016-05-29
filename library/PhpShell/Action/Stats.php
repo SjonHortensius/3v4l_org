@@ -31,7 +31,7 @@ WHERE now() - created < '1 week';")));
 				SUM(submit.count) submits,
 				AVG(penalty) penalty,
 				JSON_AGG(input.short) inputs,
-				SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) / 1000000 sleep
+				SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END) / 1000000 sleep
 			FROM submit
 
 JOIN input ON (input.id = submit.input)
