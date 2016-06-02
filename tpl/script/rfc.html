@@ -9,6 +9,7 @@
 	{if ($this->result->version->name == 'rfc-callable_typehint')}{$rfc = null;}{/}
 	{if ($this->result->version->name == 'rfc-lexical-anon'		)}{$rfc = 'lexical-anon';}{/}
 	{if ($this->result->version->name == 'rfc-multi-types'		)}{$rfc = 'union_types';}{/}
+	{if ($this->result->version->name == 'rfc-array_change_keys')}{$rfc = 'array_change_keys';}{/}
 
 	<dt id="{result->version->name}">
 		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));}

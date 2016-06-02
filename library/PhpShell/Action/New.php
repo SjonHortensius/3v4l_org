@@ -38,7 +38,8 @@ class PhpShell_Action_New extends PhpShell_Action
 	public function init()
 	{
 		$this->_userinputConfig['version']['values'] = Basic::$cache->get('quickVersionList', function(){
-			$v = PhpShell_Version::find("NOT name IN('segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
+			# exclude all versions that aren't always stored by the daemon
+			$v = PhpShell_Version::find("NOT name IN('vld', 'segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
 
 			return $v->getSimpleList('name', 'name');
 		}, 30);

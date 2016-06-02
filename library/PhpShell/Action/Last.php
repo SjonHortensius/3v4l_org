@@ -14,7 +14,11 @@ class PhpShell_Action_Last extends PhpShell_Action
 
 	public function run()
 	{
-		$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0', [], ['id' => false]);
+		if ($_GET['draft']==1)
+			$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'NOT "runQuick" ISNULL', [], ['id' => false]);
+		else
+			$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0 AND "runQuick" ISNULL', [], ['id' => false]);
+
 		$this->entries->addJoin('result', "result.input = input.id AND result.version >= 32");
 
 		parent::run();
