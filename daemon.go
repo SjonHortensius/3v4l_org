@@ -419,7 +419,8 @@ func batchSingleFix() {
 	rs, err := db.Query(`
 		SELECT id, short, created, "runArchived"
 		FROM input
-		WHERE id IN( select distinct input from result where output in (select id from output where length(raw)>32768) )`)
+		WHERE id IN (select distinct input from operations where operation in('DO_FCALL', 'INIT_FCALL') and operand in ('date', 'time'))
+		ORDER BY RANDOM()`)
 	if err != nil {
 		exitError("doBatch: error in SELECT query: %s", err)
 	}
