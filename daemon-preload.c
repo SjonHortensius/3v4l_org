@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <stdio.h>
 #include <sys/time.h>
 #include <stdlib.h>
 #include <sys/timeb.h>
@@ -9,7 +10,6 @@ int diff;
 int (*org_gettimeofday)(struct timeval *tp, void *tzp);
 time_t (*org_time)(time_t *tloc);
 int (*org_clock_gettime)(clockid_t clk_id, struct timespec *tp);
-struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
 
 void
 _initLib(void)
@@ -17,11 +17,11 @@ _initLib(void)
 	org_gettimeofday =  dlsym(RTLD_NEXT, "gettimeofday");
 	org_time =          dlsym(RTLD_NEXT, "time");
 	org_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
-	org_localtime_r =   dlsym(RTLD_NEXT, "localtime_r");
 
 	int offset = 0;
 	if (getenv("TIME") != NULL) {
 		offset = atoi(getenv("TIME"));
+//fprintf(stderr, "%s has set a custom offset\n", __FUNCTION__);
 	}
 
 	unsetenv("TIME");
@@ -66,14 +66,6 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 	tp->tv_sec -= diff;
 	return 0;
-}
-
-struct tm *localtime_r(const time_t *timep, struct tm *result) {
-	if (0 == diff)
-		_initLib();
-
-	time_t t = (time_t)(org_time(NULL) - diff);
-	return org_localtime_r(&t, result);
 }
 
 int ftime(struct timeb *tp) {
