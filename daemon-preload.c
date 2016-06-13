@@ -34,12 +34,9 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	if (0 == diff)
 		_initLib();
 
-	int r = org_gettimeofday(tp, tzp);
-
-	if (!r)
-		return r;
-
+	org_gettimeofday(tp, tzp);
 	tp->tv_sec -= diff;
+
 	return 0;
 }
 
@@ -61,11 +58,10 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 	int r = org_clock_gettime(clk_id, tp);
 
-	if (!r)
-		return r;
+	if (0 == r)
+		tp->tv_sec -= diff;
 
-	tp->tv_sec -= diff;
-	return 0;
+	return r;
 }
 
 struct tm *localtime_r(time_t *timep, struct tm *result) {
