@@ -1,0 +1,21 @@
+"script": {
+	{if (isset($this->input->user))}
+		"author": "{print json_encode($this->input->user->name);}",
+	{/}
+
+	{if (isset($this->input->title))}
+		"title":"{input->title}",
+	{/}
+	"created":"{print substr($this->input->created, 0, 19);}",
+	"state": "{input->state}",
+	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done', 'busy')));},
+	"code": {print json_encode($this->input->getCode());}
+},
+
+"version": "{userinput['version']}",
+"output": {echo json_encode($this->output);},
+"stats": {
+	"userTimeMs": {print round(1000 * ($this->result->userTime));},
+	"systemTimeMs": {print round(1000 * ($this->result->systemTime));},
+	"maxMemoryMb": {print round($this->result->maxMemory/1024, 2);}
+}
