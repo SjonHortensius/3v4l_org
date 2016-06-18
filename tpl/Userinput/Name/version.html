@@ -1,0 +1,7 @@
+<select class="{if ($this->input->required)}required {/}{state}" name="version" id="version" disabled="disabled">
+	{foreach ($this->input->values as $this->value => $this->description)}
+		<option value="{value}"{if ($this->value == $this->rawValue)} selected="selected"{/}>
+			{description}
+		</option>
+	{/}
+</select>

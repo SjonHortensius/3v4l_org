@@ -13,12 +13,13 @@
 		</div>
 
 		<div>
+			<textarea name="code" style="display:none;"></textarea>
 			<code itemprop="articleBody">{code}</code>
 		</div>
 
 		<div id="options">
 			<div>
-				<select class="valid" name="version" id="version">
+				<select class="valid" name="version" id="version" disabled="disabled">
 					{foreach ($this->quickVersionList as $this->version)}
 						<option value="{version}">{version}</option>
 					{/}
@@ -40,9 +41,20 @@
 		</div>
 
 		{if (in_array($this->input->state, array('new', 'done', 'busy')))}
-			<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" />
+			<input type="submit" value="eval();" class="{input->state}" title="shortcut: ctrl+enter" disabled="disabled" />
 		{/}
 	</form>
+
+	<noscript>
+		{if ('busy' == $this->input->state)}
+			<meta http-equiv="refresh" content="1" />
+		{/}
+
+		<div class="alert warning">
+			<h2>Enable javascript to submit</h2>
+			<p>You have javascript disabled. You will not be able to edit any code.</p>
+		</div>
+	</noscript>
 
 	{if (in_array($this->input->short, ['ji79d', 'VhEtd']))}
 		<div class="alert notice">

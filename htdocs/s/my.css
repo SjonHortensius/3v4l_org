@@ -163,8 +163,10 @@ textarea
 /* for touch-devices */
 textarea
 {
-	height: 150px;
+	height: 250px;
 	overflow: auto;
+	font-family: monospace;
+	font-size: 13px;
 }
 
 #options:not(:empty)
@@ -193,13 +195,6 @@ textarea
 #options div:not(:first-child)
 {
 	margin-left: 10px;
-}
-
-/* code after js has run */
-textarea + code
-{
-	white-space: normal;
-	background: none;
 }
 
 form.submit-attempted textarea.invalid,
@@ -372,7 +367,7 @@ input:disabled + #previewForm
 	margin-left: 20px;
 }
 
-#previewForm select#version
+select#version
 {
 	width: 100px;
 	height: 25px;

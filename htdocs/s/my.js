@@ -69,25 +69,26 @@ var evalOrg = {};
 
 	this.richEditor = function()
 	{
-		if (document.getElementsByName('code').length > 0)
-			return;
+		if (this.editor)
+			return false;
 
-		var code = document.getElementsByTagName('code')[0];
-		var textarea = document.createElement('textarea');
-		textarea.name = 'code';
+		var code = $('code');
+		var textarea = $('textarea[name=code]');
 		textarea.value = code.textContent;
-		code.parentNode.insertBefore(textarea, code);
 
 		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
 		if ("ontouchstart" in window)
 		{
 			code.style.display = 'none';
+			// remove display=none, shows textarea
+			textarea.removeAttribute('style');
+			$('input[type=submit]').removeAttribute('disabled');
 			return;
 		}
 
 		textarea.style.display = 'none';
 
-		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.1.9/min/')
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.3/min/')
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
@@ -187,6 +188,7 @@ var evalOrg = {};
 		d.parentNode.removeChild(d);
 
 		$('input[type=submit]').parentNode.insertBefore(p, null);
+		$('#version').removeAttribute('disabled');
 	};
 
 	this.preview = function()
@@ -199,7 +201,10 @@ var evalOrg = {};
 		xhr.open('post', '/new');
 
 		var data = new FormData($('#previewForm'));
-		data.append('code', this.editor.getValue());
+		if (this.editor)
+			data.append('code', this.editor.getValue());
+		else
+			data.append('code', $('textarea[name=code]').value);
 		xhr.send(data);
 
 		return false;
