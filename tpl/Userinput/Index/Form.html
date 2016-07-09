@@ -52,7 +52,7 @@
 		{foreach ($this->last->getPage(1, 5) as $this->row)}
 			<li>
 				<a href="/{row->short}">{if (isset($this->row->title))}{row->title}{:}{row->short}{/}</a>
-				{$d = time() - strtotime($this->row->created);}
+				{$d = time() - date('Z') - strtotime($this->row->created);}
 				 <time datetime="{row->getCreatedUtc()}">
 					{if ($d <= 60)}
 						just now

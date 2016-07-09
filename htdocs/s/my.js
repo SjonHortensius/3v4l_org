@@ -74,6 +74,11 @@ var evalOrg = {};
 
 		var code = $('code');
 		var textarea = $('textarea[name=code]');
+
+		//FIXME
+		if (document.body.classList.contains('index') && textarea.value.length > code.textContent.length)
+			code.appendChild(document.createTextNode(textarea.value));
+
 		textarea.value = code.textContent;
 
 		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
@@ -490,3 +495,7 @@ var evalOrg = {};
 }).apply(evalOrg);
 
 window.addEventListener('load', function(){ evalOrg.initialize(); });
+// Possibility to apply css before onload gets fired (which is after parsing ace.js)
+document.body.classList.add('js');
+if ("ontouchstart" in window)
+	document.body.classList.add('touch');

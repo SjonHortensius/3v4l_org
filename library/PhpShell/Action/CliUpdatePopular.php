@@ -20,7 +20,7 @@ class PhpShell_Action_CliUpdatePopular extends PhpShell_Action
 			list($count, $url) = explode(' ', ltrim($line));
 
 			if ($url != '/')
-				$active[ $url ] = $count;
+				$active[ trim($url) ] = $count;
 		}
 
 		Basic::$cache->set('active_scripts', $active, 86400);

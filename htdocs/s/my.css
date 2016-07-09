@@ -161,12 +161,24 @@ textarea
 }
 
 /* for touch-devices */
-textarea
+body.touch textarea
 {
-	height: 250px;
 	overflow: auto;
 	font-family: monospace;
 	font-size: 13px;
+}
+
+/* minimize fouc impact */
+body:not(.js) textarea,
+body.touch textarea
+{
+	height: 250px;
+}
+
+/* for non-js users, hide border from empty code-block */
+body.index textarea + code:empty
+{
+	display: none;
 }
 
 #options:not(:empty)
@@ -520,7 +532,7 @@ input + time
 body.index input#title,
 body.new input#title
 {
-	width: 957px;
+	width: 98.6%;
 }
 
 body.index time
