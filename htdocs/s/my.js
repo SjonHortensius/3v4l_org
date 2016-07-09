@@ -480,7 +480,7 @@ var evalOrg = {};
 
 		$$('g text').forEach(function (el){
 			var w = document.createElementNS(svgNs, 'a');
-			w.setAttributeNS(ns, 'xlink:href', '/search/DO_FCALL/'+ el.textContent);
+			w.setAttributeNS(ns, 'xlink:href', '/search/INIT_FCALL/'+ el.textContent);
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
 			el.parentNode.replaceChild(w, el);
