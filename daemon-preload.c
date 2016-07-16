@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <sys/timeb.h>
+#include <stdio.h>
 
 struct timeval diff;
 
@@ -24,11 +25,19 @@ _initLib(void)
 		offset = atoi(getenv("TIME"));
 	}
 
-	unsetenv("TIME");
-	unsetenv("LD_PRELOAD");
-
 	org_gettimeofday(&diff, NULL);
 	diff.tv_sec -= offset;
+
+	// This shouldn't happen
+	if (offset == 0) {
+		diff.tv_sec = 0;
+//fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
+	}
+
+//fprintf(stderr, "\n%s has set a custom offset: %d, diff.tv_sec=%ld diff.tv_usec=%ld\n", __FUNCTION__, offset, diff.tv_sec, diff.tv_usec);
+
+	unsetenv("TIME");
+	unsetenv("LD_PRELOAD");
 }
 
 int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
@@ -40,18 +49,19 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
 		tp->tv_sec--;
-		tp->tv_usec = tp->tv_usec + 1000000 - diff.tv_usec;
+		tp->tv_usec = tp->tv_usec + 1000*1000 - diff.tv_usec;
 	} else
 		tp->tv_usec -= diff.tv_usec;
+
+//fprintf(stderr, "\n%s using offset: %ld.%ld, returning %ld.%ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp.tv_sec, tp.tv_usec);
 
 	return 0;
 }
 
 time_t time(time_t *t) {
-	if (0 == diff.tv_sec)
-		_initLib();
-
-	time_t r = org_time(t) - diff.tv_sec;
+	struct timeval a;
+	gettimeofday(&a, NULL);
+	time_t r = a.tv_sec;
 
 	if (t)
 		*t = r;
@@ -65,18 +75,26 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 	int r = org_clock_gettime(clk_id, tp);
 
-	if (0 == r)
-		tp->tv_sec -= diff.tv_sec;
+	if (0 != r)
+		return r;
 
-	return r;
+	tp->tv_sec -= diff.tv_sec;
+	if (tp->tv_nsec < (1000*diff.tv_usec)) {
+		tp->tv_sec--;
+		tp->tv_nsec = tp->tv_nsec + 1000*1000*1000 - (1000*diff.tv_usec);
+	} else
+		tp->tv_nsec -= 1000*diff.tv_usec;
+
+	return 0;
 }
 
 struct tm *localtime_r(time_t *timep, struct tm *result) {
-	if (0 == diff.tv_sec)
-		_initLib();
+	if (!timep) {
+		struct timeval a;
+		gettimeofday(&a, NULL);
 
-	if (!timep)
-		*timep = (time_t)(org_time(NULL) - diff.tv_sec);
+		*timep = (time_t)a.tv_sec;
+	}
 
 	return org_localtime_r(timep, result);
 }
@@ -90,7 +108,7 @@ int ftime(struct timeb *tp) {
 	tp->time -= diff.tv_sec;
 	if (tp->millitm < diff.tv_usec) {
 		tp->millitm--;
-		tp->millitm = tp->millitm + 1000000 - diff.tv_usec;
+		tp->millitm = tp->millitm + 1000*1000 - diff.tv_usec;
 	} else
 		tp->millitm -= diff.tv_usec;
 
