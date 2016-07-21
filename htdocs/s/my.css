@@ -593,6 +593,7 @@ body.perf tr.header
 body.perf meter
 {
 	float: right;
+	margin-left: 10px;
 }
 
 body.perf tr[data-unsuccessful]

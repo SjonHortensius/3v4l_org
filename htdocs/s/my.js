@@ -147,7 +147,7 @@ var evalOrg = {};
 				$('#newForm').submit();
 		}.bind(this));
 
-		localTime(function(el, d){
+		this.localTime(function(el, d){
 			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
 		}, 'input + time');
 	};
@@ -173,7 +173,7 @@ var evalOrg = {};
 
 	this.enablePreview = function()
 	{
-		if (!$('div #version'))
+		if (!$('div #version') || !$('input[type=submit]'))
 			return;
 
 		var p = document.createElement('form');
@@ -355,12 +355,13 @@ var evalOrg = {};
 
 			for (var k in perfAggregates[type])
 				m.setAttribute(k, perfAggregates[type][k]);
+				m.setAttribute('optimum', perfAggregates[type]['low']/2);
 
 			el.childNodes[1+index].appendChild(m);
 		});
 	};
 
-	var localTime = function(cb, sel)
+	this.localTime = function(cb, sel)
 	{
 		sel = sel || 'time';
 		cb = cb || function(){};
@@ -377,12 +378,12 @@ var evalOrg = {};
 		this.editor.focus();
 		this.editor.gotoLine(this.editor.session.getLength());
 
-		localTime();
+		this.localTime();
 	};
 
 	this.handleLast = function()
 	{
-		localTime(function(el, d){
+		this.localTime(function(el, d){
 			function pad(d){ return ('0'+d).slice(-2); };
 			el.innerHTML = pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 		});
@@ -425,6 +426,7 @@ var evalOrg = {};
 			['system', 'user', 'memory'].forEach(function(type, index){
 				var m = document.createElement('meter');
 				m.setAttribute('value', tr.childNodes[1+index].textContent);
+				m.setAttribute('optimum', perfAggregates[type]['low']/2);
 
 				for (var k in perfAggregates[type])
 					m.setAttribute(k, perfAggregates[type][k]);
