@@ -53,7 +53,7 @@
 
 		<h2>Links</h2>
 		<ul>
-			<li><a href="bitcoin://1EYTH4UKTvzbhKY9R7PNdzPYEzDpkTuJP1?amount=0.1&label=3v4l.org%20support">Donate bitcoins</a> for financial support.</li>
+			<li><a href="bitcoin://1EYTH4UKTvzbhKY9R7PNdzPYEzDpkTuJP1?amount=0.1&amp;label=3v4l.org%20support">Donate bitcoins</a> for financial support.</li>
 			<li><a href="https://twitter.com/3v4l_org">Twitter</a> for announcements.</li>
 			<li><a href="http://3v4l.uservoice.com/forums/219058-general">Uservoice</a> for bugs &amp; features.</li>
 			<li><a href="mailto:root@3v4l.org">E-mail</a> if the above channels don't suffice.</li>
@@ -104,19 +104,19 @@ date.timezone = Europe/Amsterdam<br/>
 #!/bin/bash<br/>
 ulimit -f 64 -m 64 -t 2 -u 128<br/>
 <br/>
-[[ ! -d /out/$1/ ]] && mkdir /out/$1/ || chmod u+w /out/$1/<br/>
+[[ ! -d /out/$1/ ]] &amp;&amp; mkdir /out/$1/ || chmod u+w /out/$1/<br/>
 <br/>
 for bin in /bin/php-*<br/>
 do<br/>
        echo $bin - $1<br/>
-       nice -n 15 sudo -u nobody $bin -c /etc/ -q "/in/$1" &>/out/$1/${bin##*-} & PID=$!<br/>
-       ( sleep 3.1; kill -9 $PID 2>/dev/null ) &<br/>
+       nice -n 15 sudo -u nobody $bin -c /etc/ -q "/in/$1" &amp;&gt;/out/$1/${bin##*-} &amp; PID=$!<br/>
+       ( sleep 3.1; kill -9 $PID 2&gt;/dev/null ) &amp;<br/>
        wait $PID<br/>
        ex=$?<br/>
 <br/>
        sf=/out/$1/${bin##*-}-exit<br/>
-       [[ $ex -eq 0 && -f $sf ]] && rm $sf<br/>
-       [[ $ex -ne 0 ]] && echo -n $ex > $sf<br/>
+       [[ $ex -eq 0 &amp;&amp; -f $sf ]] &amp;&amp; rm $sf<br/>
+       [[ $ex -ne 0 ]] &amp;&amp; echo -n $ex &gt; $sf<br/>
 done<br/>
 <br/>
 chmod u-w /out/$1/
@@ -132,7 +132,7 @@ chmod u-w /out/$1/
 		<p>For performance reasons I strip the HTML, CSS and javascripts; but there have been a few invisible upgrades here as well. Originally I used <a href="http://mootools.net/">MooTools</a>
 		 but that has been replaced by <a href="http://vanilla-js.com/">Vanilla JS</a>. If you'd like, you can find a <a href="/s/my.js">human-readable version here</a>.
 
-		 My work pays off, as can be seen when <a href="http://tools.pingdom.com/fpt/#!/b77XQk/https://3v4l.org">analyzing the performance of this site</a>.
+		 My work pays off, as can be seen when <a href="https://tools.pingdom.com/#!/Sbxr/https://3v4l.org">analyzing</a> the <a href="https://developers.google.com/speed/pagespeed/insights/?url=http%3A%2F%2F3v4l.org%2F">performance of this site</a>.
 		</p>
 
 		<p>The layout has taken a few cues from Bootstrap but given the verboseness of both its HTML and CSS I don't actually use that.

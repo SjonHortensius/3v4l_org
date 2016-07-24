@@ -3,12 +3,21 @@ set -e
 
 cd `dirname $0`
 
-cat ./my.css ../ext/glyphicons-halflings.css | php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Static.php');echo Basic_Static::prefixCss3(Basic_Static::cssStrip(file_get_contents('php://stdin'), 2500));" > c.css
+{
+	cat ./my.css
+
+	head -n18 ../ext/glyphicons-halflings.css
+
+	# include only the icons we use
+	grep -rEo icon-[a-z]+ ../../tpl/ ./my.js | cut -d: -f2|sort -u|while read i; do grep -A2 --no-group-separator $i ../ext/glyphicons-halflings.css; done
+}| php -r "require('/srv/http/.common/Basic_Framework/library/Basic/Static.php');echo Basic_Static::cssStrip(file_get_contents('php://stdin'), 2500);" > c.css
 
 cat ./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));" > c.js
 
 [[ $1 == 'q' ]] && exit 0
 
-mv c.js c2.js
-curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c2.js" http://closure-compiler.appspot.com/compile > c.js
+curl -s https://www.google-analytics.com/analytics.js -O -z analytics.js
+
+mv c.js c2.js; cp analytics.js c.js
+curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c2.js" http://closure-compiler.appspot.com/compile >> c.js
 rm c2.js

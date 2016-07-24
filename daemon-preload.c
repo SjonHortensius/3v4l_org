@@ -2,6 +2,7 @@
 #include <dlfcn.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <bits/time.h>
 #include <sys/timeb.h>
 #include <stdio.h>
 
@@ -75,7 +76,7 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 
 	int r = org_clock_gettime(clk_id, tp);
 
-	if (0 != r)
+	if (0 != r || (CLOCK_REALTIME != clk_id && CLOCK_REALTIME_COARSE != clk_id))
 		return r;
 
 	tp->tv_sec -= diff.tv_sec;

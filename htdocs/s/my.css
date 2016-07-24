@@ -628,3 +628,13 @@ body.last td:last-child
 	text-overflow: ellipsis;
 	text-align: left;
 }
+
+/* mobile specific */
+@media (max-width: 600px)
+{
+	#options:not(:empty){	margin-top: 0; }
+	#previewForm{			display: none; }
+	#uvTab{					display: none; }
+	header span{			display: none; }
+	body.index .column li{	margin-bottom: 1em; }
+}

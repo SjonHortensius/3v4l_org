@@ -10,7 +10,11 @@
 
 	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
 {if (Basic::$config->PRODUCTION_MODE)}
-	<link rel="stylesheet" href="/s/c.css"/>
+	{if ("index" == Basic::$userinput['action'])}
+		<style>{print file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css');}</style>
+	{:}
+		<link rel="stylesheet" href="/s/c.css"/>
+	{/}
 {:}
 	<link rel="stylesheet" href="/s/my.css"/>
 	<link rel="stylesheet" href="/ext/glyphicons-halflings.css"/>

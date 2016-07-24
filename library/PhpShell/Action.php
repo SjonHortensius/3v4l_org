@@ -55,6 +55,9 @@ class PhpShell_Action extends Basic_Action
 				Basic::$log->start(get_class(Basic::$action) .'::init');
 		}
 
+		if ($_GET['resetOpcache'] == sha1_file(APPLICATION_PATH .'/htdocs/index.php'))
+			die(print_r(opcache_get_status(false)+['RESET' => opcache_reset()]));
+
 		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'application/json';
 		elseif ('text/plain' == $_SERVER['HTTP_ACCEPT'])
@@ -62,7 +65,7 @@ class PhpShell_Action extends Basic_Action
 
 		// Since we resolve everything to 'script'; prevent random strings in bodyClass
 		if (! Basic::$action instanceof PhpShell_Action_Script)
-			$this->bodyClass .= ' '.Basic::$userinput['action'];
+			$this->bodyClass = trim($this->bodyClass .' '.Basic::$userinput['action']);
 
 		try
 		{
