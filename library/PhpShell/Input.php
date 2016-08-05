@@ -112,8 +112,11 @@ class PhpShell_Input extends PhpShell_Entity
 		if (Basic::$config->PRODUCTION_MODE && is_writable($cachePath))
 			unlink($cachePath);
 
-		if (0 == Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0])
-			Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
+		if (Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0] > 0)
+			return false;
+
+		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
+		Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
 
 		$this->waitUntilNoLonger('new');
 

@@ -35,6 +35,7 @@ type Input struct {
 	created      time.Time
 	run          int
 	runArchived  bool
+	lastSubmit   time.Time
 }
 
 type Output struct {
@@ -212,11 +213,15 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
 
 	// Perform date fixation
-	if this.created.Before(time.Date(2012, time.April, 18, 01, 17, 44, 0, time.UTC)) {
-		fmt.Printf("Warning; NOT fixating time on %s to %d\n", this.short, this.created.Unix());
-	} else {
+	if this.lastSubmit.IsZero() {
+		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit); err != nil {
+			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short);
+		}
+	}
+
+	if !this.lastSubmit.IsZero() {
 		cmd.Env = append(cmd.Env, []string{
-			"TIME="+ strconv.FormatInt(this.created.Unix(), 10),
+			"TIME="+ strconv.FormatInt(this.lastSubmit.Unix(), 10),
 			"LD_PRELOAD=/usr/bin/daemon-preload.so",
 		}...)
 	}

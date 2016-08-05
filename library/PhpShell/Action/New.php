@@ -106,8 +106,6 @@ class PhpShell_Action_New extends PhpShell_Action
 			]);
 		}
 
-		PhpShell_Submit::create(['input' => $input->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
-
 		if (!isset($version))
 		{
 			usleep(250 * 1000);
