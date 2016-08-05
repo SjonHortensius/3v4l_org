@@ -16,6 +16,11 @@ class PhpShell_Action_Last extends PhpShell_Action
 	{
 		if ($_GET['draft']==1)
 			$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'NOT "runQuick" ISNULL', [], ['id' => false]);
+		elseif ($_GET['mine']==1)
+		{
+			$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0 AND submit.ip = ?', [$_SERVER['REMOTE_ADDR']], ['id' => false]);
+			$this->entries->addJoin('submit', "submit.input = input.id");
+		}
 		else
 			$this->entries = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0 AND "runQuick" ISNULL', [], ['id' => false]);
 
