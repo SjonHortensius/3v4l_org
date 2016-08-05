@@ -1,0 +1,3 @@
+[submodule "htdocs/ext/vanilla-js-tools"]
+	path = htdocs/ext/vanilla-js-tools
+	url = git@github.com:SjonHortensius/vanilla-js-tools

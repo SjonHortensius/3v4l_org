@@ -97,6 +97,8 @@ var evalOrg = {};
 		textarea.style.display = 'none';
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.3/min/')
+		// Use a shim to keep ff happy
+		ace.config.set('workerPath', '/s/');
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
@@ -112,7 +114,8 @@ var evalOrg = {};
 		}.bind(this));
 
 		this.editor.on('change', function(){
-			$('input[type=submit]').removeAttribute('disabled');
+			if ($('input[type=submit]'))
+				$('input[type=submit]').removeAttribute('disabled');
 		});
 
 		if ($('#archived_1'))
