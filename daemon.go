@@ -436,6 +436,14 @@ func batchSingleFix() {
 			exitError("doBatch: error fetching work: %s", err)
 		}
 
+		minCreated := time.Time{}
+		if err := db.QueryRow(`SELECT MIN(created) FROM result WHERE input = $1`, input.id).Scan(&minCreated); err == nil {
+			if (minCreated.Before(time.Now().Add(-time.Hour*24*31))) {
+				stats.Lock(); stats.c["singleFixSkip"]++; stats.Unlock()
+				continue
+			}
+		}
+
 		_batchResetHard(input)
 	}
 
