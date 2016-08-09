@@ -90,8 +90,8 @@
 	{foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
 		{if (empty($this->name)) continue;}
 
-		{if (isset($this->showTab[ $this->link ]) && false == $this->showTab[ $this->link ])}
-			<li class="disabled" title="not available"><a>
+		{if (!$this->showTab[ $this->link ])}
+			<li class="disabled" title="not available"><a id="{link}">
 		{:}
 			{if ($this->link == Basic::$userinput['tab'])}
 				<li itemprop="articleSection" class="active">
@@ -99,7 +99,7 @@
 				<li>
 			{/}
 
-			<a href="/{input->short}{if ($this->link != 'output')}/{link}{/}#tabs">
+			<a href="/{input->short}{if ($this->link != 'output')}/{link}{/}#output">
 		{/}
 
 			{name}</a>
@@ -109,6 +109,7 @@
 	</ul>
 
 	<div id="tab" itemprop="articleBody">
+		<a id="output"></a>
 		{$this->show('script/'.Basic::$userinput['tab']);}
 	</div>
 </div>

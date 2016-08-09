@@ -237,14 +237,14 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		return Basic::$database->query("
 			WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
-			  SELECT id, r.operation, link, name, parent
-			  FROM operations o
-			  INNER JOIN \"references\" r ON r.operation = o.operation AND (o.operand = r.operand OR r.operand IS NULL)
-			  WHERE input = ?
-			  UNION ALL
-			  SELECT C.id, C.operation, C.link, C.name, C.parent
-			  FROM recRefs P
-			  INNER JOIN \"references\" C on P.id = C.parent
+				SELECT id, r.operation, link, name, parent
+				FROM operations o
+				INNER JOIN \"references\" r ON r.operation = o.operation AND (o.operand = r.operand OR r.operand IS NULL)
+				WHERE input = ?
+				UNION ALL
+				SELECT C.id, C.operation, C.link, C.name, C.parent
+				FROM recRefs P
+				INNER JOIN \"references\" C on P.id = C.parent
 			)
 			SELECT link, name FROM recRefs;", [$this->id]);
 	}

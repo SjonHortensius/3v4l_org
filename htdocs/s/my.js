@@ -168,6 +168,23 @@ var evalOrg = {};
 		$$('dt').forEach(function(el){
 			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
 		});
+
+		var hasOverflow = false;
+		$$('dd').forEach(function(dd){
+			hasOverflow = hasOverflow || dd.scrollHeight>dd.clientHeight;
+			hasOverflow = hasOverflow || dd.scrollWidth>dd.clientWidth;
+		});
+
+		if (hasOverflow)
+		{
+			var a = document.createElement('a');
+			a.setAttribute('id', 'expand');
+			a.addEventListener('click', outputExpand);
+			var i = document.createElement('i');
+			i.classList.add('icon-resize-full', 'expand');
+			a.appendChild(i);
+			$('div#tab').insertBefore(a, $('div#tab').firstChild);
+		}
 /*
 		$$('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
@@ -176,6 +193,29 @@ var evalOrg = {};
 			});
 		});
 */	};
+
+	var outputExpand = function(e)
+	{
+		var i = $('a#expand i'), doExpand;
+
+		if (i.classList.contains('icon-resize-full'))
+		{
+			doExpand = true;
+			i.classList.remove('icon-resize-full');
+			i.classList.add('icon-resize-small')
+		} else {
+			doExpand = false;
+			i.classList.remove('icon-resize-small');
+			i.classList.add('icon-resize-full')
+		}
+
+		$$('dd').forEach(function(dd){
+			if (doExpand)
+				dd.style.maxHeight = '50em';
+			else
+				dd.removeAttribute('style');
+		});
+	};
 
 	this.enablePreview = function()
 	{

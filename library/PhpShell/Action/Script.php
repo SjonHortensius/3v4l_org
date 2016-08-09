@@ -93,15 +93,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		$this->code = $this->input->getCode();
 
-		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || mt_rand(0,9)<1))
+		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || Basic::$config->PRODUCTIOMODE && mt_rand(0,9)<1))
 			$this->input->updateOperations();
 
-		$this->showTab = [
-			'vld' =>		isset($this->input->operationCount) && $this->input->operationCount>0,
-			'refs' =>		!empty(iterator_to_array($this->input->getRefs())),
-			'segfault' =>	!empty(iterator_to_array($this->input->getSegfault())),
-			'bytecode' =>	!empty(iterator_to_array($this->input->getBytecode())),
-		];
+		$this->showTab = array_fill_keys(array_keys($this->_userinputConfig['tab']['values']), true);
+		$this->showTab['vld'] = (isset($this->input->operationCount) && $this->input->operationCount > 0);
+		$this->showTab['segfault'] = (count($this->input->getSegfault()) > 0);
+		$this->showTab['bytecode'] = (count($this->input->getBytecode()) > 0);
+		unset($this->showTab['hhvm']);
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);

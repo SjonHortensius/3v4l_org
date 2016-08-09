@@ -8,12 +8,13 @@
 	{/}
 
 	{if (isset($this->input->title))}
-		"title":"{input->title}",
+		"title": "{input->title}",
 	{/}
-	"created":"{print substr($this->input->created, 0, 19);}",
+	"created": "{print substr($this->input->created, 0, 19);}",
 	"state": "{input->state}",
 	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done', 'busy')));},
-	"code": {print json_encode(Basic::$action->code);}
+	"code": {print json_encode(Basic::$action->code);},
+	"tabs": {print json_encode($this->showTab);}
 },
 
 {$this->show('script/'.Basic::$userinput['tab']);}
