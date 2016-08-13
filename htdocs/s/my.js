@@ -85,7 +85,7 @@ var evalOrg = {};
 		textarea.value = code.textContent;
 
 		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
-		if ("ontouchstart" in window)
+		if (document.body.classList.contains('touch'))
 		{
 			code.style.display = 'none';
 			// remove display=none, shows textarea
@@ -175,7 +175,7 @@ var evalOrg = {};
 			hasOverflow = hasOverflow || dd.scrollWidth>dd.clientWidth;
 		});
 
-		if (hasOverflow)
+		if (!document.body.classList.contains('touch') && hasOverflow)
 		{
 			var a = document.createElement('a');
 			a.setAttribute('id', 'expand');
@@ -546,8 +546,9 @@ var evalOrg = {};
 	};
 }).apply(evalOrg);
 
-window.addEventListener('load', function(){ evalOrg.initialize(); });
 // Possibility to apply css before onload gets fired (which is after parsing ace.js)
 document.body.classList.add('js');
 if ("ontouchstart" in window)
 	document.body.classList.add('touch');
+
+window.addEventListener('load', function(){ evalOrg.initialize(); });
