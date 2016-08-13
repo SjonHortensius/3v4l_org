@@ -179,6 +179,7 @@ var evalOrg = {};
 		{
 			var a = document.createElement('a');
 			a.setAttribute('id', 'expand');
+			a.setAttribute('title', 'expand output');
 			a.addEventListener('click', outputExpand);
 			var i = document.createElement('i');
 			i.classList.add('icon-resize-full', 'expand');

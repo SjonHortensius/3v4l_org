@@ -155,9 +155,11 @@ ul#tabs + div
 	border: 1px solid #ddd;
 }
 
-#tab a > i
+#tab a#expand
 {
 	float: right;
+	cursor: pointer;
+	padding: 5px;
 }
 
 code,
@@ -268,7 +270,7 @@ dt
 	max-width: 45em;
 }
 
-dt[id], a > i
+dt[id]
 {
 	cursor: pointer;
 }
