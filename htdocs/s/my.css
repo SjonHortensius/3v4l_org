@@ -176,6 +176,7 @@ body.touch textarea
 	overflow: auto;
 	font-family: monospace;
 	font-size: 13px;
+	resize: vertical;
 }
 
 body.touch dd

@@ -13,6 +13,7 @@
 			<th>created</th>
 			<th># runs</th>
 			<th># operations</th>
+			<th>operations</th>
 		</tr>
 	</thead>
 
@@ -27,6 +28,7 @@
 			<td>{print substr($this->result->created, 0, 19);}</td>
 			<td>{result->run}</td>
 			<td>{result->operationCount}</td>
+			<td>{result->listOperations()}</td>
 		</tr>
 		{/}
 	</tbody>
