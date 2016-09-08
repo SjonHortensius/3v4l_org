@@ -68,6 +68,10 @@ var evalOrg = {};
 					$('select#'+p[0]).value = p[1];
 			});
 		}
+
+		$$('.alert').forEach(function (el){
+			el.addEventListener('touchstart', function(e){ el.remove(); });
+		});
 	};
 
 	this.richEditor = function()
@@ -197,31 +201,15 @@ var evalOrg = {};
 
 	var outputExpand = function(e)
 	{
-		var i = $('a#expand i'), doExpand;
-
-		if (i.classList.contains('icon-resize-full'))
-		{
-			doExpand = true;
-			i.classList.remove('icon-resize-full');
-			i.classList.add('icon-resize-small')
-		} else {
-			doExpand = false;
-			i.classList.remove('icon-resize-small');
-			i.classList.add('icon-resize-full')
-		}
-
-		$$('dd').forEach(function(dd){
-			if (doExpand)
-				dd.style.maxHeight = '50em';
-			else
-				dd.removeAttribute('style');
-		});
+		$('dl').classList.toggle('expand');
+		$('a#expand i').classList.toggle('icon-resize-full');
+		$('a#expand i').classList.toggle('icon-resize-small');
 	};
 
 	this.enablePreview = function()
 	{
-		if (!$('div #version') || !$('input[type=submit]'))
-			return;
+		if (!$('input[type=submit]'))
+			return $('div #version').parentNode.remove();
 
 		var p = document.createElement('form');
 		p.setAttribute('id', 'previewForm');

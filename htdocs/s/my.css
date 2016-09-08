@@ -205,7 +205,6 @@ body.index textarea + code:empty
 	margin-top: -1.5em;
 	border-radius: 0 0 4px 4px;
 	border: 1px solid #ddd;
-	border-bottom-color: top;
 }
 
 #options input[type=checkbox] + label
@@ -308,8 +307,14 @@ dd:hover,
 dt:target + dd,
 dd:only-of-type
 {
+	/* this is a soft-expand */
 	max-height: 50em;
 	transition: max-height 0.3s ease-in;
+}
+
+dl.expand dd
+{
+	max-height: 100%;
 }
 
 table
@@ -369,10 +374,13 @@ input[type=submit]
 
 input[type=submit]:not([disabled])
 {
-	background: linear-gradient(180deg, #08C, #05C);
-	background-color: #0074CC;
-	background-repeat: repeat-x;
+	background: linear-gradient(180deg, #08C, #05C) #0074CC repeat-x;
 	color: white;
+	cursor: pointer;
+}
+
+button
+{
 	cursor: pointer;
 }
 
@@ -415,9 +423,7 @@ input.busy
 
 #tabs.busy li.active a
 {
-	background-image: url(/s/loading.gif);
-	background-repeat: no-repeat;
-	background-position: right 10px center;
+	background: url(/s/loading.gif) right 10px center no-repeat;
 	padding-right: 35px;
 }
 
@@ -455,14 +461,14 @@ div.column
 {
 	border: 1px solid rgb(255, 255, 255);
 	border-right-width: 0;
-	border-radius: 4px 0px 0px 4px;
-	box-shadow: rgba(255, 255, 255, 0.247059) 1px 1px 1px inset, rgba(0, 0, 0, 0.498039) 0px 1px 2px;
+	border-radius: 4px 0 0 4px;
+	box-shadow: rgba(255, 255, 255, 0.247059) 1px 1px 1px inset, rgba(0, 0, 0, 0.498039) 0 1px 2px;
 	position: fixed;
-	right: 0px;
+	right: 0;
 	top: 50%;
 	z-index: 9999;
 	margin-top: -86px;
-	background: #cc6d00 url(/ext/uvBg.png) 50% 0px no-repeat;
+	background: #cc6d00 url(/ext/uvBg.png) 50% 0 no-repeat;
 }
 
 #uvTab a
