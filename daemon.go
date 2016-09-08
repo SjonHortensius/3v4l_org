@@ -421,6 +421,8 @@ func batchScheduleNewVersions(target *Version) {
 }
 
 func batchSingleFix() {
+	return
+
 	rs, err := db.Query(`
 		SELECT id, short, created, "runArchived"
 		FROM input

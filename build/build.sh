@@ -5,7 +5,7 @@ cd `dirname $0`/in/
 version=$1
 
 ISTEMP=0
-[[ $version == *a* ]] && ISTEMP=1
+[[ $version == *a* || $version == *RC* ]] && ISTEMP=1
 
 echo -ne "Downloading...\r"
 [[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl3.php.net/distributions/php-$version.tar.bz2
