@@ -43,6 +43,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
+	/** @return self */
 	public static function create(array $data = array())
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))

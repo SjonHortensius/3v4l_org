@@ -46,7 +46,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			foreach (PhpShell_Operation::find()->getCount('operation') as $op => $count)
 				$opCount[$op] = $op .' ('. number_format($count) .' occurrences)';
 			return $opCount;
-		}, 86400);
+		}, (86400/3*2));
 
 		$this->haveOperand = Basic::$cache->get(__CLASS__.'::haveOperand', function(){
 			$ops = [];
