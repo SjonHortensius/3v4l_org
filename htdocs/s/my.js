@@ -94,7 +94,6 @@ var evalOrg = {};
 			code.style.display = 'none';
 			// remove display=none, shows textarea
 			textarea.removeAttribute('style');
-			$('input[type=submit]').removeAttribute('disabled');
 			return;
 		}
 
@@ -136,7 +135,7 @@ var evalOrg = {};
 		this.richEditor();
 		this.enablePreview();
 
-		if ($('input[type=submit].busy'))
+		if ($('#tabs.busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
 		document.body.addEventListener('keydown', function(e){
@@ -496,6 +495,11 @@ var evalOrg = {};
 
 		if ($('svg'))
 			this.handleTagcloud();
+		else
+			this.localTime(function(el, d){
+				function pad(d){ return ('0'+d).slice(-2); };
+				el.innerHTML = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+			});
 	};
 
 	this.handleBughunt = function()
