@@ -1,4 +1,4 @@
 {$r = $this->input->getVld();}
-{$vld = $r->getSingle()->output->getRaw($this->input, 'vld');}
+{$this->vld = $r->getSingle()->output->getRaw($this->input, 'vld');}
 
-"vld": {print json_encode($vld);}
+"vld": {vld}

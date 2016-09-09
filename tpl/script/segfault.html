@@ -2,10 +2,7 @@
 
 {$output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
 {$banner = '*** Segmentation fault';}
-{$offset = strrpos($output, $banner) + strlen($banner);}
-{$output = substr($output, $offset);}
+{$offset = strpos($output, $banner) + strlen($banner);}
+{$this->output = substr($output, $offset);}
 
-{$output = str_replace('Register dump:', '<h2>Register dump:</h2>', $output);}
-{$output = str_replace('Backtrace:', '<h2>Backtrace:</h2>', $output);}
-
-<pre>{print $output;}</pre>
+<pre>{output}</pre>

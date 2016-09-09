@@ -1,8 +1,8 @@
 {$r = $this->input->getSegfault();}
 
-{$output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
+{$this->output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
 {$banner = '*** Segmentation fault';}
-{$offset = strrpos($output, $banner) + strlen($banner);}
-{$output = substr($output, $offset);}
+{$offset = strrpos($this->output, $banner) + strlen($banner);}
+{$this->output = substr($this->output, $offset);}
 
-"segfault": {print json_encode($output);}
+"segfault": {output}

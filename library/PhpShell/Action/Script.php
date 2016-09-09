@@ -30,7 +30,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 			]
 		],
 	);
-	public $code;
 	public $input;
 	public $showTab = [];
 	public $bodyClass = 'script';
@@ -90,8 +89,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 		// Attempt to retrigger the daemon
 		if ($this->input->state == 'new')
 			$this->input->trigger();
-
-		$this->code = $this->input->getCode();
 
 		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || Basic::$config->PRODUCTIOMODE && mt_rand(0,9)<1))
 			$this->input->updateOperations();

@@ -1,20 +1,20 @@
 "script": {
 	{if (isset($this->input->source))}
-		"source": "{input->source->short}",
+		"source": {input->source->short},
 	{/}
 
 	{if (isset($this->input->user))}
-		"author": "{print json_encode($this->input->user->name);}",
+		"author": {input->user->name),
 	{/}
 
 	{if (isset($this->input->title))}
-		"title": "{input->title}",
+		"title": {input->title},
 	{/}
-	"created": "{print substr($this->input->created, 0, 19);}",
-	"state": "{input->state}",
+	"created": {input->getCreatedUtc()},
+	"state": {input->state},
 	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done', 'busy')));},
-	"code": {print json_encode(Basic::$action->code);},
-	"tabs": {print json_encode($this->showTab);}
+	"code": {input->getCode()},
+	"tabs": {showTab}
 },
 
 {$this->show('script/'.Basic::$userinput['tab']);}
