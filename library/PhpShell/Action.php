@@ -83,8 +83,8 @@ class PhpShell_Action extends Basic_Action
 
 	protected function _handleLastModified()
 	{
-		if (isset($_SESSION['userId']))
-			return false;
+		if (isset($_SESSION['userId']) || 'text/html' != $this->contentType)
+			$this->_cacheLength = 0;
 
 		parent::_handleLastModified();
 	}

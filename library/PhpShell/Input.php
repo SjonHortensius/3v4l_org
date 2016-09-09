@@ -38,13 +38,14 @@ class PhpShell_Input extends PhpShell_Entity
 		return gmp_strval(gmp_init(sha1($code), 16), 58);
 	}
 
+	/** @return self */
 	public static function byHash($hash)
 	{
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
 
 	/** @return self */
-	public static function create(array $data = array())
+	public static function create(array $data = [])
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service', [], 402);
@@ -131,16 +132,18 @@ class PhpShell_Input extends PhpShell_Entity
 		{
 			usleep(100 * 1000);
 
-			$input = PhpShell_Input::find("id = ?", [$this->id])->getSingle();
-			foreach ($input as $k => $v)
-				$this->$k = $v;
+			$this->removeCached();
+			$input = PhpShell_Input::get($this->id);
 		}
-		while (++$i < 15 && $this->state == $state);
+		while (++$i < 15 && $input->state == $state);
+
+		$this->state = $input->state;
+		$this->run = $input->run;
 	}
 
 	public function getRfcOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', array($this->id, $this->run), ['version.released' => false]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run], ['version.released' => false]);
 		$results->addJoin('output', "output.id = result.output");
 		$results->addJoin('version', "version.id = result.version");
 
@@ -149,7 +152,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', array($this->id, $this->run), ['version.order' => true]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run], ['version.order' => true]);
 		$results->addJoin('output', "output.id = result.output");
 		$results->addJoin('version', "version.id = result.version");
 
