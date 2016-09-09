@@ -9,7 +9,7 @@
 	<form method="post" action="/new" id="newForm">
 		<div>
 			<input type="text" name="title" id="title" size="48" maxlength="64" value="{input->title}" placeholder="Untitled" />
-			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc('r')}</time>
+			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc()}</time>
 		</div>
 
 		<div>

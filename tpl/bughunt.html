@@ -25,7 +25,7 @@
 			<td>
 				<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
 			</td>
-			<td>{print substr($this->result->created, 0, 19);}</td>
+			<td><time datetime="{result->getCreatedUtc()}">{result->getCreatedUtc()}</time></td>
 			<td>{result->run}</td>
 			<td>{result->operationCount}</td>
 			<td>{result->listOperations()}</td>

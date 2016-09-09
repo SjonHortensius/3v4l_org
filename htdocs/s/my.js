@@ -1,4 +1,4 @@
-if ("undefined" == typeof ga)
+if ('undefined' == typeof ga)
 {
 	(function(i,s,o,g,r,a,m){
 		i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -14,7 +14,7 @@ NodeList.prototype.forEach =
  HTMLCollection.prototype.forEach =
  DOMTokenList.prototype.forEach = function (cb){
 	Array.prototype.forEach.call(this, cb);
-}
+};
 
 HTMLSelectElement.prototype.getSelected = function(){
 	var s = [];
@@ -23,11 +23,11 @@ HTMLSelectElement.prototype.getSelected = function(){
 			s.push(this[i].value);
 	}
 	return s;
-}
+};
 
 String.prototype.ucFirst = function(){
 	return this.charAt(0).toUpperCase() + this.slice(1);
-}
+};
 
 function $(s){
 	return document.querySelector(s);
@@ -39,12 +39,12 @@ function $$(s){
 var evalOrg = {};
 (function()
 {
-	"use strict"
+	"use strict";
 
 	var self = this,
-		editor,
 		refreshTimer,
 		refreshCount = 0;
+	this.editor = undefined;
 
 	this.initialize = function()
 	{
@@ -70,7 +70,7 @@ var evalOrg = {};
 		}
 
 		$$('.alert').forEach(function (el){
-			el.addEventListener('touchstart', function(e){ el.remove(); });
+			el.addEventListener('touchstart', function(){ el.remove(); });
 		});
 	};
 
@@ -99,7 +99,7 @@ var evalOrg = {};
 
 		textarea.style.display = 'none';
 
-		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.3/min/')
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.3/min/');
 		// Use a shim to keep ff happy
 		ace.config.set('workerPath', '/s/');
 		this.editor = ace.edit(code);
@@ -112,7 +112,7 @@ var evalOrg = {};
 		if ($('input[type=submit]'))
 			$('input[type=submit]').setAttribute('disabled', 'disabled');
 
-		$('#newForm').addEventListener('submit', function(e){
+		$('#newForm').addEventListener('submit', function(){
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
@@ -169,7 +169,7 @@ var evalOrg = {};
 	this.handleOutput = function()
 	{
 		$$('dt').forEach(function(el){
-			el.addEventListener('click', function(e){ window.location.hash = '#'+ el.id; });
+			el.addEventListener('click', function(){ window.location.hash = '#'+ el.id; });
 		});
 
 		var hasOverflow = false;
@@ -198,7 +198,7 @@ var evalOrg = {};
 		});
 */	};
 
-	var outputExpand = function(e)
+	var outputExpand = function()
 	{
 		$('dl').classList.toggle('expand');
 		$('a#expand i').classList.toggle('icon-resize-full');
@@ -235,9 +235,9 @@ var evalOrg = {};
 		window.location.hash = '#version='+ $('#version').value;
 
 		var xhr = new XMLHttpRequest();
-		xhr.submittedData
-		xhr.onload = _preview;
+		xhr.onload = _refreshOutput;
 		xhr.open('post', '/new');
+		xhr.setRequestHeader('Accept', 'application/json');
 
 		var data = new FormData($('#previewForm'));
 		if (this.editor)
@@ -249,41 +249,26 @@ var evalOrg = {};
 		return false;
 	};
 
-	var _preview = function()
-	{
-		$$('#newForm ~ div, #newForm ~ ul').forEach(function(div){
-			div.parentNode.removeChild(div);
-		});
-
-		//fixme - this is functional but it all sucks
-
-		var t = this.responseText.match(/<ul id="tabs"[^>]*>([\s\S]*?)<\/ul>/);
-		var r = this.responseText.match(/<div id="tab"[^>]*>([\s\S]*?)<\/div>/);
-		if (!t || !r)
-		{
-			t = ['', '<li class="active"><a>Error</a></li>'];
-			r = this.responseText.match(/<body[^>]*>([\s\S]*?)<\/body>/);
-		}
-
-		if (!r)
-			return;
-
-		var ul = document.createElement('ul'); ul.setAttribute('id', 'tabs');
-		var tab = document.createElement('div'); tab.setAttribute('id', 'tab');
-
-		ul.innerHTML = t[1];
-		tab.innerHTML = r[1];
-		$('#newForm').parentNode.insertBefore(tab, $('#newForm').nextSibling);
-		$('#newForm').parentNode.insertBefore(ul, tab);
-	};
-
 	this.refresh = function()
 	{
+		if (!$('#tabs.busy') || refreshCount > 42)
+		{
+			window.clearInterval(refreshTimer);
+			return $('#tabs').classList.remove('busy');
+		}
+
 		refreshCount++;
 
 		var xhr = new XMLHttpRequest();
 		xhr.onload = _refresh;
 		xhr.open('get', window.location.pathname);
+
+		if (document.body.classList.contains('output'))
+		{
+			xhr.setRequestHeader('Accept', 'application/json');
+			xhr.onload = _refreshOutput;
+		}
+
 		xhr.send();
 	};
 
@@ -293,49 +278,89 @@ var evalOrg = {};
 		var t = this.responseText.match(/<ul id="tabs"[^>]*>([\s\S]*?)<\/ul>/);
 		var r = this.responseText.match(/<div id="tab"[^>]*>([\s\S]*?)<\/div>/);
 		if (!t || !r)
-			window.location.reload();
+			return window.setTimeout(window.location.reload.bind(window.location), 200);
 
-		$('#tabs').innerHTML = t[1];
+		// We need input.state on #tabs, so use outer
+		$('#tabs').outerHTML = t[0];
 
-		if (document.body.classList.contains('output') && window.DOMParser)
-			self._refreshOutput(tab, r[1]);
-		else
-		{
-			tab.innerHTML = r[1];
+		tab.innerHTML = r[1];
 
-			document.body.classList.forEach(function(c){
-				if ('function' == typeof this[ 'handle'+c.ucFirst() ])
-					this[ 'handle'+c.ucFirst() ]();
-			}.bind(self));
-		}
-
-		if (!this.responseText.match(/class="busy"/) || refreshCount > 42)
-		{
-			clearInterval(refreshTimer);
-			$('input[type=submit].busy').classList.remove('busy');
-			$('#tabs.busy').classList.remove('busy');
-		}
+		document.body.classList.forEach(function(c){
+			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
+				this[ 'handle'+c.ucFirst() ]();
+		}.bind(self));
 	};
 
-	this._refreshOutput = function(tab, html)
+	var _refreshOutput = function()
 	{
-		var p = new DOMParser, doc = p.parseFromString(html, 'text/html'),
-			dl = tab.getElementsByTagName('dl')[0],
-			o = dl.getElementsByTagName('dt'),
-			n = doc.getElementsByTagName('dt');
+		try
+		{
+			var r = JSON.parse(this.responseText);
+		}
+		catch (e)
+		{
+			return window.setTimeout(window.location.reload.bind(window.location), 200);
+		}
 
-		n.forEach(function(ndt, i){
-			if (o[i] && ndt.textContent == o[i].textContent)
+		if (r.script.state != 'busy')
+			$('#tabs').classList.remove('busy');
+
+		// Update tab enabled/disabled state
+		$$('#tabs li').forEach(function (li) {
+			var a = li.firstChild, tab;
+
+			if (li.classList.contains('disabled'))
+			{
+				tab = a.getAttribute('id');
+
+				if (r.script.tabs[tab])
+				{
+//console.log('enabling', tab);
+					li.classList.remove('disabled');
+					li.removeAttribute('title');
+
+					a.setAttribute('href', '/' + r.script.short + '/' + tab + '#output');
+				}
+			}
+			else
+			{
+				var aParts = a.getAttribute('href').split('/');
+				tab = (2 == aParts.length) ? 'output' : aParts[2].split('#')[0];
+
+				if ('undefined' != typeof r.script.tabs[tab] && !r.script.tabs[tab])
+				{
+//console.log('disabling', tab);
+					li.classList.add('disabled');
+					li.setAttribute('title', 'not available');
+
+					a.removeAttribute('href');
+					a.setAttribute('id', tab);
+				}
+			}
+		});
+
+		var tab = $('#tab'), dl = tab.getElementsByTagName('dl')[0],
+			o = dl.getElementsByTagName('dt');
+
+		r.output.forEach(function (n, i) {
+			var nvText = 'Output for ' + n.versions;
+
+			if (o[i] && o[i].textContent == nvText)
 				return;
 
-			var ndd = document.importNode(ndt.nextSibling, true),
-				ndt = document.importNode(ndt, true);
+			var ndt = document.createElement('dt'),
+				ndd = document.createElement('dd');
 
-			ndt.addEventListener('click', function(e){ window.location.hash = '#'+ ndt.id; });
+			ndt.appendChild(document.createTextNode(nvText));
+			ndt.setAttribute('id', 'v' + n.versions.replace(/,/g, ' ').split(' ').shift().replace(/\./g, ''));
+			ndt.addEventListener('click', function(){ window.location.hash = '#'+ ndt.id; });
 
-			if (o[i] && ndd.textContent == o[i].nextSibling.textContent)
+			// json output is also html encoded
+			ndd.innerHTML = n.output;
+
+			if (o[i] && n.output == o[i].nextSibling.innerHTML)
 			{
-//console.log('update', o[i].textContent, 'to', ndt.textContent);
+//console.log('update', o[i].textContent, 'to', nvText);
 				dl.replaceChild(ndt, o[i]);
 			}
 			else
@@ -353,6 +378,13 @@ var evalOrg = {};
 				}
 			}
 		});
+
+		// When using preview on normal output we need to remove existing results
+		while (o.length > r.output.length)
+		{
+			o[r.output.length].nextSibling.remove();
+			o[r.output.length].remove();
+		}
 	};
 
 	var perfAddHeader = function(el, name, sum)
@@ -421,7 +453,7 @@ var evalOrg = {};
 	this.handleLast = function()
 	{
 		this.localTime(function(el, d){
-			function pad(d){ return ('0'+d).slice(-2); };
+			function pad(d){ return ('0'+d).slice(-2); }
 			el.innerHTML = pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 		});
 	};
@@ -429,7 +461,7 @@ var evalOrg = {};
 	this.handlePerf = function()
 	{
 		if (!perfAggregates)
-			return false
+			return false;
 
 		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
 
@@ -497,24 +529,30 @@ var evalOrg = {};
 			this.handleTagcloud();
 		else
 			this.localTime(function(el, d){
-				function pad(d){ return ('0'+d).slice(-2); };
+				function pad(d){ return ('0'+d).slice(-2); }
 				el.innerHTML = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 	};
 
 	this.handleBughunt = function()
 	{
-		if (!$('#bughuntForm'))
-			return false;
+		if ($('#bughuntForm'))
+		{
+			$('#bughuntForm').addEventListener('submit', function (e) {
+				e.preventDefault();
 
-		$('#bughuntForm').addEventListener('submit', function(e){
-			e.preventDefault();
-
-			var url = '/bughunt/'
-				+ $('#versions').getSelected().join('+')
-				+ '/'+ $('#controls').getSelected().join('+');
-			window.location.href = url;
-		});
+				window.location.href = '/bughunt/'
+					+ $('#versions').getSelected().join('+')
+					+ '/' + $('#controls').getSelected().join('+');
+			});
+		}
+		else
+		{
+			this.localTime(function(el, d){
+				function pad(d){ return ('0'+d).slice(-2); }
+				el.innerHTML = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+			});
+		}
 	};
 
 	this.handleTagcloud = function()
@@ -530,17 +568,11 @@ var evalOrg = {};
 			el.parentNode.replaceChild(w, el);
 		});
 	};
-
-	var btcAmountReceived = function()
-	{
-		return 0;
-		// https://blockchain.info/q/getreceivedbyaddress/xyz / 100000000
-	};
 }).apply(evalOrg);
 
 // Possibility to apply css before onload gets fired (which is after parsing ace.js)
 document.body.classList.add('js');
-if ("ontouchstart" in window)
+if ('ontouchstart' in window)
 	document.body.classList.add('touch');
 
 window.addEventListener('load', function(){ evalOrg.initialize(); });
