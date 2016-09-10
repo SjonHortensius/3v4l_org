@@ -382,6 +382,9 @@ input[type=submit]:not([disabled])
 button
 {
 	cursor: pointer;
+	/* for chrome */
+	color: #333;
+	padding: 4px 16px;
 }
 
 select:disabled

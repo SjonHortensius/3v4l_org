@@ -50,7 +50,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 		$this->haveOperand = Basic::$cache->get(__CLASS__.'::haveOperand', function(){
 			$ops = [];
-			foreach (Basic::$database->query("SELECT operation FROM operations GROUP BY operation HAVING COUNT(DISTINCT operand)>0") as $row)
+			foreach (Basic::$database->query("SELECT DISTINCT operation FROM operations WHERE NOT operand ISNULL") as $row)
 				array_push($ops, $row['operation']);
 			return $ops;
 		}, 86400);

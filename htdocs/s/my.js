@@ -303,7 +303,21 @@ var evalOrg = {};
 			return window.setTimeout(window.location.reload.bind(window.location), 200);
 		}
 
-		if (r.script.state != 'busy')
+		if (!$('#tabs'))
+		{
+			// Used when submitting a preview from a non-script page such as the homepage
+			$$('#newForm ~ div, #newForm ~ ul').forEach(function(div){
+				div.parentNode.removeChild(div);
+			});
+
+			var ul = document.createElement('ul'); ul.setAttribute('id', 'tabs');
+			var tab = document.createElement('div'); tab.setAttribute('id', 'tab');
+			tab.appendChild(document.createElement('dl'));
+
+			$('#newForm').parentNode.insertBefore(tab, $('#newForm').nextSibling);
+			$('#newForm').parentNode.insertBefore(ul, tab);
+		}
+		else if (r.script.state != 'busy')
 			$('#tabs').classList.remove('busy');
 
 		// Update tab enabled/disabled state
