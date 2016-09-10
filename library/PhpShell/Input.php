@@ -258,7 +258,7 @@ class PhpShell_Input extends PhpShell_Entity
 				FROM recRefs P
 				INNER JOIN \"references\" C on P.id = C.parent
 			)
-			SELECT link, name FROM recRefs;", [$this->id]);
+			SELECT link, name FROM recRefs ORDER BY name ASC;", [$this->id]);
 	}
 
 	public function getLastModified()
