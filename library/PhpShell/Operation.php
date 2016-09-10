@@ -8,20 +8,21 @@ class PhpShell_Operation extends PhpShell_Entity
 	];
 	protected static $_numerical = ['count'];
 
-	public static function create(array $data = array())
+	public static function create(array $data = [])
 	{
 		if (isset($data['operand']) && strlen($data['operand']) > 64)
 			return false;
 
-		if (isset($data['operand']))
-			$opMatch = "operand = :operand";
-		else
-			$opMatch = "operand ISNULL";
+		if (!isset($data['count']))
+			$data['count'] = 1;
 
-		# incompatible with parent by design! (no need to return object that is ignored)
-		return Basic::$database->query("WITH upsert AS (UPDATE operations SET count = count + 1 WHERE input = :input AND operation = :operation AND ".$opMatch." RETURNING *)
-			INSERT INTO operations SELECT :input, :operation, :operand, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
+		Basic::$database->query("
+			INSERT INTO operations VALUES (:input, :operation, :operand, :count)
+				ON CONFLICT ON CONSTRAINT \"operations_inputOp\" DO UPDATE
+				SET count = operations.count + 1",
 			$data);
+
+		return self::getStub($data);
 	}
 
 	public static function getTable()

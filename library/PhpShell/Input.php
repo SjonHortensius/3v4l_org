@@ -96,14 +96,22 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->save(['operationCount' => count($operations)]);
 		$vld->output->removeCached();
 
-		foreach ($operations as $match)
-		{
-			PhpShell_Operation::create([
-				'input' => $this,
-				'operation' => $match['op'],
-				'operand' => isset($match['operand']) ? $match['operand'] : null,
-			]);
+		#FIXME check optimization below: select count(*), count(distinct input) from operations; select count(*) from operations where operand IS NULL;
+		#FIXME before optimizing returns: 8,135,002 | 688,416 & 5,743,929
+		#FIXME operations is ~ 390 MB with public.operations_inputOp = 330 MB
+
+		// Operand can be NULL, but it's part of a UNIQUE index which won't work. Fix count manually
+		$ops = [];
+		foreach ($operations as $match) {
+			if (isset($match['operand']))
+				PhpShell_Operation::create(['input' => $this, 'operation' => $match['op'], 'operand' => $match['operand']]);
+			else
+				$ops[$match['op']] = isset($ops[$match['op']]) ? $ops[$match['op']]+1 : 1;
 		}
+
+		// Now manually submit NULL operands with correct count
+		foreach ($ops as $op => $count)
+			PhpShell_Operation::create(['input' => $this, 'operation' => $op, 'operand' => null, 'count' => $count]);
 	}
 
 	public function trigger(PhpShell_Version $version = null)
