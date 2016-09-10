@@ -265,6 +265,7 @@ var evalOrg = {};
 
 		if (document.body.classList.contains('output'))
 		{
+			xhr.open('get', window.location.pathname+'.json');
 			xhr.setRequestHeader('Accept', 'application/json');
 			xhr.onload = _refreshOutput;
 		}

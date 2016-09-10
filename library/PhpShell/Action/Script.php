@@ -42,6 +42,12 @@ class PhpShell_Action_Script extends PhpShell_Action
 		elseif (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
 			$this->bodyClass .= ' '.$GLOBALS['_MULTIVIEW'][1];
 
+		if (false !== strpos($GLOBALS['_MULTIVIEW'][0], '.json'))
+		{
+			$this->contentType = 'application/json';
+			$GLOBALS['_MULTIVIEW'][0] = str_replace('.json', '', $GLOBALS['_MULTIVIEW'][0]);
+		}
+
 		// copied from PhpShell_Action_New::init
 		$this->quickVersionList = Basic::$cache->get('quickVersionList', function(){
 			# exclude all versions that aren't always stored by the daemon
