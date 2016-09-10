@@ -1,8 +1,11 @@
 #!/usr/bin/php
 <?php
 
+if (empty($_SERVER['argv'][1]))
+	die(print_r(array_map('basename', glob(__DIR__.'/library/PhpShell/Action/Cli/*.php'))));
+
 $_SERVER['HTTP_ACCEPT'] = 'text/plain';
-$_SERVER['REQUEST_URI'] = $_SERVER['DOCUMENT_URI'] = $_SERVER['argv'][1];
+$_SERVER['REQUEST_URI'] = $_SERVER['DOCUMENT_URI'] = 'cli_'.$_SERVER['argv'][1];
 $_SERVER['SCRIPT_FILENAME'] = __DIR__.'/htdocs/index.php';
 
 chdir(__DIR__. '/htdocs');

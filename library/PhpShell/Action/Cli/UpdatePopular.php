@@ -1,12 +1,9 @@
 <?php
 
-class PhpShell_Action_CliUpdatePopular extends PhpShell_Action
+class PhpShell_Action_Cli_UpdatePopular extends PhpShell_Action_Cli
 {
 	public function init()
 	{
-		if (php_sapi_name() != 'cli')
-			throw new PhpShell_Action_ImportInput_CliNotDetectedException('This action can only be run from the cli');
-
 		Basic::$config->Template->cachePath = '/tmp/';
 
 		parent::init();
