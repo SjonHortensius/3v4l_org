@@ -9,12 +9,6 @@ abstract class PhpShell_Action_Cli extends PhpShell_Action
 
 		Basic::$config->Template->cachePath = '/tmp/';
 
-		$wasOn = Basic::$config->PRODUCTION_MODE;
-		Basic::$config->PRODUCTION_MODE = false;
-
-		if ($wasOn)
-			Basic::$log->start(get_class(Basic::$action) .'::init');
-
 		parent::init();
 	}
 }

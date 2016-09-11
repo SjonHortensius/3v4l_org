@@ -81,13 +81,24 @@ func (this *Input) setBusy(newRun bool) {
 		incRun = 1
 	}
 
-	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE short = $1`, this.short, incRun); err != nil {
+	if f, err := os.Create("/in/"+ this.short); err != nil {
+		exitError("setBusy: could not write source: %s", err)
+	} else {
+		var raw []byte
+		if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
+			exitError("setBusy: could not retrieve source: %s", err)
+		} else {
+			f.Write(raw)
+		}
+	}
+
+	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE id = $1`, this.id, incRun); err != nil {
 		exitError("Input: failed to update run+state: %s", err)
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		exitError("Input: failed to update run+state; %d rows affected, %s", a, err)
 	}
 
-	if err := db.QueryRow(`SELECT id, run FROM input WHERE short = $1`, this.short).Scan(&this.id, &this.run); err != nil {
+	if err := db.QueryRow(`SELECT run FROM input WHERE short = $1`, this.short).Scan(&this.run); err != nil {
 		exitError("Input: failed to fetch run: %s", err)
 	}
 }
@@ -102,6 +113,10 @@ func (this *Input) setDone() {
 		SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3
 		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state); err != nil {
 		exitError("Input: failed to update: %s", err)
+	}
+
+	if err := os.Remove("/in/"+ this.short); err != nil {
+		fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 	}
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()

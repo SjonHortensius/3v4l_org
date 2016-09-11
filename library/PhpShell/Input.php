@@ -14,7 +14,6 @@ class PhpShell_Input extends PhpShell_Entity
 		137 => 'Process was killed',
 		255 => 'Generic Error',
 	);
-	const PATH  = '/srv/http/3v4l.org/in/';
 	const VLD_MATCH = '~ *(?<line>\d*) *\d+ *[ E]?[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
 
 	public function getCode()
@@ -22,10 +21,11 @@ class PhpShell_Input extends PhpShell_Entity
 		if ($this->state == 'private')
 			throw new PhpShell_Input_PrivateException('This script is marked as private', [], 401);
 
-		if (!is_readable(self::PATH. $this->short))
+		$code = Basic::$database->query("SELECT raw FROM input_src WHERE input = ?", [$this->id])->fetchColumn();
+		if (false === $code)
 			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...', [], 404);
 
-		return file_get_contents(self::PATH. $this->short);
+		return stream_get_contents($code);
 	}
 
 	public static function clean($code)
@@ -62,17 +62,17 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 		while (count($dups) > 0);
 
-		if (file_exists(self::PATH. $short))
-			throw new PhpShell_Input_DuplicateScriptException('Duplicate script, this shouldn\'t happen');
-
-		umask(0022);
-		file_put_contents(self::PATH. $short, $data['code']);
-		unset($data['code']);
-
 		if (isset(Basic::$action->user))
 			$data['user'] = Basic::$action->user;
 
-		$input = parent::create(['short' => $short, 'hash' => $hash] + $data);
+		Basic::$database->beginTransaction();
+		{
+			$code = $data['code']; unset($data['code']);
+			$input = parent::create(['short' => $short, 'hash' => $hash] + $data);
+			PhpShell_InputSource::create(['input' => $input, 'raw' => $code]);
+		}
+		Basic::$database->commit();
+
 		$input->trigger($input->runQuick);
 
 		return $input;
