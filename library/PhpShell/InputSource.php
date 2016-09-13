@@ -8,9 +8,14 @@ class PhpShell_InputSource extends PhpShell_Entity
 
 	public static function create(array $data = [])
 	{
-		Basic::$database->query(
-			"INSERT INTO input_src VALUES(:input, :raw)",
-			$data);
+		$q = Basic::$database->prepare("INSERT INTO input_src VALUES(:input, :raw)");
+
+		$stream = fopen('php://memory','r+');
+		fwrite($stream, $data['raw']);
+		rewind($stream);
+		$data['raw'] = $stream;
+
+		$q->execute($data, ['input' => PDO::PARAM_INT, 'raw' => PDO::PARAM_LOB]);
 
 		return self::getStub($data);
 	}
