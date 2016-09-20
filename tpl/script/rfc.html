@@ -3,12 +3,8 @@
 <dl>
 {foreach ($this->input->getRfcOutput() as $this->result)}
 	{$rfc = null;}
-	{if ($this->result->version->name == 'rfc-func_interfaces'	)}{$rfc = 'functional-interfaces';}{/}
 	{if ($this->result->version->name == 'rfc-typed_properties'	)}{$rfc = 'typed-properties';}{/}
-	{if ($this->result->version->name == 'rfc-short_closures'	)}{$rfc = 'short_closures';}{/}
-	{if ($this->result->version->name == 'rfc-callable_typehint')}{$rfc = null;}{/}
 	{if ($this->result->version->name == 'rfc-lexical-anon'		)}{$rfc = 'lexical-anon';}{/}
-	{if ($this->result->version->name == 'rfc-multi-types'		)}{$rfc = 'union_types';}{/}
 	{if ($this->result->version->name == 'rfc-array_change_keys')}{$rfc = 'array_change_keys';}{/}
 
 	<dt id="{result->version->name}">
@@ -24,12 +20,12 @@
 </dl>
 
 <h3>Archived branches</h3>
-<p>Once feature-branches are merged to php7-master or a released version they are no longer available on this page. You can view them on the <a href="/{input->short}">main output page</a></p>
+<p>Once feature-branches are merged or declined, they are no longer available. Their functionality (when merged) can be viewed from the <a href="/{input->short}">main output page</a></p>
 <ul>
-	<li id="rfc-scalar_type_hints_v5">
-		<b>Scalar type hints v5</b>, <a href="http://wiki.php.net/rfc/scalar_type_hints_v5">rfc</a>. Has been included in php7-20150401
-	</li>
-	<li id="rfc-anonymous_classes">
-		<b>Anonymous classes</b>, <a href="http://wiki.php.net/rfc/anonymous_classes">rfc</a>. Has been included in php7-20150501
-	</li>
+	<li id="rfc-multi-types"><a href="https://wiki.php.net/rfc/union_types">Union Types</a> - declined</li>
+	<li id="rfc-callable_typehint"><a href="https://wiki.php.net/rfc/callable-types">Callable Prototypes</a> - declined</li>
+	<li id="rfc-short_closures"><a href="https://wiki.php.net/rfc/short_closures">Short Closures</a> - declined / withdrawn in favor of <a href="http://wiki.php.net/rfc/arrow_functions">Arrow Functions</a></li>
+	<li id="rfc-func_interfaces"><a href="https://wiki.php.net/rfc/callable-types">Function Interfaces</a> - declined</li>
+	<li id="rfc-scalar_type_hints_v5"><a href="http://wiki.php.net/rfc/scalar_type_hints_v5">Scalar type hints v5</a> - included in php7</li>
+	<li id="rfc-anonymous_classes"><a href="http://wiki.php.net/rfc/anonymous_classes">Anonymous classes</a> - included in php7</li>
 </ul>
