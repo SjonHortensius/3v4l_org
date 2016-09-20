@@ -2,5 +2,8 @@
 
 {$this->raw = $r->getSingle()->output->getRaw($this->input, 'hhvm-bytecode');}
 {$o = strpos($this->raw, "Pseudo-main at "); if (false !== $o) $this->raw = substr($this->raw, $o);}
+
+{$this->version = preg_replace('~^.*hhvm-([0-9.]+) .*$~', '\1', PhpShell_Version::byName('hhvm-bytecode')->command);}
+
 <pre>{raw}</pre>
-<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHVM 3.9.0</p>
+<p>Generated using <a href="http://hhvm.com/">HHVM's DumpByteCode feature</a>, using HHMV {version}</p>
