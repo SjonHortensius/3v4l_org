@@ -1,5 +1,8 @@
 package main
 
+// #include <sys/file.h>
+import "C"
+
 import (
 	"crypto/sha1"
 	"database/sql"
@@ -36,6 +39,7 @@ type Input struct {
 	run          int
 	runArchived  bool
 	lastSubmit   time.Time
+	srcLock      *os.File
 }
 
 type Output struct {
@@ -82,8 +86,13 @@ func (this *Input) setBusy(newRun bool) {
 	}
 
 	if f, err := os.Create("/in/"+ this.short); err != nil {
-		exitError("setBusy: could not write source: %s", err)
+		exitError("setBusy: could not create file: %s", err)
 	} else {
+		this.srcLock = f
+		if lock := C.flock(C.int(this.srcLock.Fd()), C.LOCK_SH); lock < 0 {
+			exitError("setBusy: could not lock: %s", err)
+		}
+
 		var raw []byte
 		if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
 			exitError("setBusy: could not retrieve source: %s", err)
@@ -115,8 +124,12 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
-	if err := os.Remove("/in/"+ this.short); err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
+	defer this.srcLock.Close()
+	C.flock(C.int(this.srcLock.Fd()), C.LOCK_UN)
+	if lock := C.flock(C.int(this.srcLock.Fd()), C.LOCK_EX | C.LOCK_NB); 0 == lock {
+		if err := os.Remove("/in/"+ this.short); err != nil {
+			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
+		}
 	}
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
@@ -441,7 +454,7 @@ func batchSingleFix() {
 	rs, err := db.Query(`
 		SELECT id, short, created, "runArchived"
 		FROM input
-		WHERE id IN (select distinct input from operations where operation in('DO_FCALL', 'INIT_FCALL') and operand in ('date', 'time'))
+		WHERE id IN (SELECT DISTINCT input FROM result_current WHERE "exitCode" > 0 AND "exitCode" < 255)
 		ORDER BY RANDOM()`)
 	if err != nil {
 		exitError("doBatch: error in SELECT query: %s", err)
@@ -451,14 +464,6 @@ func batchSingleFix() {
 		input := &Input{uniqueOutput: map[string]bool{}}
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
 			exitError("doBatch: error fetching work: %s", err)
-		}
-
-		minCreated := time.Time{}
-		if err := db.QueryRow(`SELECT MIN(created) FROM result WHERE input = $1`, input.id).Scan(&minCreated); err == nil {
-			if (minCreated.Before(time.Now().Add(-time.Hour*24*31))) {
-				stats.Lock(); stats.c["singleFixSkip"]++; stats.Unlock()
-				continue
-			}
 		}
 
 		_batchResetHard(input)
