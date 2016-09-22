@@ -673,7 +673,7 @@ body.last td:last-child
 
 @media (max-width: 1000px)
 {
-	input#title { width: 96%; }
+	input#title { width: 96% !important; }
 	form { padding: 0.5em; }
 	ul#tabs + div { padding: 0.5em; }
 }
