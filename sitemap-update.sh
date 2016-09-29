@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e ; cd `dirname $0`/htdocs/
 
-rm sitemap*.*
+rm sitemap*.* ||:
 
-ls /srv/http/3v4l.org/in -l --time-style='+%Y-%m-%d' | while read x x x x x d n
+sudo -u postgres psql phpshell -tc "SELECT short, TO_CHAR(created, 'YYYY-MM-DD') FROM input WHERE created>'1970-01-01'" | while read n x d
 do
 	[[ -z $n ]] && continue
 
