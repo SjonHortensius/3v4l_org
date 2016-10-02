@@ -99,7 +99,7 @@ var evalOrg = {};
 
 		textarea.style.display = 'none';
 
-		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.3/min/');
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.4/min/');
 		// Use a shim to keep ff happy
 		ace.config.set('workerPath', '/s/');
 		this.editor = ace.edit(code);
