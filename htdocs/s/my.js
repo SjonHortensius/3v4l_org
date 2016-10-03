@@ -101,7 +101,7 @@ var evalOrg = {};
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.4/min/');
 		// Use a shim to keep ff happy
-		ace.config.set('workerPath', '/s/');
+		ace.config.set('workerPath', '/ext/');
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);

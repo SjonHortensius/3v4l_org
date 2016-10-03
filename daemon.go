@@ -125,7 +125,6 @@ func (this *Input) setDone() {
 	}
 
 	defer this.srcLock.Close()
-	C.flock(C.int(this.srcLock.Fd()), C.LOCK_UN)
 	if lock := C.flock(C.int(this.srcLock.Fd()), C.LOCK_EX | C.LOCK_NB); 0 == lock {
 		if err := os.Remove("/in/"+ this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
@@ -443,7 +442,9 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
+			input.setBusy(false)
 			input.execute(target, &l)
+			input.setDone()
 		}
 	}
 }
@@ -584,8 +585,8 @@ func background() {
 	}
 
 	go func() {
-		batchSingleFix()
-		batchRefreshRandomScripts()
+//		batchSingleFix()
+//		batchRefreshRandomScripts()
 
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
@@ -662,6 +663,8 @@ func init() {
 		syscall.RLIMIT_FSIZE:  16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:   0,
 		syscall.RLIMIT_NOFILE: 2048,
+		//FIXME https://github.com/facebook/hhvm/issues/7381
+//		syscall.RLIMIT_AS:     512 * 1024 * 1024, // also, causes lots of scripts to 137 ?
 		RLIMIT_NPROC:          64,
 	}
 
