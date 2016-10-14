@@ -31,7 +31,7 @@ _initLib(void)
 
 	// This shouldn't happen
 	if (offset == 0) {
-		diff.tv_sec = 0;
+		diff.tv_sec = 1;
 //fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
 	}
 
@@ -50,11 +50,11 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
 		tp->tv_sec--;
-		tp->tv_usec = tp->tv_usec + 1000*1000 - diff.tv_usec;
+		tp->tv_usec -= 1000*1000 - diff.tv_usec;
 	} else
 		tp->tv_usec -= diff.tv_usec;
 
-//fprintf(stderr, "\n%s using offset: %ld.%ld, returning %ld.%ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp.tv_sec, tp.tv_usec);
+//fprintf(stderr, "\n%s using offset: %ld.%ld, returning %ld.%ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
 
 	return 0;
 }

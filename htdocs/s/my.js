@@ -172,23 +172,7 @@ var evalOrg = {};
 			el.addEventListener('click', function(){ window.location.hash = '#'+ el.id; });
 		});
 
-		var hasOverflow = false;
-		$$('dd').forEach(function(dd){
-			hasOverflow = hasOverflow || dd.scrollHeight>dd.clientHeight;
-			hasOverflow = hasOverflow || dd.scrollWidth>dd.clientWidth;
-		});
-
-		if (!document.body.classList.contains('touch') && hasOverflow)
-		{
-			var a = document.createElement('a');
-			a.setAttribute('id', 'expand');
-			a.setAttribute('title', 'expand output');
-			a.addEventListener('click', outputExpand);
-			var i = document.createElement('i');
-			i.classList.add('icon-resize-full', 'expand');
-			a.appendChild(i);
-			$('div#tab').insertBefore(a, $('div#tab').firstChild);
-		}
+		outputAddExpander();
 /*
 		$$('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
@@ -197,6 +181,30 @@ var evalOrg = {};
 			});
 		});
 */	};
+
+	var outputAddExpander = function()
+	{
+		if (document.body.classList.contains('touch') || $('#expand'))
+			return;
+
+		var hasOverflow = false;
+		$$('dd').forEach(function(dd){
+			hasOverflow = hasOverflow || dd.scrollHeight>dd.clientHeight;
+			hasOverflow = hasOverflow || dd.scrollWidth>dd.clientWidth;
+		});
+
+		if (!hasOverflow)
+			return;
+
+		var a = document.createElement('a');
+		a.setAttribute('id', 'expand');
+		a.setAttribute('title', 'expand output');
+		a.addEventListener('click', outputExpand);
+		var i = document.createElement('i');
+		i.classList.add('icon-resize-full', 'expand');
+		a.appendChild(i);
+		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+	};
 
 	var outputExpand = function()
 	{
@@ -400,6 +408,8 @@ var evalOrg = {};
 			o[r.output.length].nextSibling.remove();
 			o[r.output.length].remove();
 		}
+
+		outputAddExpander();
 	};
 
 	var perfAddHeader = function(el, name, sum)
