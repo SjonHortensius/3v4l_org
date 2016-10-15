@@ -1,6 +1,7 @@
+daemon
+daemon-preload.o
+daemon-preload.so
 cache/*
 htdocs/s/c.*
-build/out/
-build/in/
-build/root/
+build/*/
 .idea/
