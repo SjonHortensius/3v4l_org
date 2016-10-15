@@ -1,8 +1,5 @@
 package main
 
-// #include <sys/file.h>
-import "C"
-
 import (
 	"crypto/sha1"
 	"database/sql"
@@ -39,7 +36,10 @@ type Input struct {
 	run          int
 	runArchived  bool
 	lastSubmit   time.Time
-	srcLock      *os.File
+	src struct{
+		sync.RWMutex
+		inUse int
+	}
 }
 
 type Output struct {
@@ -85,21 +85,22 @@ func (this *Input) setBusy(newRun bool) {
 		incRun = 1
 	}
 
-	if f, err := os.Create("/in/"+ this.short); err != nil {
-		exitError("setBusy: could not create file: %s", err)
-	} else {
-		this.srcLock = f
-		if lock := C.flock(C.int(this.srcLock.Fd()), C.LOCK_SH); lock < 0 {
-			exitError("setBusy: could not lock: %s", err)
-		}
-
-		var raw []byte
-		if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
-			exitError("setBusy: could not retrieve source: %s", err)
+	this.src.Lock(); this.src.inUse++
+	if 1 == this.src.inUse {
+		if f, err := os.Create("/in/"+ this.short); err != nil {
+			exitError("setBusy: could not create file: %s", err)
 		} else {
-			f.Write(raw)
+			var raw []byte
+			if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
+				exitError("setBusy: could not retrieve source: %s", err)
+			} else {
+				f.Write(raw)
+			}
+
+			f.Close()
 		}
 	}
+	this.src.Unlock()
 
 	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE id = $1`, this.id, incRun); err != nil {
 		exitError("Input: failed to update run+state: %s", err)
@@ -124,12 +125,13 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
-	defer this.srcLock.Close()
-	if lock := C.flock(C.int(this.srcLock.Fd()), C.LOCK_EX | C.LOCK_NB); 0 == lock {
+	this.src.Lock(); this.src.inUse--
+	if 0 == this.src.inUse {
 		if err := os.Remove("/in/"+ this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 		}
 	}
+	this.src.Unlock()
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
@@ -311,6 +313,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		procOut <- string(output)
 	}(cmd, cmdR)
 
+	// We want ProcessState after successful exit too
 	go func(c *exec.Cmd) {
 		state, err := c.Process.Wait()
 
@@ -341,6 +344,9 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	case state = <-procDone:
 		output = <-procOut
 	}
+
+	// Required to close stdout/err descriptors
+	cmd.Wait()
 
 	os.RemoveAll("/tmp/")
 
@@ -378,6 +384,7 @@ func canBatch(doSleep bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer file.Close()
 
 	data := make([]byte, 64)
 	if c, err := file.Read(data); err != nil || c < 8 {
@@ -579,32 +586,6 @@ func background() {
 			stats.Unlock()
 		}
 	}()
-
-	if !isBatch {
-		return
-	}
-
-	go func() {
-//		batchSingleFix()
-//		batchRefreshRandomScripts()
-
-		for _, v := range versions {
-			// ignore helpers, they don't store all results
-			if v.isHelper {
-				continue
-			}
-
-			fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
-			stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
-			batchScheduleNewVersions(v)
-			stats.RLock(); post := stats.c["results"]; stats.RUnlock()
-
-			if post-pre < 9999 {
-				break
-			}
-		}
-
-	}()
 }
 
 var (
@@ -683,6 +664,29 @@ func main() {
 	go background()
 
 	fmt.Printf("Daemon ready\n")
+
+	if isBatch {
+//		batchSingleFix()
+		batchRefreshRandomScripts()
+
+		for _, v := range versions {
+			// ignore helpers, they don't store all results
+			if v.isHelper {
+				continue
+			}
+
+			fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
+			stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
+			batchScheduleNewVersions(v)
+			stats.RLock(); post := stats.c["results"]; stats.RUnlock()
+
+			if post-pre < 9999 {
+				break
+			}
+		}
+
+		os.Exit(0)
+	}
 
 	// Process pending work
 	doWork()
