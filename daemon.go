@@ -642,18 +642,6 @@ func init() {
 		exitError("Failed to ping db: %s", err)
 	}
 
-	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
-		if err != nil {
-			fmt.Printf("While creating listener: %s\n", err)
-		}
-	})
-
-	if !isBatch {
-		if err := l.Listen("daemon"); err != nil {
-			exitError("Could not setup Listener %s", err)
-		}
-	}
-
 	stats.c = make(map[string]int);
 
 	var limits = map[int]int{
@@ -675,6 +663,20 @@ func init() {
 	}
 
 	refreshVersions()
+
+	if isBatch {
+		return
+	}
+
+	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			fmt.Printf("While creating listener: %s\n", err)
+		}
+	})
+
+	if err := l.Listen("daemon"); err != nil {
+		exitError("Could not setup Listener %s", err)
+	}
 }
 
 func main() {
