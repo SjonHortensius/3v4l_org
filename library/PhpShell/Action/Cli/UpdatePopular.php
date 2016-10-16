@@ -2,13 +2,6 @@
 
 class PhpShell_Action_Cli_UpdatePopular extends PhpShell_Action_Cli
 {
-	public function init()
-	{
-		Basic::$config->Template->cachePath = '/tmp/';
-
-		parent::init();
-	}
-
 	public function run()
 	{
 		$head = shell_exec('grep -vF compatible /var/log/nginx/access_log | tail -n 50000 |cut -d\" -f2,6|grep -v ^POST|sort -u|cut -d" " -f2|uniq -c|sort -nr 2>/dev/null|head -n10');

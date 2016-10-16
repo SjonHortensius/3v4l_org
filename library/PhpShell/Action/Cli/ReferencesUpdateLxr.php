@@ -2,13 +2,6 @@
 
 class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 {
-	public function init()
-	{
-		Basic::$config->Template->cachePath = '/tmp/';
-
-		parent::init();
-	}
-
 	public function run()
 	{
 		if (!is_dir('/tmp/php-src/Zend'))
