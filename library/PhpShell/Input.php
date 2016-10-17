@@ -45,7 +45,7 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	/** @return self */
-	public static function create(array $data = [])
+	public static function create(array $data = [], bool $reload = true)
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service', [], 402);
