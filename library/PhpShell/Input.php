@@ -89,29 +89,47 @@ class PhpShell_Input extends PhpShell_Entity
 			return;
 		}
 
-		Basic::$database->query("DELETE FROM ". Basic_Database::escapeTable(PhpShell_Operation::getTable()) ." WHERE input = ?", [$this->id]);
-
 		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
-
-		$this->save(['operationCount' => count($operations)]);
 		$vld->output->removeCached();
 
-		#FIXME check optimization below: select count(*), count(distinct input) from operations; select count(*) from operations where operand IS NULL;
-		#FIXME before optimizing returns: 8,135,002 | 688,416 & 5,743,929
-		#FIXME operations is ~ 390 MB with public.operations_inputOp = 330 MB
-
-		// Operand can be NULL, but it's part of a UNIQUE index which won't work. Fix count manually
+		// Parse vld first, then update db accordingly
 		$ops = [];
-		foreach ($operations as $match) {
-			if (isset($match['operand']))
-				PhpShell_Operation::create(['input' => $this, 'operation' => $match['op'], 'operand' => $match['operand']]);
+		foreach ($operations as $match)
+		{
+			$key = isset($match['operand']) ? $match['op'].':'.$match['operand'] : $match['op'];
+
+			if (isset($ops[$key]))
+				$ops[$key]++;
 			else
-				$ops[$match['op']] = isset($ops[$match['op']]) ? $ops[$match['op']]+1 : 1;
+				$ops[$key] = 1;
 		}
 
-		// Now manually submit NULL operands with correct count
-		foreach ($ops as $op => $count)
-			PhpShell_Operation::create(['input' => $this, 'operation' => $op, 'operand' => null, 'count' => $count]);
+		// Delete or update db by going through all existing rows
+		foreach ($this->getRelated(PhpShell_Operation) as $op)
+		{
+			$key = isset($op->operand) ? $op->operation.':'.$op->operand : $op->operation;
+
+			if (!isset($ops[$key]))
+				$op->delete();
+			elseif ($op->count != $ops[$key])
+				$op->save(['count' => $ops[$key]]);
+
+			unset($ops[$key]);
+		}
+
+		// Now create all missing operations
+		foreach ($ops as $key => $count)
+		{
+			$operand = null;
+			if (false == strpos($key, ':'))
+				$operation = $key;
+			else
+				list($operation, $operand) = explode(':', $key, 2);
+
+			PhpShell_Operation::create(['input' => $this, 'operation' => $operation, 'operand' => $operand, 'count' => $count]);
+		}
+
+		$this->save(['operationCount' => count($operations)]);
 	}
 
 	public function trigger(PhpShell_Version $version = null)
