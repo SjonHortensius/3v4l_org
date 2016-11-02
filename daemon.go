@@ -667,7 +667,6 @@ func main() {
 
 	if isBatch {
 //		batchSingleFix()
-		batchRefreshRandomScripts()
 
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
@@ -684,6 +683,8 @@ func main() {
 				break
 			}
 		}
+
+		batchRefreshRandomScripts()
 
 		os.Exit(0)
 	}

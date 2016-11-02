@@ -29,9 +29,9 @@ _initLib(void)
 	org_gettimeofday(&diff, NULL);
 	diff.tv_sec -= offset;
 
-	// This shouldn't happen
+	// We were called with unparsable or NULL TIME env
 	if (offset == 0) {
-		diff.tv_sec = 1;
+		diff.tv_sec = 0;
 //fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
 	}
 
