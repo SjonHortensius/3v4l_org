@@ -71,11 +71,26 @@ class PhpShell_Action extends Basic_Action
 		try
 		{
 			$this->adminMessage = Basic::$cache->get('banMessage::'. $_SERVER['REMOTE_ADDR']);
-			header('X-Accel-Expires: 0');
 		}
 		catch (Basic_Memcache_ItemNotFoundException $e)
 		{
 			#care
+		}
+
+		try
+		{
+			$this->adminMessage = Basic::$cache->get('adminMessage::'. $_SERVER['REMOTE_ADDR']);
+			Basic::$cache->delete('adminMessage::'. $_SERVER['REMOTE_ADDR']);
+		}
+		catch (Basic_Memcache_ItemNotFoundException $e)
+		{
+			#care
+		}
+
+		if (isset($this->adminMessage))
+		{
+			header('X-Accel-Expires: 0');
+			$this->_cacheLength = 0;
 		}
 
 		parent::init();

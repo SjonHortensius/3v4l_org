@@ -1,6 +1,7 @@
 "output": [
 	{
-		"versions": "{userinput['version']} | took {print round(1000 * ($this->result->userTime + $this->result->systemTime));} ms, {print round($this->result->maxMemory/1024, 2);} MiB",
+		{!-- output version unescaped or we get `versions:""7.1.0" | took"` --}
+		"versions": "{print Basic::$userinput['version'];} | took {print round(1000 * ($this->result->userTime + $this->result->systemTime));} ms, {print round($this->result->maxMemory/1024, 2);} MiB",
 		"output": {output}
 	}
 ]
