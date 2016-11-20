@@ -41,6 +41,14 @@ _initLib(void)
 	unsetenv("LD_PRELOAD");
 }
 
+// _init is the proper place to initialize globally but it fails with hhvm which uses pthreads
+// because a forked thread won't call _init and also has no access to dlsym(next) or org_ vars
+void
+_init(void)
+{
+	_initLib();
+}
+
 int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	if (0 == diff.tv_sec)
 		_initLib();
