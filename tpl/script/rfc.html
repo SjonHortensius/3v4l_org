@@ -2,16 +2,10 @@
 
 <dl>
 {foreach ($this->input->getRfcOutput() as $this->result)}
-	{$rfc = null;}
-	{if ($this->result->version->name == 'rfc-typed_properties'	)}{$rfc = 'typed-properties';}{/}
-	{if ($this->result->version->name == 'rfc-lexical-anon'		)}{$rfc = 'lexical-anon';}{/}
-	{if ($this->result->version->name == 'rfc-array_change_keys')}{$rfc = 'array_change_keys';}{/}
+	{$rfc = substr($this->result->version->name, 4);}
 
 	<dt id="{result->version->name}">
-		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));}
-		{if (isset($rfc))}
-			 | <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
-		{/}
+		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));} | <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
 	</dt>
 	<dd>
 		{print htmlspecialchars($this->result->output->getRaw($this->input, $result->name));}
