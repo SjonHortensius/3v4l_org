@@ -32,6 +32,9 @@ class PhpShell_Action extends Basic_Action
 				'cdn.jsdelivr.net',
 				'blob:', # for ace worker @ chrome
 			],
+			'font-src' => [
+				"data:", # for ace-editor
+			],
 			'connect-src' => ["'self'"],
 			'img-src' => ["'self'", 'www.google-analytics.com', 'data:',],
 			'style-src' => [
@@ -45,7 +48,7 @@ class PhpShell_Action extends Basic_Action
 		foreach ($cspDirectives as $directive => $settings)
 			$csp .= $directive .' '.implode(' ', $settings). '; ';
 
-#		header('Content-Security-Policy-Report-Only: '. $csp .'report-uri /cspReport');
+		header('Content-Security-Policy-Report-Only: '. $csp .'report-uri https://3v4l.report-uri.io/r/default/csp/reportOnly');
 
 		if (0 && $_GET['waa']=='meukee')
 		{
