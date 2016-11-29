@@ -84,17 +84,24 @@ class PhpShell_Action_New extends PhpShell_Action
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
-			if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
-				$match = $match[1];
+			$source = null;
 
-			try
+			// ignore submits from /#preview which have no correct referer
+			if (!isset($version))
 			{
-				$source = PhpShell_Input::find("short = ?", [$match])->getSingle();
-			}
-			catch (Exception $e)
-			{
-				$source = null;
-				#care
+				if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
+					$match = $match[1];
+
+				try
+				{
+					// Useless when no matches ($match=[]) or submitted from homepage ($match='')
+					if (!empty($match))
+						$source = PhpShell_Input::find("short = ?", [$match])->getSingle();
+				}
+				catch (Exception $e)
+				{
+					#care
+				}
 			}
 
 			$input = PhpShell_Input::create([

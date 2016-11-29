@@ -156,6 +156,9 @@ var evalOrg = {};
 				$('#newForm').submit();
 		}.bind(this));
 
+		// Attempt to reload a preview
+		window.onpopstate = previewStateLoad.bind(this);
+
 		this.localTime(function(el, d){
 			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
 		}, 'input + time');
@@ -240,7 +243,8 @@ var evalOrg = {};
 
 	this.preview = function()
 	{
-		window.location.hash = '#version='+ $('#version').value;
+		// for people submitting from existing pages; prevent them sharing the original input
+		history.pushState({code: this.editor.getValue(), version: $('#version').value}, 'preview', '/#preview');
 
 		var xhr = new XMLHttpRequest();
 		xhr.onload = _refreshOutput;
@@ -255,6 +259,14 @@ var evalOrg = {};
 		xhr.send(data);
 
 		return false;
+	};
+
+	var previewStateLoad = function(e)
+	{
+		this.editor.setValue(e.state.code);
+		$('#version').value = e.state.version;
+
+		// get results by resubmit / replaceState storing output ?
 	};
 
 	this.refresh = function()
