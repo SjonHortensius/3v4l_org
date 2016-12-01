@@ -4,9 +4,10 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 {
 	protected function _query($fields = "*", $groupBy = null)
 	{
-		$fields = 'input, "exitCode",
+		$fields = 'result.input, result."exitCode",
 			output.hash as "output$hash", output.raw as "output$raw",
-			version.name as "version$name", version.order as "version$order", version.released as "version$released"
+			version.name as "version$name", version.order as "version$order", version.released as "version$released",
+			CASE WHEN assert.input IS NULL THEN false ELSE true END AS "isAsserted"
 		';
 
 		return parent::_query($fields, $groupBy);

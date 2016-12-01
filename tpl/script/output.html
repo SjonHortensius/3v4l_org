@@ -5,16 +5,20 @@
 	<dt id="v{print str_replace('.', '', $this->id);}">
 		Output for {*versions}
 
-		{if (isset($this->user))}
-			{!-- POSTME --}
-			<a class="inactive" title="Mark this output as correct" href="/assert/{input->short}/{id}" data-hash="{print PhpShell_Assertion::getSubmitHash($this->input, $this->id);}">
-				<i class="icon-ok"></i>
-			</a>
+		{if ($this->output['isAsserted'])}
+			<i class="icon-ok" title="This output was marked as correct"></i>
+		{:}
+			{if (isset($this->user))}
+				{!-- XHR --}
+				<a title="Mark this output as correct" href="/assert/{input->short}/{id}" data-hash="{print PhpShell_Assertion::getSubmitHash($this->input, $this->id);}">
+					<i class="icon-ok"></i>
+				</a>
+			{/}
 		{/}
 	</dt>
 
 	<dd>
-		{*output}
+		{*output['output']}
 	</dd>
 {/}
 {if (date('D') == 'Fri' && $this->input->short === '1bYJv')}

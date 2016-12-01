@@ -20,6 +20,11 @@ class PhpShell_InputSource extends PhpShell_Entity
 		return self::getStub($data);
 	}
 
+	public function getRaw()
+	{
+		return stream_get_contents($this->raw);
+	}
+
 	public static function getTable()
 	{
 		return 'input_src';

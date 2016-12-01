@@ -249,12 +249,12 @@ form .ace-chrome .ace_gutter
 	color: #aaa;
 }
 
-a.inactive [class^="icon-"]
+a i[class^="icon-"]
 {
 	opacity: 0.3;
 }
 
-a.inactive:hover [class^="icon-"]
+a:hover i[class^="icon-"]
 {
 	opacity: 1;
 }
@@ -576,6 +576,12 @@ body.index input[type=submit],
 body.script input[type=submit]
 {
 	margin-left: 0;
+}
+
+/* assertions */
+body.script dt i.icon-ok
+{
+	margin-left: 0.5em;
 }
 
 body.search input.noOperand

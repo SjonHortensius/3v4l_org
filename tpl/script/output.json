@@ -1,6 +1,6 @@
 {$this->results = [];}
 {foreach ($this->input->getOutput() as $versions => $output)}
-	{array_push($this->results, ['versions' => strip_tags($versions), 'output' => $output]);}
+	{array_push($this->results, ['versions' => strip_tags($versions), 'output' => $output['output']]);}
 {/}
 
 "output": {results}

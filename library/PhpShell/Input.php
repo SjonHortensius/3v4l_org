@@ -169,18 +169,20 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getRfcOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run], ['version.released' => false]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run], ['version.released' => false]);
 		$results->addJoin('output', "output.id = result.output");
 		$results->addJoin('version', "version.id = result.version");
+		$results->addJoin('assertion', "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
 
 		return $results;
 	}
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run], ['version.order' => true]);
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run], ['version.order' => true]);
 		$results->addJoin('output', "output.id = result.output");
 		$results->addJoin('version', "version.id = result.version");
+		$results->addJoin('assertion', "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
 
 		$abbrMax = function($name)
 		{
@@ -199,8 +201,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$result->version->name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
-			if (!isset($slot))
-				$slot = array('min' => $result->version->name, 'versions' => [], 'order' => 0);
+			if (!isset($slot)) #FIXME; use PhpShell_Output as $slot for getSubmitHash ?
+				$slot = ['min' => $result->version->name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
 			elseif ($hash != $prevHash || ($isHhvm && !$prevHhvm) || (!$isHhvm && $prevHhvm))
 			{
 				// Close previous slot
@@ -241,7 +243,7 @@ class PhpShell_Input extends PhpShell_Entity
 			elseif (isset($output['min']))
 				array_push($output['versions'], $output['min']);
 
-			$versions[ implode(', ', $output['versions']) ] = $output['output'];
+			$versions[ implode(', ', $output['versions']) ] = $output;
 		}
 
 		return $versions;
