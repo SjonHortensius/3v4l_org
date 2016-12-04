@@ -15,6 +15,8 @@ time_t (*org_time)(time_t *tloc);
 int (*org_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
 
+// This could be called _init and we wouldn't need if(0==diff) checks; but that segfaults on hhvm because of pthreads
+// also: don't add _init(){ _initLib }; that breaks functionality in hhvm
 void
 _initLib(void)
 {
@@ -41,14 +43,6 @@ _initLib(void)
 
 	unsetenv("TIME");
 	unsetenv("LD_PRELOAD");
-}
-
-// _init is the proper place to initialize globally but it fails with hhvm which uses pthreads
-// because a forked thread won't call _init and also has no access to dlsym(next) or org_ vars
-void
-_init(void)
-{
-	_initLib();
 }
 
 int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
