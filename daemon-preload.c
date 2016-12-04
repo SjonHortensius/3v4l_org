@@ -58,9 +58,9 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
 		tp->tv_sec--;
-		tp->tv_usec -= 1000*1000 - diff.tv_usec;
-	} else
-		tp->tv_usec -= diff.tv_usec;
+		tp->tv_usec = 1000*1000 - tp->tv_usec;
+	}
+	tp->tv_usec -= diff.tv_usec;
 
 //fprintf(stderr, "\n%s using offset: %ld.%ld, returning %ld.%ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
 
@@ -90,9 +90,9 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_nsec < (1000*diff.tv_usec)) {
 		tp->tv_sec--;
-		tp->tv_nsec = tp->tv_nsec + 1000*1000*1000 - (1000*diff.tv_usec);
-	} else
-		tp->tv_nsec -= 1000*diff.tv_usec;
+		tp->tv_nsec = 1000*1000*1000 - tp->tv_nsec;
+	}
+	tp->tv_nsec -= 1000*diff.tv_usec;
 
 	return 0;
 }
@@ -117,9 +117,9 @@ int ftime(struct timeb *tp) {
 	tp->time -= diff.tv_sec;
 	if (tp->millitm < diff.tv_usec) {
 		tp->millitm--;
-		tp->millitm = tp->millitm + 1000*1000 - diff.tv_usec;
-	} else
-		tp->millitm -= diff.tv_usec;
+		tp->millitm = 1000*1000 - tp->millitm;
+	}
+	tp->millitm -= diff.tv_usec;
 
 	return 0;
 }
