@@ -5,6 +5,8 @@
 #include <bits/time.h>
 #include <sys/timeb.h>
 #include <stdio.h>
+#include <sys/utsname.h>
+#include <string.h>
 
 struct timeval diff;
 
@@ -120,6 +122,20 @@ int ftime(struct timeb *tp) {
 		tp->millitm = 1000*1000 - tp->millitm;
 	}
 	tp->millitm -= diff.tv_usec;
+
+	return 0;
+}
+
+int uname(struct utsname *buf)
+{
+	if (0 == diff.tv_sec)
+		_initLib();
+
+	strcpy(buf->sysname, "Linux");
+	strcpy(buf->nodename,"php_shell");
+	strcpy(buf->release, "4.8.6-1-ARCH");
+	strcpy(buf->version, "#1 SMP PREEMPT Mon Oct 31 18:51:30 CET 2016");
+	strcpy(buf->machine, "x86_64");
 
 	return 0;
 }
