@@ -69,7 +69,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			array_push($params, PhpShell_Version::byName($v)->id);
 		}
 
-		$q .= "\nAND input.id NOT IN (SELECT input FROM operations WHERE operation IN('DO_FCALL', 'INIT_FCALL') AND operand IN ('". implode($this->blackList, "', '"). "'))\n";
+		$q .= "\nAND input.id NOT IN (SELECT input FROM bughunt_blacklist)\n";
 
 		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
 		foreach ($joins as $join)

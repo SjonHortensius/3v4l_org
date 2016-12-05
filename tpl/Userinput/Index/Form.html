@@ -24,15 +24,14 @@
 </div>
 
 <div class="column">
-	<h2>Examples</h2>
+	<h2>PHP 7.1 gotcha's, found through <a href="/bughunt/7.1.0/7.1.0RC4+7.0.6">/bughunt</a></h2>
 	<ul>
-		<li><a href="/S2AFZ">Booleans can be changed within a namespace</a></li>
-		<li><a href="/gBT4L">Argument to a constructor that takes no arguments won't be evaluated</a></li>
-		<li><a href="/0OKe3"> __toString evolves when used in comparisons</a></li>
-		<li><a href="/NJJjO">Fun with special characters</a></li>
-		<li><a href="/Rh2Y3">Finally can do some funky things to the return value</a></li>
-		<li><a href="/uNUDC">Overwriting $this when using references</a></li>
-		<li><a href="/DgUUQ">Broken formatting in DateTime</a></li>
+		<li><a href="/6lfO5">DateTime now supports microseconds</a>; <a href="https://github.com/php/php-src/pull/2186">will break a lot of code</a></li>
+		<li><a href="/amB0d">Unserialize notices get printed before instead of after __destruct runs</a></li>
+		<li><a href="/0Jeva">Casting "NAN", "INF" and "infinity" no longer works</a></li>
+		<li><a href="/QFDDc#output">var_dump recursion detection works like it did before php7</a></li>
+		<li><a href="/13Srm">JSON_PRETTY_PRINT uses less whitespace for indenting</a></li>
+		<li><a href="/XQOQD">DateInterval can no longer be accessed as array</a></li>
 	</ul>
 </div>
 

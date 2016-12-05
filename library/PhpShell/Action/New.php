@@ -54,7 +54,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		$hash = PhpShell_Input::getHash($code);
 
 		// parse phpt format
-		if (preg_match('~^--TEST--\n(.*)\n--FILE--\n(.*)(?:\?>)?\n--EXPECT--\n(.*)$~s', $code, $m))
+		if (preg_match('~^--TEST--\n(.*)\n(?:\n--SKIPIF--\n.*)?--FILE--\n(.*)(?:\?>)?\n--EXPECT--\n(.*)$~s', $code, $m))
 		{
 			$title = substr($m[1], 0, 64);
 			$code = $m[2];
