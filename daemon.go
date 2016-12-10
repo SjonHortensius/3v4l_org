@@ -219,7 +219,7 @@ func (this *Result) store() {
 	)
 
 	if err != nil {
-		fmt.Printf("Result: failed to store input=%s,version=%s,run=%d: %s\n", this.input.short, this.version.name, this.input.run, err)
+		fmt.Printf("Result: failed to store result: input=%s,version=%s,run=%d: %s\n", this.input.short, this.version.name, this.input.run, err)
 	}
 }
 
@@ -427,7 +427,7 @@ func batchScheduleNewVersions(target *Version) {
 			SELECT id, short, i.run, created
 			FROM input i
 			WHERE
-				state = 'done'
+				state = 'done' AND NOT "operationCount" IS NULL
 				AND (i."runArchived" OR i.created < $2::date)
 				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
 			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
@@ -666,11 +666,13 @@ func main() {
 	fmt.Printf("Daemon ready\n")
 
 	if isBatch {
+		batchNewComplete := 0
 //		batchSingleFix()
 
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
-			if v.isHelper {
+			if v.isHelper || len(v.name) > 6 {
+				fmt.Printf("batchScheduleNewVersions: skipping %s\n", v.name)
 				continue
 			}
 
@@ -679,7 +681,11 @@ func main() {
 			batchScheduleNewVersions(v)
 			stats.RLock(); post := stats.c["results"]; stats.RUnlock()
 
-			if post-pre < 9999 {
+			if post-pre < 99 {
+				batchNewComplete++
+			}
+			if batchNewComplete > 3 {
+				fmt.Printf("batchScheduleNewVersions: stopping; batchNewComplete > 3\n")
 				break
 			}
 		}
