@@ -21,11 +21,14 @@ class PhpShell_Input extends PhpShell_Entity
 		if ($this->state == 'private')
 			throw new PhpShell_Input_PrivateException('This script is marked as private', [], 401);
 
-		$code = Basic::$database->query("SELECT raw FROM input_src WHERE input = ?", [$this->id])->fetchColumn();
-		if (false === $code)
-			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...', [], 404);
-
-		return stream_get_contents($code);
+		try
+		{
+			return $this->getRelated(PhpShell_InputSource::class)->getSingle()->getRaw();
+		}
+		catch (Basic_EntitySet_NoSingleResultException $e)
+		{
+			throw new PhpShell_Input_NoSourceException('Although we have heard of this script; we are not sure where we left the sourcecode...', [], 404, $e);
+		}
 	}
 
 	public static function clean($code)
@@ -300,12 +303,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getVld()
 	{
-		$version = PhpShell_Version::byName('vld');
-		$emptyOutput = Basic::$cache->get(__CLASS__.'::vldEmpty', function(){
-			return PhpShell_Output::find("hash = ?", [base64_encode(sha1('', true))])->getSingle();
-		});
-
-		return $this->getResult($version)->getSubset('output != ?', [$emptyOutput]);
+		return $this->getResult(PhpShell_Version::byName('vld'));
 	}
 
 	public function getBytecode()

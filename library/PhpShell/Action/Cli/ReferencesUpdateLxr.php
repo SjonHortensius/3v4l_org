@@ -41,10 +41,10 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 
 			Basic::$database->query(
 				"INSERT INTO \"references\" (operation, operand, link, name, parent) VALUES (?, ?, ?, ?, ?)",
-				['INIT_FCALL', $match, 'http://php.net/manual/en/function.'.str_replace('_', '-', $match).'.php', $match.' - documentation', $parent]);
+				['INIT_FCALL', $match, 'http://php.net/manual/en/function.'.str_replace('_', '-', $match).'.php', $match.' - manual', $parent]);
 			Basic::$database->query(
 				"INSERT INTO \"references\" (operation, operand, link, name) VALUES (?, ?, ?, ?)",
-				['INIT_FCALL', $match, 'https://php-lxr.adamharvey.name/source/xref/master/'.$file.'#'.$line, $match.' - source']);
+				['INIT_FCALL', $match, 'http://lxr.php.net/xref/PHP-MASTER/'.$file.'#'.$line, $match.' - source']);
 		}
 	}
 }

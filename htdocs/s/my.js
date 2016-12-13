@@ -142,6 +142,13 @@ var evalOrg = {};
 			if (13 == e.keyCode && e.altKey)
 				return this.preview();
 
+			// ignore ctrl/cmd+s
+			if (83 == e.which && (e.ctrlKey || e.metaKey))
+			{
+				e.preventDefault();
+				return false;
+			}
+
 			if (13 != e.keyCode || !e.ctrlKey)
 				return;
 
