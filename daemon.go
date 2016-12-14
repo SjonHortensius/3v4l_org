@@ -356,7 +356,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 func refreshVersions() {
 	newVersions := []*Version{}
 
-	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC`)
+	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC, "order" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
