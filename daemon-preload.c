@@ -68,6 +68,11 @@ time_t time(time_t *t) {
 	gettimeofday(&a, NULL);
 	time_t r = a.tv_sec;
 
+	// time() performs better then gettimeofday() because it is less precise. Emulate lack-of-precision
+	// http://stackoverflow.com/questions/6498972#6499061 or run https://3v4l.org/WkNOd without preload
+	if (a.tv_usec < 3000)
+		r--;
+
 	if (t)
 		*t = r;
 
