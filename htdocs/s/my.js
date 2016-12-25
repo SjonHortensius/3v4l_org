@@ -99,9 +99,9 @@ var evalOrg = {};
 
 		textarea.style.display = 'none';
 
-		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.4/min/');
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
 		// Use a shim to keep ff happy
-		ace.config.set('workerPath', '/ext/');
+		ace.config.set('workerPath', '/s/');
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
