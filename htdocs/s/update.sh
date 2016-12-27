@@ -16,8 +16,6 @@ cat ./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory
 
 [[ $1 == 'q' ]] && exit 0
 
-curl -s https://www.google-analytics.com/analytics.js -O -z analytics.js
-
-mv c.js c2.js; cp analytics.js c.js
+mv c.js c2.js
 curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c2.js" http://closure-compiler.appspot.com/compile >> c.js
 rm c2.js
