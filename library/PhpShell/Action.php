@@ -22,10 +22,8 @@ class PhpShell_Action extends Basic_Action
 			'script-src' => [
 				"'self'",
 				'cdn.jsdelivr.net',
-				'www.google-analytics.com',
 				'blob:', # for ace worker
 				"'unsafe-inline'", # tmp for /perf, /search and tagcloud
-				"data:", # for google-analytics
 			],
 			'child-src' => [
 				"'self'",
@@ -36,19 +34,19 @@ class PhpShell_Action extends Basic_Action
 				"data:", # for ace-editor
 			],
 			'connect-src' => ["'self'"],
-			'img-src' => ["'self'", 'www.google-analytics.com', 'data:',],
+			'img-src' => ["'self'", 'data:',],
 			'style-src' => [
 				"'self'",
 				"'unsafe-inline'", # for ace-editor
 			]
 		];
-		$cspDirectives['frame-src'] = $cspDirectives['child-src']; # b/c
+#		$cspDirectives['frame-src'] = $cspDirectives['child-src']; # b/c
 
 		$csp = "default-src 'none'; ";
 		foreach ($cspDirectives as $directive => $settings)
 			$csp .= $directive .' '.implode(' ', $settings). '; ';
 
-		header('Content-Security-Policy-Report-Only: '. $csp .'report-uri https://3v4l.report-uri.io/r/default/csp/reportOnly');
+		header('Content-Security-Policy: '. $csp .'report-uri https://3v4l.report-uri.io/r/default/csp/enforce');
 
 		if (0 && $_GET['waa']=='meukee')
 		{

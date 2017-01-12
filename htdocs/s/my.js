@@ -562,7 +562,7 @@ var evalOrg = {};
 		else
 			this.localTime(function(el, d){
 				function pad(d){ return ('0'+d).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 	};
 
@@ -582,7 +582,7 @@ var evalOrg = {};
 		{
 			this.localTime(function(el, d){
 				function pad(d){ return ('0'+d).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 		}
 	};
