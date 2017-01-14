@@ -31,7 +31,8 @@ var evalOrg = {};
 
 	var self = this,
 		refreshTimer,
-		refreshCount = 0;
+		refreshCount = 0,
+		perfAggregates = undefined;
 	this.editor = undefined;
 
 	this.initialize = function()
@@ -78,14 +79,7 @@ var evalOrg = {};
 
 		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
 		if (document.body.classList.contains('touch'))
-		{
-			code.style.display = 'none';
-			// remove display=none, shows textarea
-			textarea.removeAttribute('style');
 			return;
-		}
-
-		textarea.style.display = 'none';
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
 		// Use a shim to keep ff happy
@@ -492,9 +486,10 @@ var evalOrg = {};
 
 	this.handlePerf = function()
 	{
-		if (!perfAggregates)
+		if (!$('table[data-aggregates]'))
 			return false;
 
+		perfAggregates = JSON.parse($('table[data-aggregates]').dataset['aggregates']);
 		var version, previous, header, sum = {count: 0, system: 0, user: 0, memory: 0, success: 0};
 
 		// Don't use foreach or cache n.length
@@ -553,11 +548,12 @@ var evalOrg = {};
 			window.location.href = url;
 		});
 
+		var haveOperand = JSON.parse($('dfn[data-have-operands]').dataset['haveOperands']);
 		$('select[name=operation]').addEventListener('change', function(e){
 			$('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
 		});
 
-		if ($('svg'))
+		if ($('div#tagCloud'))
 			this.handleTagcloud();
 		else
 			this.localTime(function(el, d){
@@ -589,6 +585,38 @@ var evalOrg = {};
 
 	this.handleTagcloud = function()
 	{
+		var tc = $('div#tagCloud');
+		var fill = d3.scale.category20();
+		var fontSize = d3.scale.linear().range([10, 100]).domain([tc.dataset['min'], tc.dataset['max']]);
+
+		function draw(words) {
+			d3.select('div#tagCloud').append('svg')
+				.attr('width', 1022)
+				.attr('height', 600)
+				.append('g')
+				.attr('transform', 'translate(511,300)')
+				.selectAll('text')
+				.data(words)
+				.enter().append('text')
+				.style('font-size', function(d) { return d.size + 'px'; })
+				.style('fill', function(d, i) { return fill(i); })
+				.attr('text-anchor', 'middle')
+				.attr('transform', function(d) {
+					return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
+				})
+				.text(function(d) { return d.text; });
+		}
+
+		var layout = d3.layout.cloud()
+			.size([1022, 600])
+			.padding(5)
+			.rotate(0)
+			.font('Impact')
+			.fontSize(function(d) { return fontSize(+d.size); })
+			.on('end', draw)
+			.words(JSON.parse(tc.dataset['words']))
+			.start();
+
 		var ns = 'http://www.w3.org/1999/xlink', svgNs = 'http://www.w3.org/2000/svg';
 		$('svg').setAttribute('xmlns:xlink', ns);
 
@@ -600,6 +628,16 @@ var evalOrg = {};
 			el.parentNode.replaceChild(w, el);
 		});
 	};
+
+	this.handleVersions = function()
+	{
+		tableSorter.initialize();
+	};
+
+	this.handleStats = function()
+	{
+		this.localTime(false, 'tbody td:nth-child(2)');
+	}
 }).apply(evalOrg);
 
 // Possibility to apply css before onload gets fired (which is after parsing ace.js)

@@ -22,25 +22,20 @@ class PhpShell_Action extends Basic_Action
 			'script-src' => [
 				"'self'",
 				'cdn.jsdelivr.net',
-				'blob:', # for ace worker
-				"'unsafe-inline'", # tmp for /perf, /search and tagcloud
 			],
-			'child-src' => [
+			'child-src' => [ # valid sources for web-workers
 				"'self'",
 				'cdn.jsdelivr.net',
-				'blob:', # for ace worker @ chrome
 			],
-			'font-src' => [
-				"data:", # for ace-editor
+			'connect-src' => [
+				"'self'", # for xhr
 			],
-			'connect-src' => ["'self'"],
 			'img-src' => ["'self'", 'data:',],
 			'style-src' => [
 				"'self'",
-				"'unsafe-inline'", # for ace-editor
+				"'unsafe-inline'", # for ace-editor & tagcloud
 			]
 		];
-#		$cspDirectives['frame-src'] = $cspDirectives['child-src']; # b/c
 
 		$csp = "default-src 'none'; ";
 		foreach ($cspDirectives as $directive => $settings)

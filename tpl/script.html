@@ -13,7 +13,7 @@
 		</div>
 
 		<div>
-			<textarea name="code" style="display:none;"></textarea>
+			<textarea name="code"></textarea>
 			<code itemprop="articleBody">{input->getCode()}</code>
 		</div>
 
@@ -51,6 +51,7 @@
 		{/}
 
 		<div class="alert warning">
+			{!-- because we don't output code in textarea in html (for spiders it is in <code>) --}
 			<h2>Enable javascript to submit</h2>
 			<p>You have javascript disabled. You will not be able to edit any code.</p>
 		</div>

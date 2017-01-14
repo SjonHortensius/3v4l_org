@@ -157,8 +157,16 @@ ul#tabs + div
 	padding: 5px;
 }
 
+
+/*                  Normal Mobile No-js No-js@index
+ * textarea[name=code] X  |   V  |  X  |    V
+ * <code>              V  |   X  |  V  |    X
+ * <code><textarea>    V  |   X  |  X  |    X
+ */
+
 code,
-textarea
+body.touch textarea,
+body.index:not(.js) textarea
 {
 	border: 0 solid black;
 	border-width: 1px 0;
@@ -170,31 +178,29 @@ textarea
 	background: #fff;
 }
 
-/* for touch-devices */
-body.touch textarea
+/* selector is less specific than above */
+textarea[name=code]
+{
+	display: none;
+}
+
+body.touch textarea,
+body.index:not(.js) textarea
 {
 	overflow: auto;
-	font-family: monospace;
-	font-size: 13px;
 	resize: vertical;
+	height: 250px;
+}
+
+body.touch code,
+body.index:not(.js) code
+{
+	display: none;
 }
 
 body.touch dd
 {
 	max-height: 50em;
-}
-
-/* minimize fouc impact */
-body:not(.js) textarea,
-body.touch textarea
-{
-	height: 250px;
-}
-
-/* for non-js users, hide border from empty code-block */
-body.index textarea + code:empty
-{
-	display: none;
 }
 
 #options:not(:empty)
@@ -589,6 +595,11 @@ body.search input.noOperand
 	opacity: 0.3;
 }
 
+body.search svg
+{
+	font-family: Impact;
+}
+
 body.bughunt select
 {
 	height: 100px;
@@ -602,6 +613,13 @@ body.bughunt form p
 body.output dt a
 {
 	float: right;
+}
+
+/* Rebecca */
+body.output dd iframe
+{
+	width: 925px;
+	height: 450px;
 }
 
 body.perf table i
@@ -665,6 +683,31 @@ body.last td:last-child
 {
 	text-overflow: ellipsis;
 	text-align: left;
+}
+
+body.stats .axis path,
+body.stats .axis line {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+body.stats .x.axis path {
+	display: none;
+}
+
+body.stats .line {
+	fill: none;
+	stroke: steelblue;
+	stroke-width: 1.5px;
+}
+
+body.stats .bar {
+	fill: #666;
+	font-family: Helvetica, sans-serif;
+}
+body.stats .bar text {
+	color: black;
 }
 
 /* mobile specific */

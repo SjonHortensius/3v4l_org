@@ -1,6 +1,6 @@
-{$this->max = ['system'=>-1, 'user'=>-1, 'memory'=>-1];}
-{$this->sum = ['system'=>0, 'user'=>0, 'memory'=>0];}
-{$this->count = 0;}
+{$max = ['system'=>-1, 'user'=>-1, 'memory'=>-1];}
+{$sum = ['system'=>0, 'user'=>0, 'memory'=>0];}
+{$count = 0;}
 {$perf = iterator_to_array($this->input->getPerf());}
 
 {foreach ($perf as $r)}
@@ -14,40 +14,35 @@
 		{continue;}
 	{/}
 
-	{$this->count++;}
-	{$this->max['system'] = max($this->max['system'], $r['system']);}
-	{$this->max['user']   = max($this->max['user'],   $r['user']);}
-	{$this->max['memory'] = max($this->max['memory'], $r['memory']);}
-	{$this->sum['system'] += $r['system'];}
-	{$this->sum['user']   += $r['user'];}
-	{$this->sum['memory'] += $r['memory'];}
+	{$count++;}
+	{$max['system'] = max($max['system'], $r['system']);}
+	{$max['user']   = max($max['user'],   $r['user']);}
+	{$max['memory'] = max($max['memory'], $r['memory']);}
+	{$sum['system'] += $r['system'];}
+	{$sum['user']   += $r['user'];}
+	{$sum['memory'] += $r['memory'];}
 {/}
 
-{if ($this->count == 0)}
+{if ($count == 0)}
 	No results found
 	{return;}
 {/}
 
-{$this->avg = [
-	'system' => round($this->sum['system'] / $this->count, 3),
-	'user'   => round($this->sum['user']   / $this->count, 3),
-	'memory' => round($this->sum['memory'] / $this->count, 3),
-];}
-
-<script>
-	var perfAggregates = {
-		system: { max: {max['system']}, low: {avg['system']}, high: {print ($this->max['system'] + $this->avg['system']) / 2;}},
-		user: { max: {max['user']}, low: {avg['user']}, high: {print ($this->max['user'] + $this->avg['user']) / 2;}},
-		memory: { max: {max['memory']}, low: {avg['memory']}, high: {print ($this->max['memory'] + $this->avg['memory']) / 2;}}
-	};
-</script>
+{$perfAggregates = [];}
+{foreach (array_keys($max) as $key)}
+	{$perfAggregates[$key] = [
+		'low' => round($sum[$key] / $count, 3),
+		'high'=> round(($max[$key] + ($sum[$key] / $count)) / 2, 3),
+		'max' => $max[$key],
+	];}
+{/}
 
 <p>
 	Here you find the average performance (time &amp; memory) of each version. A greyed out version indicates it didn't complete successfully (based on exit-code).<br/>
 	Note: <a href="http://hhvm.com/blog/2027/faster-and-cheaper-the-evolution-of-the-hhvm-jit">hhvm uses a JIT</a> which only kicks in after a few runs. Since we run scripts only once, hhvm always runs slower.
 </p>
 
-<table>
+<table data-aggregates='{print json_encode($perfAggregates);}'>
 	<thead>
 		<tr>
 			<th>Version</th>
