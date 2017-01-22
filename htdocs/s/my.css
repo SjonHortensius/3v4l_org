@@ -532,7 +532,7 @@ header span
 
 header ul
 {
-	padding: 1em 1.5em;
+	padding: 1em 1em 1em 0;
 	list-style: none;
 	float: right;
 	margin: 0;

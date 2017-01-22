@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# curl http://dl.hhvm.com/debian/pool/main/h/hhvm/hhvm_3.9.9~jessie_amd64.deb -O
+# ar p hhvm_3.14.5~jessie_amd64.deb data.tar.xz|tar xJv ./usr/bin/hhvm
+
 set -e
 cd `dirname $0`/in/
 
