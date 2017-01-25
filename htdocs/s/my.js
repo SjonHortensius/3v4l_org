@@ -98,6 +98,8 @@ var evalOrg = {};
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
+		history.pushState({code: textarea.value, version: null}, 'initial page', window.location.pathname);
+
 		this.editor.on('change', function(){
 			if ($('input[type=submit]'))
 				$('input[type=submit]').removeAttribute('disabled');
