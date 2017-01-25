@@ -4,17 +4,17 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 {
 	public $title = 'Search our database for certain opcodes';
 	public $formSubmit = 'array_search();';
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'operation' => [
 			'valueType' => 'scalar',
-//			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+//			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'required' => true,
 			'options' => ['minLength' => 2, 'maxLength' => 28],
 			'inputType' => 'select',
 		],
 		'operand' => [
 			'valueType' => 'scalar',
-//			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
+//			'source' => ['superglobal' => 'REQUEST', 'key' => 2],
 			'required' => false,
 			'options' => [
 				'minLength' => 1,
@@ -24,7 +24,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		],
 		'page' => [
 			'valueType' => 'integer',
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 3],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 3],
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
@@ -34,12 +34,10 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 	public function init()
 	{
-		global $_MULTIVIEW;
-
-		if (isset($_MULTIVIEW[1]))
-			$_POST['operation'] = $_MULTIVIEW[1];
-		if (isset($_MULTIVIEW[2]))
-			$_POST['operand'] = $_MULTIVIEW[2];
+		if (isset($_REQUEST[1]))
+			$_POST['operation'] = $_REQUEST[1];
+		if (isset($_REQUEST[2]))
+			$_POST['operand'] = $_REQUEST[2];
 
 		$opCount = Basic::$cache->get(__CLASS__.'::counts', function(){
 			$opCount = [];
@@ -55,7 +53,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			return $ops;
 		}, 86400);
 
-		$this->_userinputConfig['operation']['values'] = $opCount;
+		$this->userinputConfig['operation']['values'] = $opCount;
 
 		// for the tagcloud
 		if (!isset($_POST['operation']))

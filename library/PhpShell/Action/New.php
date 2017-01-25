@@ -3,7 +3,7 @@
 class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'title' => [
 			'valueType' => 'scalar',
 			'regexp' => '~^[\x20-\x7e\x80-\xff]*$~',
@@ -36,7 +36,7 @@ class PhpShell_Action_New extends PhpShell_Action
 
 	public function init()
 	{
-		$this->_userinputConfig['version']['values'] = Basic::$cache->get('quickVersionList', function(){
+		$this->userinputConfig['version']['values'] = Basic::$cache->get('quickVersionList', function(){
 			# exclude all versions that aren't always stored by the daemon
 			$v = PhpShell_Version::find("NOT name IN('vld', 'segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
 

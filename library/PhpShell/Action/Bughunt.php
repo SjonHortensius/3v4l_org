@@ -4,10 +4,10 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 {
 	public $title = 'Find scripts where one version differs from the others';
 	public $formSubmit = 'array_intersect_uassoc();';
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'versions' => [
 			'description' => 'Select one version you want to focus on when comparing',
-//			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+//			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'required' => true,
 			'values' => [],
 			'options' => ['multiple' => true],
@@ -15,14 +15,14 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		'controls' => [
 			'description' => 'Select two versions to compare against. Output from all controls must match, '.
 				'this eliminates scripts that have a high variance (caused by time based or random output)',
-//			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
+//			'source' => ['superglobal' => 'REQUEST', 'key' => 2],
 			'required' => true,
 			'values' => [],
 			'options' => ['multiple' => true],
 		],
 		'page' => [
 			'valueType' => 'integer',
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 3],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 3],
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
@@ -33,14 +33,12 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init()
 	{
-		global $_MULTIVIEW;
+		if (isset($_REQUEST[1]))
+			$_POST['versions'] = explode('+', $_REQUEST[1]);
+		if (isset($_REQUEST[2]))
+			$_POST['controls'] = explode('+', $_REQUEST[2]);
 
-		if (isset($_MULTIVIEW[1]))
-			$_POST['versions'] = explode('+', $_MULTIVIEW[1]);
-		if (isset($_MULTIVIEW[2]))
-			$_POST['controls'] = explode('+', $_MULTIVIEW[2]);
-
-		$this->_userinputConfig['versions']['values'] = $this->_userinputConfig['controls']['values'] =
+		$this->userinputConfig['versions']['values'] = $this->userinputConfig['controls']['values'] =
 			PhpShell_Version::find('"isHelper" = false AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
 
 		parent::init();

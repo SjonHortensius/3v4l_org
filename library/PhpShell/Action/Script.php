@@ -2,10 +2,10 @@
 
 class PhpShell_Action_Script extends PhpShell_Action
 {
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'script' => [
 			'valueType' => 'scalar',
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 0],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 0],
 			'required' => true,
 			/* Don't check for lengths here; /randomstring will be invalid; leading to
 			 * generic 400-'unknown action' instead of 404-'unknown script' error. This is
@@ -14,7 +14,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 //			'options' => ['minLength' => 5, 'maxLength' => 6],
 		],
 		'tab' => [
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'required' => false,
 			'default' => 'output',
 			'values' => [
@@ -37,22 +37,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 	public function init()
 	{
-		if (!isset($GLOBALS['_MULTIVIEW'][1]))
-		{
-			$this->bodyClass .= ' output';
-			$this->title = 'Output for '. $GLOBALS['_MULTIVIEW'][0];
-		}
-		elseif (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
-		{
-			$this->bodyClass .= ' '.$GLOBALS['_MULTIVIEW'][1];
-			$this->title = $this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ] .' for '. $GLOBALS['_MULTIVIEW'][0];
-		}
+		$this->bodyClass .= ' '. Basic::$userinput['tab'];
+		$this->title = Basic::$userinput['tab'] .' for '. Basic::$userinput['script'];
 
-		if (false !== strpos($GLOBALS['_MULTIVIEW'][0], '.json'))
+		# needed because we serve different content on the same URI, which browsers may cache
+		if (false !== strpos(Basic::$userinput['script'], '.json'))
 		{
-			# needed because we serve different content on the same URI, which browsers can cache
 			$this->contentType = 'application/json';
-			$GLOBALS['_MULTIVIEW'][0] = str_replace('.json', '', $GLOBALS['_MULTIVIEW'][0]);
+			$_REQUEST[0] = str_replace('.json', '', Basic::$userinput['script']);
 		}
 
 		// copied from PhpShell_Action_New::init
@@ -106,7 +98,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || Basic::$config->PRODUCTION_MODE && mt_rand(0,9)<1))
 			$this->input->updateOperations();
 
-		$this->showTab = array_fill_keys(array_keys($this->_userinputConfig['tab']['values']), true);
+		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
 		$this->showTab['vld'] = (isset($this->input->operationCount) && $this->input->operationCount > 0);
 		$this->showTab['segfault'] = (count($this->input->getSegfault()) > 0);
 		$this->showTab['bytecode'] = (count($this->input->getBytecode()) > 0);

@@ -2,15 +2,15 @@
 
 class PhpShell_Action_Assert extends PhpShell_Action
 {
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'script' => [
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'scalar',
 			'required' => true,
 			'options' => ['minLength' => 5, 'maxLength' => 6],
 		],
 		'version' => [
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 2],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 2],
 			'valueType' => 'scalar',
 			'required' => true,
 		],

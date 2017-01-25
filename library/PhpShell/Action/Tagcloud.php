@@ -2,10 +2,10 @@
 // Extended by _Search
 class PhpShell_Action_Tagcloud extends PhpShell_Action
 {
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'ip' => [
 			'valueType' => 'scalar',
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'regexp' => '~^(%|[0-9.]+)$~',
 			'default' => '%',
 		],
@@ -16,7 +16,7 @@ class PhpShell_Action_Tagcloud extends PhpShell_Action
 
 	public function init()
 	{
-//		$this->_userinputConfig['ip']['default'] = $_SERVER['REMOTE_ADDR'];
+//		$this->userinputConfig['ip']['default'] = $_SERVER['REMOTE_ADDR'];
 
 		parent::init();
 	}

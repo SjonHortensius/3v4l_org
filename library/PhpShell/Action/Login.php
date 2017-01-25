@@ -2,9 +2,9 @@
 
 class PhpShell_Action_Login extends PhpShell_Action
 {
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'provider' => [
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'values' => [],
 			'required' => true,
 			'options' => ['valuesToKeys'],
@@ -22,7 +22,7 @@ class PhpShell_Action_Login extends PhpShell_Action
 			[Basic::$config->React->apiKey, Basic::$config->React->apiSecret]
 		);
 
-		$this->_userinputConfig['provider']['values'] = $this->_client->OAuthServer->getProviders();
+		$this->userinputConfig['provider']['values'] = $this->_client->OAuthServer->getProviders();
 
 		parent::init();
 	}

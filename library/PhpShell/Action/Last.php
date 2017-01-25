@@ -3,10 +3,10 @@
 class PhpShell_Action_Last extends PhpShell_Action
 {
 	public $title = 'Recent submissions';
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'page' => [
 			'valueType' => 'integer',
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],

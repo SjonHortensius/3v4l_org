@@ -2,9 +2,9 @@
 
 class PhpShell_Action_Query extends PhpShell_Action
 {
-	protected $_userinputConfig = array(
+	public $userinputConfig = array(
 		'bookmark' => [
-			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'scalar',
 			'required' => true,
 			'values' => [
