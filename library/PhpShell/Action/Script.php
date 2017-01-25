@@ -38,12 +38,19 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public function init()
 	{
 		if (!isset($GLOBALS['_MULTIVIEW'][1]))
+		{
 			$this->bodyClass .= ' output';
+			$this->title = 'Output for '. $GLOBALS['_MULTIVIEW'][0];
+		}
 		elseif (isset($this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ]))
+		{
 			$this->bodyClass .= ' '.$GLOBALS['_MULTIVIEW'][1];
+			$this->title = $this->_userinputConfig['tab']['values'][ $GLOBALS['_MULTIVIEW'][1] ] .' for '. $GLOBALS['_MULTIVIEW'][0];
+		}
 
 		if (false !== strpos($GLOBALS['_MULTIVIEW'][0], '.json'))
 		{
+			# needed because we serve different content on the same URI, which browsers can cache
 			$this->contentType = 'application/json';
 			$GLOBALS['_MULTIVIEW'][0] = str_replace('.json', '', $GLOBALS['_MULTIVIEW'][0]);
 		}

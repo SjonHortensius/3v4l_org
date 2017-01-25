@@ -4,6 +4,7 @@
 */
 class PhpShell_Action_Error extends PhpShell_Action
 {
+	public $title = 'Error';
 	protected $_userinputConfig = array(
 		'code' => [
 			'source' => ['superglobal' => 'MULTIVIEW', 'key' => 1],

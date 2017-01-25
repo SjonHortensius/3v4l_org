@@ -2,6 +2,7 @@
 
 class PhpShell_Action_Last extends PhpShell_Action
 {
+	public $title = 'Recent submissions';
 	protected $_userinputConfig = array(
 		'page' => [
 			'valueType' => 'integer',

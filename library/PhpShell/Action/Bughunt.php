@@ -2,8 +2,8 @@
 
 class PhpShell_Action_Bughunt extends PhpShell_Action
 {
+	public $title = 'Find scripts where one version differs from the others';
 	public $formSubmit = 'array_intersect_uassoc();';
-	public $formTitle = '3v4l.org<small> - Find scripts where one version differs from the others</small>';
 	protected $_userinputConfig = array(
 		'versions' => [
 			'description' => 'Select one version you want to focus on when comparing',

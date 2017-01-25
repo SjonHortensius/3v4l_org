@@ -3,7 +3,6 @@
 class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
-	public $formTitle = '3v4l.org<small> - online PHP & HHVM shell, run code in 150+ different versions!</small>';
 	protected $_userinputConfig = array(
 		'title' => [
 			'valueType' => 'scalar',
