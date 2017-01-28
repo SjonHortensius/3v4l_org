@@ -82,8 +82,22 @@ var evalOrg = {};
 			return;
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
-		// Use a shim to keep ff happy
-		ace.config.set('workerPath', '/s/');
+		/* In Ff Workers cannot be loaded directly from external sources
+		 * Ace contains a workaround for that (by catching DOMException) which Ff doesn't throw
+		 * We set a magic config-key to override the complete workerPath with a shim-in-a-blob
+		 * This sucks but prevents us from needing to load a shim worker
+		 *
+		 * Refs:
+		 *  https://github.com/ajaxorg/ace/blob/4c7e5eb3lib/ace/config.js#L75
+		 *  https://github.com/ajaxorg/ace/blob/4c7e5eb3/lib/ace/worker/worker_client.js#L186
+		 *  http://stackoverflow.com/questions/13111609
+		 */
+		var blob = URL.createObjectURL(new Blob(
+				["importScripts('https://cdn.jsdelivr.net/ace/1.2.6/min/worker-php.js');"],
+				{"type": "application/javascript"}
+		));
+		ace.config.set('$moduleUrls', {'ace/mode/php_worker': blob});
+
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
@@ -97,8 +111,6 @@ var evalOrg = {};
 		$('#newForm').addEventListener('submit', function(){
 			textarea.value = this.editor.getValue();
 		}.bind(this));
-
-		history.pushState({code: textarea.value, version: null}, 'initial page', window.location.pathname);
 
 		this.editor.on('change', function(){
 			if ($('input[type=submit]'))

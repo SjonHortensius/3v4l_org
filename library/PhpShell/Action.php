@@ -30,6 +30,7 @@ class PhpShell_Action extends Basic_Action
 			'child-src' => [ # valid sources for web-workers
 				"'self'",
 				'cdn.jsdelivr.net',
+				"blob:",
 			],
 			'connect-src' => [
 				"'self'", # for xhr
