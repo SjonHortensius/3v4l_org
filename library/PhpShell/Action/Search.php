@@ -34,17 +34,19 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 	public function init()
 	{
-		if (isset($_REQUEST[1]))
-			$_POST['operation'] = $_REQUEST[1];
-		if (isset($_REQUEST[2]))
-			$_POST['operand'] = $_REQUEST[2];
-
 		$opCount = Basic::$cache->get(__CLASS__.'::counts', function(){
-			$opCount = [];
+			$v= [];
 			foreach (PhpShell_Operation::find()->getCount('operation') as $op => $count)
-				$opCount[$op] = $op .' ('. number_format($count) .' occurrences)';
-			return $opCount;
+				$v[$op] = $op .' ('. number_format($count) .' occurrences)';
+			return $v;
 		}, (86400/3*2));
+
+		Basic::$userinput->operation->values = $opCount;
+
+		if (isset($_REQUEST[1]))
+			Basic::$userinput->operation->setValue($_REQUEST[1]);
+		if (isset($_REQUEST[2]))
+			Basic::$userinput->operand->setValue($_REQUEST[2]);
 
 		$this->haveOperand = Basic::$cache->get(__CLASS__.'::haveOperand', function(){
 			$ops = [];
@@ -53,10 +55,8 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			return $ops;
 		}, 86400);
 
-		$this->userinputConfig['operation']['values'] = $opCount;
-
 		// for the tagcloud
-		if (!isset($_POST['operation']))
+		if (!Basic::$userinput->operation->isValid())
 			parent::generate();
 
 		parent::init();

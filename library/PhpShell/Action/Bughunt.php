@@ -33,13 +33,15 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init()
 	{
-		if (isset($_REQUEST[1]))
-			$_POST['versions'] = explode('+', $_REQUEST[1]);
-		if (isset($_REQUEST[2]))
-			$_POST['controls'] = explode('+', $_REQUEST[2]);
+		$versions = PhpShell_Version::find('"isHelper" = false AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
+		Basic::$userinput->versions->values = $versions;
+		Basic::$userinput->controls->values = $versions;
 
-		$this->userinputConfig['versions']['values'] = $this->userinputConfig['controls']['values'] =
-			PhpShell_Version::find('"isHelper" = false AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
+		if (isset($_REQUEST[1]))
+			Basic::$userinput->versions->setValue(explode('+', $_REQUEST[1]));
+
+		if (isset($_REQUEST[2]))
+			Basic::$userinput->controls->setValue(explode('+', $_REQUEST[2]));
 
 		parent::init();
 	}

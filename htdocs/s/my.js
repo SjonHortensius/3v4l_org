@@ -98,10 +98,8 @@ var evalOrg = {};
 			textarea.value = this.editor.getValue();
 		}.bind(this));
 
-		history.pushState({code: textarea.value, version: null}, 'initial page', window.location.pathname);
-
 		this.editor.on('change', function(){
-			if ($('input[type=submit]'))
+			if ($('input[type=submit][disabled]'))
 				$('input[type=submit]').removeAttribute('disabled');
 		});
 
@@ -254,6 +252,10 @@ var evalOrg = {};
 
 	var previewStateLoad = function(e)
 	{
+		// Not every hash change means there is a valid state to pop
+		if (!e.state || !e.state.code)
+			return;
+
 		this.editor.setValue(e.state.code);
 		$('#version').value = e.state.version;
 
