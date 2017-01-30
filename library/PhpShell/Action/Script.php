@@ -40,10 +40,11 @@ class PhpShell_Action_Script extends PhpShell_Action
 		$this->bodyClass .= ' '. Basic::$userinput['tab'];
 		$this->title = Basic::$userinput['tab'] .' for '. Basic::$userinput['script'];
 
-		# needed because we serve different content on the same URI, which browsers may cache
+		# needed because we used to serve different content on the same URI, which browsers may cache
 		if (false !== strpos(Basic::$userinput['script'], '.json'))
 		{
 			$this->contentType = 'application/json';
+			//Basic::$userinput['script']->setValue(substr(Basic::$userinput['script'], strlen(Basic::$userinput['script'])-4));
 			$_REQUEST[0] = str_replace('.json', '', Basic::$userinput['script']);
 		}
 

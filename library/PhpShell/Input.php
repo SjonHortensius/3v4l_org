@@ -137,12 +137,6 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger(PhpShell_Version $version = null)
 	{
-		// flush possible nginx fastcgi_cache, match levels=1:2, key="$request_method:$request_uri:$http_cookie";
-		$h = md5("GET:/{$this->short}:{$_SERVER['HTTP_COOKIE']}");
-		$cachePath = "/var/tmp/nginx/{$h[31]}/{$h[29]}{$h[30]}/$h";
-		if (Basic::$config->PRODUCTION_MODE && is_writable($cachePath))
-			unlink($cachePath);
-
 		if (Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0] > 0)
 			return false;
 

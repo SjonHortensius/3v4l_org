@@ -33,7 +33,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init()
 	{
-		$versions = PhpShell_Version::find('"isHelper" = false AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
+		$versions = PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
 		Basic::$userinput->versions->values = $versions;
 		Basic::$userinput->controls->values = $versions;
 
