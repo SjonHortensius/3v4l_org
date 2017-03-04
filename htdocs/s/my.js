@@ -84,12 +84,17 @@ var evalOrg = {};
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
 		// Use a shim to keep ff happy
 		ace.config.set('workerPath', '/s/');
+		ace.require('ace/ext/language_tools');
 		this.editor = ace.edit(code);
 		this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
 		this.editor.setOption('maxLines', Infinity);
 		this.editor.session.setMode('ace/mode/php');
 		this.editor.session.setUseWrapMode(true);
+		this.editor.setOptions({
+			enableBasicAutocompletion: true,
+			enableLiveAutocompletion: false,
+		});
 
 		if ($('input[type=submit]'))
 			$('input[type=submit]').setAttribute('disabled', 'disabled');
@@ -164,6 +169,9 @@ var evalOrg = {};
 		$$('dt').forEach(function(el){
 			el.addEventListener('click', function(){ window.location.hash = '#'+ el.id; });
 		});
+
+		if (window.location.hash == '#spoiler')
+			$('#tab').classList.add('spoiler');
 
 		outputAddExpander();
 /*
