@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# curl http://dl.hhvm.com/debian/pool/main/h/hhvm/hhvm_3.9.9~jessie_amd64.deb -O
-# ar p hhvm_3.14.5~jessie_amd64.deb data.tar.xz|tar xJv ./usr/bin/hhvm
+# v=3.18.1; curl http://dl.hhvm.com/debian/pool/main/h/hhvm/hhvm_$v~jessie_amd64.deb -O; \
+#   ar p hhvm_$v~jessie_amd64.deb data.tar.xz|tar xJv ./usr/bin/hhvm; \
+#   strip usr/bin/hhvm; mv usr/bin/hhvm /srv/http/3v4l.org/bin/hhvm-$v
 
 set -e
 cd `dirname $0`/in/
@@ -17,14 +18,17 @@ echo -ne "Downloading...\r"
 [[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
 
 echo -ne "Extracting...\r"
+[[ -d ../root/$version/ ]] && rm -R ../root/$version/
 tar xjf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2
 cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 
-[[ `vercmp $version 5.4.0`  -gt 0 && `vercmp $version 5.4.7` -lt 0  ]] && patch -p0 <../../php-with-libxml2-29plus.patch
-[[ `vercmp $version 5.4.7`  -gt 0 && `vercmp $version 5.4.15` -lt 0 ]] && confFlags="$confFlags --without-openssl";
-[[ `vercmp $version 5.4.14` -gt 0 ]] && confFlags="$confFlags --with-openssl"
+vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}
+[[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
+[[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
+[[ $vers -gt 5407 &&  $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
+[[ $vers -gt 5414 ]] && confFlags="$confFlags --with-openssl"
 
 if [[ $ISTEMP -eq 1 ]]; then
 	EXTENSION_DIR=/usr/lib/php/${version:0:3}/modules; export EXTENSION_DIR
@@ -35,11 +39,11 @@ else
 fi
 
 echo -ne "Configuring...\r"
-./configure $confFlags &>build-configure.log
+./configure $confFlags &>build.log || { rm -R */; tail build.log; exit 1; }
 
 echo -ne "Making...     \r"
 # remove directories but leave logs
-make -j10 &>build-make.log || { rm -R */; exit 1; }
+make -j10 &>build.log || { rm -R */; tail build.log; exit 1; }
 
 # verify correct build
 ./sapi/cli/php -i >/dev/null

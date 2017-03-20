@@ -1,0 +1,11 @@
+--- ext/gmp/gmp.c       2008-12-31 12:15:37.000000000 +0100
++++ ext/gmp/gmp.c       2017-02-22 17:02:51.830502379 +0100
+@@ -1359,7 +1359,7 @@
+ 
+                GMPG(rand_initialized) = 1;
+        }
+-       mpz_urandomb(*gmpnum_result, GMPG(rand_state), GMP_ABS (limiter) * __GMP_BITS_PER_MP_LIMB);
++       mpz_urandomb(*gmpnum_result, GMPG(rand_state), GMP_ABS (limiter) * GMP_LIMB_BITS);
+ 
+        ZEND_REGISTER_RESOURCE(return_value, gmpnum_result, le_gmp);
+ }

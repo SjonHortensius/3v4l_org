@@ -717,6 +717,12 @@ body.stats .bar text
 	color: black;
 }
 
+body.query caption
+{
+	text-align: left;
+	font-family: Monospace;
+}
+
 /* mobile specific */
 @media (max-width: 600px)
 {

@@ -9,7 +9,8 @@ class PhpShell_Action_Query extends PhpShell_Action
 			'required' => true,
 			'values' => [
 				'versionPerformance' => <<<EOQ
-SELECT name "version", ROUND(AVG("systemTime")::numeric, 2) sys, ROUND(AVG("userTime")::numeric, 2) usr, ROUND(AVG("maxMemory")/1024) mem FROM input
+SELECT name "version", ROUND(AVG("systemTime")::numeric, 2) sys, ROUND(AVG("userTime")::numeric, 2) usr, ROUND(AVG("maxMemory")/1024) mem
+FROM input
 JOIN result_current r ON (r.input = input.id AND r.run = input.run)
 JOIN version v ON (v.id=r.version)
 WHERE input.id IN (SELECT id FROM input ORDER BY RANDOM() LIMIT 250) AND NOT v."isHelper"
@@ -20,6 +21,7 @@ EOQ
 			],
 		],
 	);
+	protected $_cacheLength = '4 hours';
 
 	public function run()
 	{
