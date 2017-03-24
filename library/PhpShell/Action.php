@@ -7,6 +7,24 @@ class PhpShell_Action extends Basic_Action
 	public $user;
 	public $bodyClass;
 	public $adminMessage;
+	public $cspDirectives = [
+		'script-src' => [
+			"'self'",
+			'cdn.jsdelivr.net',
+		],
+		'child-src' => [ # valid sources for web-workers
+			"'self'",
+			'cdn.jsdelivr.net',
+		],
+		'connect-src' => [
+			"'self'", # for xhr
+		],
+		'img-src' => ["'self'", 'data:',],
+		'style-src' => [
+			"'self'",
+			"'unsafe-inline'", # for ace-editor & tagcloud
+		]
+	];
 
 	public function init()
 	{
@@ -22,27 +40,9 @@ class PhpShell_Action extends Basic_Action
 		header('X-Frame-Options: DENY');
 		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
-		$cspDirectives = [
-			'script-src' => [
-				"'self'",
-				'cdn.jsdelivr.net',
-			],
-			'child-src' => [ # valid sources for web-workers
-				"'self'",
-				'cdn.jsdelivr.net',
-			],
-			'connect-src' => [
-				"'self'", # for xhr
-			],
-			'img-src' => ["'self'", 'data:',],
-			'style-src' => [
-				"'self'",
-				"'unsafe-inline'", # for ace-editor & tagcloud
-			]
-		];
 
 		$csp = "default-src 'none'; ";
-		foreach ($cspDirectives as $directive => $settings)
+		foreach ($this->cspDirectives as $directive => $settings)
 			$csp .= $directive .' '.implode(' ', $settings). '; ';
 
 		header('Content-Security-Policy: '. $csp .'report-uri https://3v4l.report-uri.io/r/default/csp/enforce');

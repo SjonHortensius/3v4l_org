@@ -56,6 +56,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 			return $v->getSimpleList('name', 'name');
 		}, 30);
 
+		// Rebecca
+		if (Basic::$userinput['script'] == '1bYJv')
+			array_push($this->cspDirectives['child-src'], 'https://www.youtube.com');
 		parent::init();
 	}
 
