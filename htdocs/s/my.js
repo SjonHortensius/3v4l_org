@@ -63,6 +63,11 @@ var evalOrg = {};
 		});
 	};
 
+	var isMobile = function()
+	{
+		return navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/);
+	};
+
 	this.richEditor = function()
 	{
 		if (this.editor)
@@ -77,8 +82,8 @@ var evalOrg = {};
 
 		textarea.value = code.textContent;
 
-		// Disable ace for touch-devices; see https://github.com/ajaxorg/ace/issues/37
-		if (document.body.classList.contains('touch'))
+		// Disable ace for mobile-devices; see https://github.com/ajaxorg/ace/issues/37
+		if (isMobile())
 			return;
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
