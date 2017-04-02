@@ -15,6 +15,7 @@ class PhpShell_Action extends Basic_Action
 		'child-src' => [ # valid sources for web-workers
 			"'self'",
 			'cdn.jsdelivr.net',
+			'www.youtube.com', # for rebecca
 		],
 		'connect-src' => [
 			"'self'", # for xhr
@@ -28,6 +29,14 @@ class PhpShell_Action extends Basic_Action
 
 	public function init()
 	{
+		// For now; don't autoStart sessions
+		if (isset($_COOKIE[ Basic::$config->Session->name ]))
+		{
+			session_name(Basic::$config->Session->name);
+			session_set_cookie_params($config->lifetime, Basic::$config->Site->baseUrl);
+			session_start();
+		}
+
 		if (isset($_SESSION['userId']))
 			$this->user = PhpShell_User::get($_SESSION['userId']);
 		elseif (!empty($_COOKIE))
