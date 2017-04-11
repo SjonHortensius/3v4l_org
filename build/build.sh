@@ -27,7 +27,7 @@ confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enabl
 vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
-[[ $vers -gt 5407 &&  $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
+[[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
 [[ $vers -gt 5414 ]] && confFlags="$confFlags --with-openssl"
 
 if [[ $ISTEMP -eq 1 ]]; then

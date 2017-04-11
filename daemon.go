@@ -528,7 +528,7 @@ func _batchResetHard(input *Input){
 			}
 		}
 
-		if input.runArchived || v.isHelper || v.eol.After(input.created) {
+		if input.runArchived || v.eol.After(input.created) {
 			input.execute(v, &l)
 		}
 	}
@@ -560,7 +560,7 @@ func doWork() {
 		input.setBusy(!version.Valid)
 
 		for _, v := range versions {
-			if (version.Valid && version.String == v.name) || (!version.Valid && (v.isHelper || input.runArchived || v.eol.After(input.created))) {
+			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, rMax)
 			}
 		}

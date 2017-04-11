@@ -2,10 +2,9 @@
 
 <dl>
 {foreach ($this->input->getRfcOutput() as $this->result)}
-	{$rfc = substr($this->result->version->name, 4);}
-
+	{$this->rfc = substr($this->result->version->name, 4);}
 	<dt id="{result->version->name}">
-		Output for {print implode(' ', array_map('ucfirst', explode('-', str_replace(['rfc-', '_'], ['', '-'], $this->result->version->name))));} | <a href="https://wiki.php.net/rfc/{print $rfc;}">rfc</a>
+		Output for <a href="https://wiki.php.net/rfc/{rfc}">{print ucfirst(str_replace(['-', '_'], ' ', $this->rfc));}</a>
 	</dt>
 	<dd>
 		{print htmlspecialchars($this->result->output->getRaw($this->input, $result->name));}
@@ -16,6 +15,7 @@
 <h3>Archived branches</h3>
 <p>Once feature-branches are merged or declined, they are no longer available. Their functionality (when merged) can be viewed from the <a href="/{input->short}">main output page</a></p>
 <ul>
+	<li id="rfc-typed-properties"><a href="https://wiki.php.net/rfc/typed-properties">Typed Properties</a> - declined</li>
 	<li id="rfc-multi-types"><a href="https://wiki.php.net/rfc/union_types">Union Types</a> - declined</li>
 	<li id="rfc-callable_typehint"><a href="https://wiki.php.net/rfc/callable-types">Callable Prototypes</a> - declined</li>
 	<li id="rfc-short_closures"><a href="https://wiki.php.net/rfc/short_closures">Short Closures</a> - declined / withdrawn in favor of <a href="http://wiki.php.net/rfc/arrow_functions">Arrow Functions</a></li>
