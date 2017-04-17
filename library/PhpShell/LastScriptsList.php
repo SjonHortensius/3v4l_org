@@ -8,7 +8,7 @@ class PhpShell_LastScriptsList extends Basic_EntitySet
 			AVG("systemTime") "systemTime",
 			AVG("maxMemory") "maxMemory",
 			source AS "sourceId",
-			COUNT(DISTINCT output) * 100 / COUNT(output) variance';
+			(COUNT(DISTINCT output)-1) * 100 / COUNT(output) variance';
 
 		return parent::_query($fields, "input.id");
 	}

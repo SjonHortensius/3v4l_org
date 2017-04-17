@@ -575,8 +575,8 @@ var evalOrg = {};
 			this.handleTagcloud();
 		else
 			this.localTime(function(el, d){
-				function pad(d){ return ('0'+d).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+				function pad(n){ return ('0'+n).slice(-2); }
+				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 	};
 
@@ -596,7 +596,7 @@ var evalOrg = {};
 		{
 			this.localTime(function(el, d){
 				function pad(d){ return ('0'+d).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDay()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 		}
 	};
