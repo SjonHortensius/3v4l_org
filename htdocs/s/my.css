@@ -151,7 +151,8 @@ ul#tabs + div
 	border: 1px solid #ddd;
 }
 
-#tab a#expand
+#tab a#expand,
+#tab a#diff
 {
 	float: right;
 	cursor: pointer;
@@ -261,7 +262,8 @@ a i[class^="icon-"]
 	opacity: 0.3;
 }
 
-a:hover i[class^="icon-"]
+a:hover i[class^="icon-"],
+i[class^="icon-"].active
 {
 	opacity: 1;
 }
@@ -565,6 +567,16 @@ input + time
 {
 	color: #999;
 	font-size: 10px;
+}
+
+ins
+{
+	background-color: #adff2f;
+}
+
+del
+{
+	background-color: #ff4500;
 }
 
 /* page specific styles */

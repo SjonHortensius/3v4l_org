@@ -98,7 +98,7 @@ var evalOrg = {};
 		this.editor.session.setUseWrapMode(true);
 		this.editor.setOptions({
 			enableBasicAutocompletion: true,
-			enableLiveAutocompletion: false,
+			enableLiveAutocompletion: false
 		});
 
 		if ($('input[type=submit]'))
@@ -113,7 +113,7 @@ var evalOrg = {};
 				$('input[type=submit]').removeAttribute('disabled');
 		});
 
-		if ($('#archived_1[data-ran-archived=""'))
+		if ($('#archived_1[data-ran-archived=""]'))
 			$('#archived_1').addEventListener('change', function(){
 				$('input[type=submit]').removeAttribute('disabled');
 			});
@@ -157,7 +157,7 @@ var evalOrg = {};
 		}.bind(this));
 
 		// Attempt to reload a preview
-		window.onpopstate = previewStateLoad.bind(this);
+		window.onpopstate = this.previewStateLoad.bind(this);
 
 		this.localTime(function(el, d){
 			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
@@ -179,6 +179,7 @@ var evalOrg = {};
 			$('#tab').classList.add('spoiler');
 
 		outputAddExpander();
+		outputAddDiff();
 /*
 		$$('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
@@ -217,6 +218,103 @@ var evalOrg = {};
 		$('dl').classList.toggle('expand');
 		$('a#expand i').classList.toggle('icon-resize-full');
 		$('a#expand i').classList.toggle('icon-resize-small');
+	};
+
+	var outputAddDiff = function()
+	{
+		if ($('#diff') || $$('dd').length < 2)
+			return;
+
+		var a = document.createElement('a');
+		a.setAttribute('id', 'diff');
+		a.setAttribute('title', 'diff output');
+		a.addEventListener('click', outputDiff);
+		var i = document.createElement('i');
+		i.classList.add('icon-tasks', 'diff');
+		a.appendChild(i);
+		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+	};
+
+	var diffDone = false;
+	var outputDiff = function()
+	{
+		var ref = $$('div#tab dt:target + dd');
+		ref = ref[0] || $$('div#tab dd:first-of-type')[0];
+
+		$$('div#tab dd').forEach(function (dd){
+			if (dd == ref)
+				return;
+
+			var newContent;
+
+			if (diffDone)
+				newContent = dd.getAttribute('original');
+			else
+			{
+				dd.setAttribute('original', dd.innerHTML);
+				newContent = diffstring(ref.innerHTML, dd.innerHTML);
+				// Remove </del><del>
+				newContent = newContent.replace(/<\/(del|ins)><\1>/g, '');
+				// Remove <del> when immediately followed by ins
+				newContent = newContent.replace(/<del>(?:.*?)<\/del><ins>/g, '<ins>');
+			}
+
+			dd.innerHTML = newContent;
+		});
+
+		$('a#diff i').classList.toggle('active');
+		diffDone = !diffDone;
+	};
+
+	// Source: http://ejohn.org/files/jsdiff.js
+	var diffstring = function(o, n)
+	{
+		var diff=function(d,e){var b={};var c={};for(var a=0;a<e.length;a++){if(b[e[a]]==null){b[e[a]]={rows:[],o:null}}b[e[a]].rows.push(a)}for(var a=0;a<d.length;a++){if(c[d[a]]==null){c[d[a]]={rows:[],n:null}}c[d[a]].rows.push(a)}for(var a in b){if(b[a].rows.length==1&&typeof(c[a])!='undefined'&&c[a].rows.length==1){e[b[a].rows[0]]={text:e[b[a].rows[0]],row:c[a].rows[0]};d[c[a].rows[0]]={text:d[c[a].rows[0]],row:b[a].rows[0]}}}for(var a=0;a<e.length-1;a++){if(e[a].text!=null&&e[a+1].text==null&&e[a].row+1<d.length&&d[e[a].row+1].text==null&&e[a+1]==d[e[a].row+1]){e[a+1]={text:e[a+1],row:e[a].row+1};d[e[a].row+1]={text:d[e[a].row+1],row:a+1}}}for(var a=e.length-1;a>0;a--){if(e[a].text!=null&&e[a-1].text==null&&e[a].row>0&&d[e[a].row-1].text==null&&e[a-1]==d[e[a].row-1]){e[a-1]={text:e[a-1],row:e[a].row-1};d[e[a].row-1]={text:d[e[a].row-1],row:a-1}}}return{o:d,n:e}};
+		var sep = /[^0-9a-zA-Z<>]+/g;
+
+		o = o.replace(/\s+$/, '');
+		n = n.replace(/\s+$/, '');
+
+		var i, out = diff(o == '' ? [] : o.split(sep), n == '' ? [] : n.split(sep) );
+		var str = '';
+
+		var oSpace = o.match(sep);
+		if (oSpace == null)
+			oSpace = ['\n'];
+		else
+			oSpace.push('\n');
+
+		var nSpace = n.match(sep);
+		if (nSpace == null)
+			nSpace = ['\n'];
+		else
+			nSpace.push('\n');
+
+		if (out.n.length == 0)
+		{
+			for (i = 0; i < out.o.length; i++)
+				str += '<del>' + out.o[i] + oSpace[i] + '</del>';
+		}
+		else
+		{
+			if (out.n[0].text == null)
+				for (n = 0; n < out.o.length && out.o[n].text == null; n++)
+					str += '<del>' + out.o[n] + oSpace[n] + '</del>';
+
+			for (i = 0; i < out.n.length; i++ ) {
+				if (out.n[i].text == null)
+					str += '<ins>' + out.n[i] + nSpace[i] + '</ins>';
+				else
+				{
+					var pre = '';
+					for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++)
+						pre += '<del>' + out.o[n] + oSpace[n] + '</del>';
+					str += out.n[i].text + nSpace[i] + pre;
+				}
+			}
+		}
+
+		return str;
 	};
 
 	this.enablePreview = function()
@@ -264,7 +362,7 @@ var evalOrg = {};
 		return false;
 	};
 
-	var previewStateLoad = function(e)
+	this.previewStateLoad = function(e)
 	{
 		// Not every hash change means there is a valid state to pop
 		if (!e.state || !e.state.code)
@@ -437,7 +535,7 @@ var evalOrg = {};
 
 		i.className = 'icon-';
 
-		el.addEventListener('click', function(e){
+		el.addEventListener('click', function(){
 			el.classList.toggle('open');
 			var row = el;
 
@@ -625,7 +723,7 @@ var evalOrg = {};
 				.text(function(d) { return d.text; });
 		}
 
-		var layout = d3.layout.cloud()
+		d3.layout.cloud()
 			.size([1022, 600])
 			.padding(5)
 			.rotate(0)
