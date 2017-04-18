@@ -248,73 +248,47 @@ var evalOrg = {};
 			var newContent;
 
 			if (diffDone)
-				newContent = dd.getAttribute('original');
+				dd.innerHTML = dd.getAttribute('original');
 			else
 			{
-				dd.setAttribute('original', dd.innerHTML);
-				newContent = diffstring(ref.innerHTML, dd.innerHTML);
-				// Remove </del><del>
-				newContent = newContent.replace(/<\/(del|ins)><\1>/g, '');
-				// Remove <del> when immediately followed by ins
-				newContent = newContent.replace(/<del>(?:.*?)<\/del><ins>/g, '<ins>');
-			}
+				if (!dd.hasAttribute('original'))
+					dd.setAttribute('original', dd.innerHTML);
 
-			dd.innerHTML = newContent;
+				var fragment = document.createDocumentFragment(), node, swap;
+				var diff = JsDiff.diffWordsWithSpace(ref.innerHTML, dd.innerHTML);
+
+				for (var i=0; i < diff.length; i++)
+				{
+					if (diff[i].added && diff[i + 1] && diff[i + 1].removed)
+					{
+						swap = diff[i];
+						diff[i] = diff[i + 1];
+						diff[i + 1] = swap;
+					}
+
+					if (diff[i].removed)
+					{
+						node = document.createElement('del');
+						node.appendChild(document.createTextNode(diff[i].value));
+					}
+					else if (diff[i].added)
+					{
+						node = document.createElement('ins');
+						node.appendChild(document.createTextNode(diff[i].value));
+					}
+					else
+						node = document.createTextNode(diff[i].value);
+
+					fragment.appendChild(node);
+				}
+
+				dd.textContent = '';
+				dd.appendChild(fragment);
+			}
 		});
 
 		$('a#diff i').classList.toggle('active');
 		diffDone = !diffDone;
-	};
-
-	// Source: http://ejohn.org/files/jsdiff.js
-	var diffstring = function(o, n)
-	{
-		var diff=function(d,e){var b={};var c={};for(var a=0;a<e.length;a++){if(b[e[a]]==null){b[e[a]]={rows:[],o:null}}b[e[a]].rows.push(a)}for(var a=0;a<d.length;a++){if(c[d[a]]==null){c[d[a]]={rows:[],n:null}}c[d[a]].rows.push(a)}for(var a in b){if(b[a].rows.length==1&&typeof(c[a])!='undefined'&&c[a].rows.length==1){e[b[a].rows[0]]={text:e[b[a].rows[0]],row:c[a].rows[0]};d[c[a].rows[0]]={text:d[c[a].rows[0]],row:b[a].rows[0]}}}for(var a=0;a<e.length-1;a++){if(e[a].text!=null&&e[a+1].text==null&&e[a].row+1<d.length&&d[e[a].row+1].text==null&&e[a+1]==d[e[a].row+1]){e[a+1]={text:e[a+1],row:e[a].row+1};d[e[a].row+1]={text:d[e[a].row+1],row:a+1}}}for(var a=e.length-1;a>0;a--){if(e[a].text!=null&&e[a-1].text==null&&e[a].row>0&&d[e[a].row-1].text==null&&e[a-1]==d[e[a].row-1]){e[a-1]={text:e[a-1],row:e[a].row-1};d[e[a].row-1]={text:d[e[a].row-1],row:a-1}}}return{o:d,n:e}};
-		var sep = /[^0-9a-zA-Z<>]+/g;
-
-		o = o.replace(/\s+$/, '');
-		n = n.replace(/\s+$/, '');
-
-		var i, out = diff(o == '' ? [] : o.split(sep), n == '' ? [] : n.split(sep) );
-		var str = '';
-
-		var oSpace = o.match(sep);
-		if (oSpace == null)
-			oSpace = ['\n'];
-		else
-			oSpace.push('\n');
-
-		var nSpace = n.match(sep);
-		if (nSpace == null)
-			nSpace = ['\n'];
-		else
-			nSpace.push('\n');
-
-		if (out.n.length == 0)
-		{
-			for (i = 0; i < out.o.length; i++)
-				str += '<del>' + out.o[i] + oSpace[i] + '</del>';
-		}
-		else
-		{
-			if (out.n[0].text == null)
-				for (n = 0; n < out.o.length && out.o[n].text == null; n++)
-					str += '<del>' + out.o[n] + oSpace[n] + '</del>';
-
-			for (i = 0; i < out.n.length; i++ ) {
-				if (out.n[i].text == null)
-					str += '<ins>' + out.n[i] + nSpace[i] + '</ins>';
-				else
-				{
-					var pre = '';
-					for (n = out.n[i].row + 1; n < out.o.length && out.o[n].text == null; n++)
-						pre += '<del>' + out.o[n] + oSpace[n] + '</del>';
-					str += out.n[i].text + nSpace[i] + pre;
-				}
-			}
-		}
-
-		return str;
 	};
 
 	this.enablePreview = function()

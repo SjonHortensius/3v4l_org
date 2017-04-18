@@ -16,6 +16,6 @@ cat ./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory
 
 [[ $1 == 'q' ]] && exit 0
 
-mv c.js c2.js
-curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c2.js" http://closure-compiler.appspot.com/compile > c.js
+curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c.js" http://closure-compiler.appspot.com/compile > c2.js
+cat c2.js ../ext/diff.js >c.js
 rm c2.js
