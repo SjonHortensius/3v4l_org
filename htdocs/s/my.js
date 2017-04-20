@@ -63,11 +63,6 @@ var evalOrg = {};
 		});
 	};
 
-	var isMobile = function()
-	{
-		return navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/);
-	};
-
 	this.richEditor = function()
 	{
 		if (this.editor)
@@ -83,7 +78,7 @@ var evalOrg = {};
 		textarea.value = code.textContent;
 
 		// Disable ace for mobile-devices; see https://github.com/ajaxorg/ace/issues/37
-		if (isMobile())
+		if (document.body.classList.contains('mobile'))
 			return;
 
 		ace.config.set('basePath', 'https://cdn.jsdelivr.net/ace/1.2.6/min/');
@@ -242,18 +237,13 @@ var evalOrg = {};
 		ref = ref[0] || $$('div#tab dd:first-of-type')[0];
 
 		$$('div#tab dd').forEach(function (dd){
-			if (dd == ref)
-				return;
-
-			var newContent;
+			if (!dd.hasAttribute('original'))
+				dd.setAttribute('original', dd.innerHTML);
 
 			if (diffDone)
 				dd.innerHTML = dd.getAttribute('original');
-			else
+			else if (dd != ref)
 			{
-				if (!dd.hasAttribute('original'))
-					dd.setAttribute('original', dd.innerHTML);
-
 				var fragment = document.createDocumentFragment(), node, swap;
 				var diff = JsDiff.diffWordsWithSpace(ref.innerHTML, dd.innerHTML);
 
@@ -734,5 +724,7 @@ var evalOrg = {};
 document.body.classList.add('js');
 if ('ontouchstart' in window)
 	document.body.classList.add('touch');
+if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
+	document.body.classList.add('mobile');
 
 window.addEventListener('load', function(){ evalOrg.initialize(); });

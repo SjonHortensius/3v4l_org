@@ -167,7 +167,7 @@ ul#tabs + div
  */
 
 code,
-body.touch textarea,
+body.mobile textarea,
 body.index:not(.js) textarea
 {
 	border: 0 solid black;
@@ -186,7 +186,7 @@ textarea[name=code]
 	display: none;
 }
 
-body.touch textarea,
+body.mobile textarea,
 body.index:not(.js) textarea
 {
 	overflow: auto;
@@ -194,12 +194,13 @@ body.index:not(.js) textarea
 	height: 250px;
 }
 
-body.touch code,
+body.mobile code,
 body.index:not(.js) code
 {
 	display: none;
 }
 
+body.mobile dd,
 body.touch dd
 {
 	max-height: 50em;
