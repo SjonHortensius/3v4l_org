@@ -245,7 +245,10 @@ var evalOrg = {};
 			else if (dd != ref)
 			{
 				var fragment = document.createDocumentFragment(), node, swap;
-				var diff = JsDiff.diffWordsWithSpace(ref.innerHTML, dd.innerHTML);
+				var diff = JsDiff.diffWordsWithSpace(
+					ref.hasChildNodes() ? ref.childNodes[0].textContent : '',
+					dd.hasChildNodes() ? dd.childNodes[0].textContent : ''
+				);
 
 				for (var i=0; i < diff.length; i++)
 				{
@@ -272,8 +275,14 @@ var evalOrg = {};
 					fragment.appendChild(node);
 				}
 
-				dd.textContent = '';
-				dd.appendChild(fragment);
+				// No output means childnodes is empty
+				if (!dd.hasChildNodes())
+					dd.appendChild(fragment);
+				else
+				{
+					dd.childNodes[0].textContent = '';
+					dd.insertBefore(fragment, dd.childNodes[0]);
+				}
 			}
 		});
 
