@@ -580,6 +580,11 @@ del
 	background-color: #ff4500;
 }
 
+header ul a[href="sponsor"]
+{
+	color: #c22;
+}
+
 /* page specific styles */
 body.index input#title,
 body.new input#title
