@@ -580,7 +580,7 @@ del
 	background-color: #ff4500;
 }
 
-header ul a[href="sponsor"]
+header ul a[data-funded="under"]
 {
 	color: #f00;
 }
@@ -748,7 +748,11 @@ body.query caption
 	#previewForm{			display: none; }
 	#uvTab{					display: none; }
 	header span{			display: none; }
+	header ul{				padding-right: 0; }
 	body.index .column li{	margin-bottom: 1em; }
+	/* keep menu on single line, remove bughunt & search; prevent LI from taking up space */
+	nav li:nth-of-type(2),
+	nav li:nth-of-type(3){	display: none; }
 }
 
 @media (max-width: 1000px)
@@ -756,4 +760,9 @@ body.query caption
 	input#title { width: 96% !important; }
 	form { padding: 0.5em; }
 	ul#tabs + div { padding: 0.5em; }
+}
+
+body.sponsor h2:first-of-type + ul li
+{
+	background-color: #cbffba;
 }
