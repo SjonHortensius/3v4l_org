@@ -744,6 +744,8 @@ body.query caption
 /* mobile specific */
 @media (max-width: 600px)
 {
+	ul#tabs li.disabled{	display: none; }
+	ul#tabs li a{			padding: 5px; }
 	#options:not(:empty){	margin-top: 0; }
 	#previewForm{			display: none; }
 	#uvTab{					display: none; }
