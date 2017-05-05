@@ -2,15 +2,25 @@
 
 class PhpShell_Action_Cli_AdminMessageCreate extends PhpShell_Action_Cli
 {
+	public $userinputConfig = [
+		'type' => [
+			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
+			'values' => ['ban', 'admin'],
+		],
+		'ip' => [
+			'source' => ['superglobal' => 'REQUEST', 'key' => 2],
+			'valueType' => 'scalar',
+			'regexp' => '~^[0-9.]+$~',
+		],
+		'message' => [
+			'source' => ['superglobal' => 'REQUEST', 'key' => 3],
+			'valueType' => 'scalar',
+		],
+	];
+
 	public function run()
 	{
-		$vars = array_combine(['x', 'x', 'type', 'ip', 'message'], $_SERVER['argv']);
-		print_r($vars);
-
-		if (count($_SERVER['argv']) < 3 || !in_array($vars['type'], ['ban', 'admin'], true))
-			die('incorrect parameters');
-
-		Basic::$cache->set($vars['type'].'Message::'. $vars['ip'], $vars['message']);
+		Basic::$cache->set(Basic::$userinput['type'].'Message::'. Basic::$userinput['ip'], Basic::$userinput['message']);
 
 		print('succes');
 	}
