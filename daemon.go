@@ -191,7 +191,7 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		output:     newOutput(raw, i, v),
 		version:    v,
 		exitCode:   exitCode,
-		created:    time.Now(),
+		created:    time.Now().UTC(),
 		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
 		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
 		maxMemory:  usage.Maxrss,
