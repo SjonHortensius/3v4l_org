@@ -7,8 +7,10 @@
 #include <stdio.h>
 #include <sys/utsname.h>
 #include <string.h>
+#include <stdbool.h>
 
 struct timeval diff;
+bool initDone = false;
 
 int (*org_gettimeofday)(struct timeval *tp, void *tzp);
 time_t (*org_time)(time_t *tloc);
@@ -31,22 +33,23 @@ _initLib(void)
 	}
 
 	org_gettimeofday(&diff, NULL);
-	diff.tv_sec -= offset;
-
-	// We were called with unparsable or NULL TIME env
-	if (offset == 0) {
+	if (offset != 0) {
+		diff.tv_sec -= offset;
+	} else {
 		diff.tv_sec = 0;
-//fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
+//		fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
 	}
 
 //fprintf(stderr, "\n%s has set a custom offset: %d, diff.tv_sec=%ld diff.tv_usec=%ld\n", __FUNCTION__, offset, diff.tv_sec, diff.tv_usec);
 
 	unsetenv("TIME");
 	unsetenv("LD_PRELOAD");
+
+	initDone = true;
 }
 
 int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
-	if (0 == diff.tv_sec)
+	if (!initDone)
 		_initLib();
 
 	org_gettimeofday(tp, tzp);
@@ -80,7 +83,7 @@ time_t time(time_t *t) {
 }
 
 int clock_gettime(clockid_t clk_id, struct timespec *tp) {
-	if (0 == diff.tv_sec)
+	if (!initDone)
 		_initLib();
 
 	int r = org_clock_gettime(clk_id, tp);
@@ -110,7 +113,7 @@ struct tm *localtime_r(time_t *timep, struct tm *result) {
 }
 
 int ftime(struct timeb *tp) {
-	if (0 == diff.tv_sec)
+	if (!initDone)
 		_initLib();
 
 	ftime(tp);
@@ -127,7 +130,7 @@ int ftime(struct timeb *tp) {
 
 int uname(struct utsname *buf)
 {
-	if (0 == diff.tv_sec)
+	if (!initDone)
 		_initLib();
 
 	strcpy(buf->sysname, "Linux");
