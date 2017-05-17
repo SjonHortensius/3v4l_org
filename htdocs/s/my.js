@@ -217,7 +217,7 @@ var evalOrg = {};
 
 	var outputAddDiff = function()
 	{
-		if ($('#diff') || $$('dd').length < 2)
+		if ($('#diff') || $$('#tab dd').length < 2)
 			return;
 
 		var a = document.createElement('a');
