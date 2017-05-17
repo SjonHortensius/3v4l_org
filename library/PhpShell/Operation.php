@@ -8,7 +8,7 @@ class PhpShell_Operation extends PhpShell_Entity
 	];
 	protected static $_numerical = ['count'];
 
-	public static function create(array $data = [], bool $reload = true)
+	public static function create(array $data = [], bool $reload = true): Basic_Entity
 	{
 		if (isset($data['operand']) && strlen($data['operand']) > 64)
 			return false;
@@ -19,7 +19,7 @@ class PhpShell_Operation extends PhpShell_Entity
 		return self::getStub($data);
 	}
 
-	public function save(array $data = [])
+	public function save(array $data = []): bool
 	{
 		if ($this->_isNew())
 			return parent::save($data);

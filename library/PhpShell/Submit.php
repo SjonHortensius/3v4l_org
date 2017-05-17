@@ -8,7 +8,7 @@ class PhpShell_Submit extends PhpShell_Entity
 	];
 	protected static $_numerical = ['count'];
 
-	public static function create(array $data = array(), bool $reload = true)
+	public static function create(array $data = array(), bool $reload = true): Basic_Entity
 	{
 		# incompatible with parent by design! (no need to return object that is ignored)
 		return Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = timezone('UTC'::text, now()), count = count + 1 WHERE input = :input AND ip = :ip RETURNING *)

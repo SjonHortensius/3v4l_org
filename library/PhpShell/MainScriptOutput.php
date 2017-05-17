@@ -2,7 +2,16 @@
 /* Optimized EntitySet which fetches partial related entities in a single query */
 class PhpShell_MainScriptOutput extends Basic_EntitySet
 {
-	protected function _query($fields = "*", $groupBy = null)
+	public function __construct()
+	{
+		parent::__construct(PhpShell_Result::class);
+
+		$this->addJoin(PhpShell_Output::class, "output.id = result.output")
+			->addJoin(PhpShell_Version::class, "version.id = result.version")
+			->addJoin(PhpShell_Assertion::class, "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
+	}
+
+	protected function _query($fields = "*", $groupBy = null): Basic_DatabaseQuery
 	{
 		$fields = 'result.input, result."exitCode",
 			output.hash as "output$hash", output.raw as "output$raw",

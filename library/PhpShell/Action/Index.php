@@ -12,8 +12,9 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 	{
 		parent::init();
 
-		$this->last = new PhpShell_LastScriptsList(PhpShell_Input, 'input.run > 0 AND "runQuick" ISNULL', [], ['id' => false]);
-		$this->last->addJoin('result', "result.input = input.id AND result.version >= 32");
+		$this->last = (new PhpShell_LastScriptsList)
+			->getSubset('input.run > 0 AND "runQuick" ISNULL', [])
+			->setOrder(['id' => false]);
 
 		$this->popular = Basic::$cache->get('active_scripts', function(){ return [];}, 60);
 	}

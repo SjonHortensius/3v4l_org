@@ -36,7 +36,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 	{
 		$opCount = Basic::$cache->get(__CLASS__.'::counts', function(){
 			$v= [];
-			foreach (PhpShell_Operation::find()->getCount('operation') as $op => $count)
+			foreach (PhpShell_Operation::find()->getAggregate("COUNT(*), operation", 'operation')->fetchArray('count', 'operation') as $op => $count)
 				$v[$op] = $op .' ('. number_format($count) .' occurrences)';
 			return $v;
 		}, (86400/3*2));
@@ -75,8 +75,8 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 		$this->entries = new PhpShell_SearchScriptsList(PhpShell_Input, $q, $params, ['input.id' => !true]);
 		//this produces incomplete variance and ~time but is ~4 times faster
-		$this->entries->addJoin('result_current', "result_current.input = input.id AND result_current.version >= 32");
-		$this->entries->addJoin('operations', "operations.input = input.id");
+		$this->entries->addJoin(PhpShell_ResultCurrent::class, "result_current.input = input.id AND result_current.version >= 32");
+		$this->entries->addJoin(PhpShell_Operations::class, "operations.input = input.id");
 
 		return parent::run();
 	}

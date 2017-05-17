@@ -6,7 +6,7 @@ class PhpShell_InputSource extends PhpShell_Entity
 		'input' => PhpShell_Input::class,
 	];
 
-	public static function create(array $data = [], bool $reload = true)
+	public static function create(array $data = [], bool $reload = true): Basic_Entity
 	{
 		$q = Basic::$database->prepare("INSERT INTO input_src VALUES(:input, :raw)");
 

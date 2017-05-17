@@ -48,7 +48,7 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	/** @return self */
-	public static function create(array $data = [], bool $reload = true)
+	public static function create(array $data = [], bool $reload = true): Basic_Entity
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service', [], 402);
@@ -166,20 +166,15 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getRfcOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run], ['version.released' => false]);
-		$results->addJoin('output', "output.id = result.output");
-		$results->addJoin('version', "version.id = result.version");
-		$results->addJoin('assertion', "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run]);
 
-		return $results;
+		return $results->setOrder(['version.released' => false]);
 	}
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run], ['version.order' => true]);
-		$results->addJoin('output', "output.id = result.output");
-		$results->addJoin('version', "version.id = result.version");
-		$results->addJoin('assertion', "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
+		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run]);
+		$results->setOrder(['version.order' => true]);
 
 		$abbrMax = function($name)
 		{
@@ -329,7 +324,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
 	}
 
-	protected function _checkPermissions($action)
+	protected function _checkPermissions($action): bool
 	{
 		if ($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title)
 		{

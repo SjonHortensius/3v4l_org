@@ -52,17 +52,6 @@ class PhpShell_Action_New extends PhpShell_Action
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
 
-		// parse phpt format
-		if (preg_match('~^--TEST--\n(.*)\n(?:\n--SKIPIF--\n.*)?--FILE--\n(.*)(?:\?>)?\n--EXPECT--\n(.*)$~s', $code, $m))
-		{
-			$title = substr($m[1], 0, 64);
-			$code = $m[2];
-
-			$hash = PhpShell_Input::getHash($code);
-			// Match format from daemon
-			$assertOutputHash = base64_encode(sha1($m[3], true));
-		}
-
 		if (isset(Basic::$userinput['version']))
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
@@ -121,15 +110,6 @@ class PhpShell_Action_New extends PhpShell_Action
 				'title' => $title,
 				'runArchived' => Basic::$userinput['archived'],
 				'runQuick' => $version,
-			]);
-		}
-
-		if (isset($assertOutput))
-		{
-			PhpShell_Assertion::create([
-				'input' => $input,
-				'outputHash' => $assertOutput,
-				'user' => $this->user,
 			]);
 		}
 

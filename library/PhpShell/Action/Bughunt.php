@@ -33,7 +33,9 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init()
 	{
-		$versions = PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [], ['version.order' => false])->getSimpleList('name', 'name');
+		$versions = PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [])
+				->setOrder(['version.order' => false])
+				->getSimpleList('name', 'name');
 		Basic::$userinput->versions->values = $versions;
 		Basic::$userinput->controls->values = $versions;
 
@@ -51,29 +53,22 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
 
-		$params = []; $joins=[]; $q = "true";
-		foreach (Basic::$userinput['versions'] as $i => $v)
-		{
-			$alias = 'v'.$i;
-			$q .= "\nAND {$alias}.version = ?".($i>0? " AND {$alias}.output = v0.output" : "");
+		$this->entries = PhpShell_Input::find("input.id NOT IN (SELECT input FROM bughunt_blacklist)", [])->setOrder(['input.id' => true]);
 
-			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-			array_push($params, PhpShell_Version::byName($v)->id);
-		}
+		foreach (['versions', 'controls'] as $idx)
+			foreach (Basic::$userinput[$idx] as $i => $v)
+			{
+				$alias = $idx[0].$i;
 
-		foreach (Basic::$userinput['controls'] as $i => $v)
-		{
-			$alias = 'c'.$i;
-			$q .= "\nAND {$alias}.version = ? AND {$alias}.output != v0.output".($i>0? " AND {$alias}.output = c0.output" : "");
-			array_push($joins, ['result_current', "{$alias}.input = input.id AND {$alias}.run = input.run", $alias]);
-			array_push($params, PhpShell_Version::byName($v)->id);
-		}
+				$this->entries = $this->entries->addJoin(PhpShell_ResultCurrent::class, "{$alias}.input = input.id AND {$alias}.run = input.run", $alias, "INNER", false)
+					->getSubset("\n{$alias}.version = ?", [PhpShell_Version::byName($v)->id]);
 
-		$q .= "\nAND input.id NOT IN (SELECT input FROM bughunt_blacklist)\n";
+				if ('controls' == $idx)
+					$this->entries = $this->entries->getSubset("{$alias}.output != v0.output");
 
-		$this->entries = new PhpShell_BughuntSet(PhpShell_Input, $q, $params, ['input.id' => true]);
-		foreach ($joins as $join)
-			$this->entries->addJoin(...$join);
+				if ($i > 0)
+					$this->entries = $this->entries->getSubset("{$alias}.output = {$idx[0]}0.output");
+			}
 
 		return parent::run();
 	}
