@@ -1,14 +1,14 @@
 * registering an account
 	* notifications when new versions change your output (or when they don't too maybe?)
-* diff output
 * nightly builds
 * webgrind output, valgrind
 
-* inline diff, 1 output en per regel overzicht van versie-verschillen
 * my-favorites
 * specify majors, [] > 5.1, [] > 5.2.*
 
 premium: (25 $ / m)
-	segfault service - submit a segfault and we'll create a bug or tell you what your doing wrong (max 3 / month) (gdb integration? zbacktrace? )
-	personal subdomain + script submitted by ... on ..
-	
+	personal subdomain / script submitted by ... on ..
+
+phar.hosting with single selectable version and HTML output. Interactive, emulate fastcgi
+
+"navigable tree of history, so like your "based on xxxxx" thing but showing a complete tree back to the initial paste"
