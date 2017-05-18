@@ -11,7 +11,7 @@ class PhpShell_Operation extends PhpShell_Entity
 	public static function create(array $data = [], bool $reload = true): Basic_Entity
 	{
 		if (isset($data['operand']) && strlen($data['operand']) > 64)
-			return false;
+			throw new PhpShell_Operation_InvalidDataException('Operand too long');
 
 		// Cannot use parent::create because psql will log "currval of sequence "operations_id_seq" is not yet defined in this session"
 		Basic::$database->query("INSERT INTO operations VALUES (:input, :operation, :operand, :count)", $data);

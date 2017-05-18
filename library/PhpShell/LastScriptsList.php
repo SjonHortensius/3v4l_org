@@ -5,10 +5,11 @@ class PhpShell_LastScriptsList extends Basic_EntitySet
 	{
 		parent::__construct(PhpShell_Input::class);
 
-		$this->addJoin(PhpShell_Result, "result.input = input.id AND result.version >= 32");
+		// Using Current produces incomplete variance and ~time but is ~4 times faster
+		$this->addJoin(PhpShell_ResultCurrent, "result_current.input = input.id AND result_current.version >= 32");
 	}
 
-	protected function _query($fields = "*", $groupBy = null): Basic_DatabaseQuery
+	protected function _query(string $fields, $groupBy = null): Basic_DatabaseQuery
 	{
 		// sourceId prevents $this->prevResult->source->id from fetching source.* from input
 		$fields = 'input.*, AVG("userTime") "userTime",

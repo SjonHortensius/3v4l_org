@@ -2,7 +2,7 @@
 
 class PhpShell_SearchScriptsList extends PhpShell_LastScriptsList
 {
-	protected function _query($fields = "*", $groupBy = null)
+	protected function _query(string $fields = "*", $groupBy = null): Basic_DatabaseQuery
 	{
 		$fields = 'SUM(operations.count) count,
 			input.*,

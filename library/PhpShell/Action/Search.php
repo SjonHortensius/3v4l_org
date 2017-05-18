@@ -64,19 +64,13 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 	public function run()
 	{
-		$q = "input.state = 'done' AND operation = ?";
-		$params = array(Basic::$userinput['operation']);
+		$this->entries = (new PhpShell_SearchScriptsList)
+			->getSubset("input.state = 'done' AND operation = ?", [Basic::$userinput['operation']])
+			->addJoin(PhpShell_Operation::class, "operations.input = input.id")
+			->setOrder(['input.id' => false]);
 
 		if (isset(Basic::$userinput['operand']))
-		{
-			$q .= " AND operand = ?";
-			array_push($params, Basic::$userinput['operand']);
-		}
-
-		$this->entries = new PhpShell_SearchScriptsList(PhpShell_Input, $q, $params, ['input.id' => !true]);
-		//this produces incomplete variance and ~time but is ~4 times faster
-		$this->entries->addJoin(PhpShell_ResultCurrent::class, "result_current.input = input.id AND result_current.version >= 32");
-		$this->entries->addJoin(PhpShell_Operations::class, "operations.input = input.id");
+			$this->entries = $this->entries->getSubset("operand = ?", [Basic::$userinput['operand']]);
 
 		return parent::run();
 	}

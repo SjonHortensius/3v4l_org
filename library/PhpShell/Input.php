@@ -129,7 +129,14 @@ class PhpShell_Input extends PhpShell_Entity
 			else
 				list($operation, $operand) = explode(':', $key, 2);
 
-			PhpShell_Operation::create(['input' => $this, 'operation' => $operation, 'operand' => $operand, 'count' => $count]);
+			try
+			{
+				PhpShell_Operation::create(['input' => $this, 'operation' => $operation, 'operand' => $operand, 'count' => $count]);
+			}
+			catch (PhpShell_Operation_InvalidDataException $e)
+			{
+					// ignore
+			}
 		}
 
 		$this->save(['operationCount' => count($operations)]);
@@ -166,14 +173,14 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getRfcOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run]);
+		$results = (new PhpShell_MainScriptOutput)->getSubset('result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run]);
 
 		return $results->setOrder(['version.released' => false]);
 	}
 
 	public function getOutput()
 	{
-		$results = new PhpShell_MainScriptOutput(PhpShell_Result, 'result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run]);
+		$results = (new PhpShell_MainScriptOutput)->getSubset('result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run]);
 		$results->setOrder(['version.order' => true]);
 
 		$abbrMax = function($name)

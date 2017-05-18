@@ -73,12 +73,12 @@ class PhpShell_Action_New extends PhpShell_Action
 			if (!$input->runArchived && Basic::$userinput['archived'])
 				$input->save(['runArchived' => 1]);
 
-			// Allow upgrading quick>full
+			// Allow upgrading quick>full | quick never has title so store that too
 			if (isset($input->runQuick) && !isset($version))
-				$input->save(['runQuick' => null]);
+				$input->save(['runQuick' => null, 'title' => $title]);
 
 			// Prevent partially running a full script (because of duplicate result)
-			if (!isset($version) || 0 == $input->getResult($version)->getCount(null, true))
+			if (!isset($version) || 0 == count($input->getResult($version)))
 				$input->trigger($version);
 		}
 		// No results from ::byHash

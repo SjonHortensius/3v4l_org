@@ -10,9 +10,10 @@ class PhpShell_Submit extends PhpShell_Entity
 
 	public static function create(array $data = array(), bool $reload = true): Basic_Entity
 	{
-		# incompatible with parent by design! (no need to return object that is ignored)
-		return Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = timezone('UTC'::text, now()), count = count + 1 WHERE input = :input AND ip = :ip RETURNING *)
+		Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = timezone('UTC'::text, now()), count = count + 1 WHERE input = :input AND ip = :ip RETURNING *)
 			INSERT INTO submit SELECT :input, :ip, timezone('UTC'::text, now()), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
 			$data);
+
+		return PhpShell_Submit::getStub($data);
 	}
 }
