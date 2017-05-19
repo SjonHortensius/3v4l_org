@@ -64,7 +64,8 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 	public function run()
 	{
-		$this->entries = (new PhpShell_SearchScriptsList)
+		$this->entries = PhpShell_Input::find()
+			->includePerformance()
 			->getSubset("input.state = 'done' AND operation = ?", [Basic::$userinput['operation']])
 			->addJoin(PhpShell_Operation::class, "operations.input = input.id")
 			->setOrder(['input.id' => false]);

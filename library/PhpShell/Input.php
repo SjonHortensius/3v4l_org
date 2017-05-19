@@ -309,22 +309,6 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->getResult($version)->getSubset('"exitCode" = 0');
 	}
 
-	public function listOperations()
-	{
-		$operations = [
-			'FETCH_CLASS',
-			'INIT_FCALL',
-		];
-
-		// We ignore $operation here for now
-		$ops = [];
-		foreach ($this->getRelated('PhpShell_Operation')->getSubset("operation IN('".implode("','", $operations)."')") as $row)
-			$ops[ $row->operand ] += $row->count;
-
-		arsort($ops);
-		return substr(implode(', ', array_filter(array_keys($ops))), 0, 65);
-	}
-
 	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
 	{
 		$dt = new DateTime($this->created, new DateTimeZone('UTC'));

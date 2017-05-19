@@ -15,7 +15,9 @@ class PhpShell_Action_Last extends PhpShell_Action
 
 	public function run()
 	{
-		$this->entries = (new PhpShell_LastScriptsList)
+		$this->entries = PhpShell_Input::find()
+			->includeVariance()
+			->includeOperations()
 			->setOrder(['id' => false]);
 
 		if ($_GET['draft']==1)

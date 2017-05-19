@@ -12,10 +12,10 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 	{
 		parent::init();
 
-		$this->last = (new PhpShell_LastScriptsList)
+		$this->last = PhpShell_Input::find()
 			->getSubset('input.run > 0 AND "runQuick" ISNULL', [])
 			->setOrder(['id' => false]);
 
-		$this->popular = Basic::$cache->get('active_scripts', function(){ return [];}, 60);
+		$this->popular = Basic::$cache->get('active_scripts', function(){ return []; }, 60);
 	}
 }

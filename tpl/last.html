@@ -30,7 +30,7 @@
 				<td>{if ($this->row->runArchived)}<i>{/}{row->run}{if ($this->row->runArchived)}</i>{/}</td>
 				<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
 				<td>{row->variance}</td>
-				<td>{row->listOperations()}</td>
+				<td>{print substr($this->row->operations, 0, 64);}</td>
 			</tr>
 
 			{$this->prevrow = $this->row;}
