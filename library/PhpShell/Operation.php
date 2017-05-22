@@ -32,15 +32,17 @@ class PhpShell_Operation extends PhpShell_Entity
 		$this->count = $data['count'];
 
 		if (isset($this->operand))
-			return Basic::$database->query(
+			Basic::$database->query(
 				"UPDATE \"operations\" SET \"count\" = ? WHERE operation = ? AND operand = ? AND input = ?",
 				[$this->count, $this->operation, $this->operand, $this->input]
 			);
 		else
-			return Basic::$database->query(
+			Basic::$database->query(
 				"UPDATE \"operations\" SET \"count\" = ? WHERE operation = ? AND operand IS NULL AND input = ?",
 				[$this->count, $this->operation, $this->input]
 			);
+
+		return true;
 	}
 
 	public function delete()

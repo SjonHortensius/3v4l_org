@@ -315,14 +315,12 @@ class PhpShell_Input extends PhpShell_Entity
 		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
 	}
 
-	protected function _checkPermissions($action): bool
+	protected function _checkPermissions($action): void
 	{
-		if ($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title)
-		{
-			if (!isset($this->user) || $this->user->id !== Basic::$action->user->id)
-				throw new PhpShell_Input_TitleChangeNotAllowedException('Permission denied, only the owner can update the title', [], 403);
-		}
+		if (!($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title))
+			return;
 
-		return true;
+		if (!isset($this->user) || $this->user->id !== Basic::$action->user->id)
+			throw new PhpShell_Input_TitleChangeNotAllowedException('Permission denied, only the owner can update the title', [], 403);
 	}
 }
