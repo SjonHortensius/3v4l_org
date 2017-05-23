@@ -2,22 +2,23 @@
 <html dir="ltr" lang="en-US">
 <head>
 	<title>Online PHP editor | {title}</title>
-	<base href="{baseHref}"/>
-	<meta name="keywords" content="php,test,run,execute,online,interactive,shell,console,codepad,fiddle,xdebug,vld,performance,hhvm"/>
-	<meta name="description" content="Test your php code: get statistics, vld output and compare output from all versions. {title}"/>
-	<meta name="author" content="Sjon Hortensius - root@3v4l.org"/>
+	<base href="{baseHref}">
+	<meta name="keywords" content="php,test,run,execute,online,interactive,shell,console,codepad,fiddle,xdebug,vld,performance,hhvm">
+	<meta name="description" content="Test your php code: get statistics, vld output and compare output from all versions. {title}">
+	<meta name="author" content="Sjon Hortensius - root@3v4l.org">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-	<link href="/favicon.ico" rel="shortcut icon" type="image/x-icon"/>
+	<link rel="manifest" href="/manifest">
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 {if (Basic::$config->PRODUCTION_MODE)}
 	{if ("index" == Basic::$userinput['action'])}
 		<style>{print file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css');}</style>
 	{:}
-		<link rel="stylesheet" href="/s/c.css"/>
+		<link rel="stylesheet" href="/s/c.css">
 	{/}
 {:}
-	<link rel="stylesheet" href="/s/my.css"/>
-	<link rel="stylesheet" href="/ext/glyphicons-halflings.css"/>
+	<link rel="stylesheet" href="/s/my.css">
+	<link rel="stylesheet" href="/ext/glyphicons-halflings.css">
 {/}
 </head>
 

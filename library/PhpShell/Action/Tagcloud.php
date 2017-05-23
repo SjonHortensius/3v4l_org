@@ -1,6 +1,6 @@
 <?php
 // Extended by _Search
-class PhpShell_Action_Tagcloud extends PhpShell_Action
+abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 {
 	public $userinputConfig = array(
 		'ip' => [

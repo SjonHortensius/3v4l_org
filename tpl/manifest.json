@@ -1,0 +1,12 @@
+{!-- nginx shouldn't handle .json directly as we use it for refresh in .js --}
+"short_name": "PHP via 3v4l",
+"name": "online php shell",
+"start_url": "/?from=homescreen",
+"icons": [
+	{
+		"src": "/s/logo.png",
+		"sizes": "66x21",
+		"type":"image/png"
+	}
+],
+"display": "standalone"

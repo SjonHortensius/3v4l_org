@@ -23,7 +23,6 @@ class PhpShell_InputSet extends Basic_EntitySet
 
 	public function includeOperations()
 	{
-		$this->addJoin(PhpShell_Operation::class, "operations.input = input.id");
 		$this->_fields []= "(SELECT string_agg(operand, ', ') FROM (SELECT operand FROM operations WHERE input = id AND operation IN('FETCH_CLASS','INIT_FCALL') ORDER BY count DESC LIMIT 10) AS popularOperations) operations";
 
 		return $this;

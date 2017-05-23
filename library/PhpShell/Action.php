@@ -33,7 +33,7 @@ class PhpShell_Action extends Basic_Action
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
 		{
 			session_name(Basic::$config->Session->name);
-			session_set_cookie_params($config->lifetime, Basic::$config->Site->baseUrl);
+			session_set_cookie_params(Basic::$config->lifetime, Basic::$config->Site->baseUrl);
 			session_start();
 		}
 
