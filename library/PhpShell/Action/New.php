@@ -46,7 +46,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		return Basic::$cache->get('quickVersionList', function(){
 			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("NOT name IN('vld', 'segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
+			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%'", [], ['"isHelper"' => true, 'version.order' => false]);
 
 			return $v->getSimpleList('name', 'name');
 		}, 30);
