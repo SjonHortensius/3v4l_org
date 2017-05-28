@@ -105,6 +105,8 @@ var evalOrg = {};
 		}.bind(this));
 
 		this.editor.on('change', function(){
+			$('#newForm').classList.add('changed');
+
 			if ($('input[type=submit][disabled]'))
 				$('input[type=submit]').removeAttribute('disabled');
 		});
@@ -294,26 +296,9 @@ var evalOrg = {};
 	this.enablePreview = function()
 	{
 		if (!$('input[type=submit]'))
-			return $('div #version').parentNode.remove();
+			return $('form#previewForm').remove();
 
-		var p = document.createElement('form');
-		p.setAttribute('id', 'previewForm');
-
-		var b = document.createElement('button');
-		b.setAttribute('name', 'version');
-		b.setAttribute('type', 'button');
-		b.setAttribute('title', 'shortcut: alt+enter');
-		b.appendChild(document.createTextNode('preview in'));
-		b.addEventListener('click', this.preview.bind(this));
-		p.appendChild(b);
-
-		// Move existing select from #options to after submit button, remove original parent
-		var d = $('div #version').parentNode;
-		p.appendChild($('#version'));
-		d.parentNode.removeChild(d);
-
-		$('input[type=submit]').parentNode.insertBefore(p, null);
-		$('#version').removeAttribute('disabled');
+		$('#previewForm button').addEventListener('click', this.preview.bind(this));
 	};
 
 	this.preview = function()

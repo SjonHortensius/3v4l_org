@@ -407,20 +407,23 @@ input:disabled + label
 	color: #ccc;
 }
 
-input:disabled + #previewForm
+#previewForm
 {
 	display: none;
 }
 
+#newForm.changed + #previewForm
+{
+	display: block;
+}
+
 #previewForm
 {
-	background-color: #ccc;
-	border-radius: 4px;
-	border: 1px solid #ddd;
+	box-shadow: none;
 	padding: 0.5em 0 0.5em;
-	display: inline;
-	width: 200px;
-	margin-left: 20px;
+	position: absolute;
+	margin-left: 125px;
+	margin-top: -82px;
 }
 
 select#version

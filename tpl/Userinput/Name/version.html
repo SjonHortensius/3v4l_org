@@ -1,6 +1,4 @@
-{!-- disabled by default so non-js people will still submit fully, instead of quick (because input is located in normal form by default) --}
-
-<select class="{if ($this->input->required)}required {/}{state}" name="version" id="version" disabled="disabled">
+<select class="{if ($this->input->required)}required {/}{state}" name="version" id="version">
 	{!-- fetch values manually since Basic_Userinput::getHtmlFor will not run init(), not populating the values --}
 
 	{foreach (PhpShell_Action_New::getPreviewVersions() as $this->value)}
