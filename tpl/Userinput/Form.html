@@ -1,3 +1,7 @@
+{if (Basic::$action instanceof PhpShell_Action_New)}
+	{$this->formAction = '/new';}
+{/}
+
 <form method="post" action="{formAction}" id="{print str_replace('/', '', $this->formAction);}Form"{if ($this->formContainsFile)} enctype="multipart/form-data"{/}{if ($this->hasBeenSubmitted)} class="submit-attempted"{/}>
 	{foreach (Basic::$userinput as $this->input)}
 		{$this->inputs .= $this->input->getHtml();}

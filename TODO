@@ -12,3 +12,7 @@ premium: (25 $ / m)
 phar.hosting with single selectable version and HTML output. Interactive, emulate fastcgi
 
 "navigable tree of history, so like your "based on xxxxx" thing but showing a complete tree back to the initial paste"
+
+move version. options from html to js
+don't move preview in js, use html for quicker rendering
+[whitelisted] referal logging

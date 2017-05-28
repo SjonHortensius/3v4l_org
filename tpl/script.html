@@ -5,45 +5,9 @@
 		<meta itemprop="name" content="{input->short}" />
 	{/}
 
-	{!-- render form for Action_New manually --}
-	<form method="post" action="/new" id="newForm">
-		<div>
-			<input type="text" name="title" id="title" size="48" maxlength="64" value="{input->title}" placeholder="Untitled" />
-			<time itemprop="datePublished" datetime="{input->getCreatedUtc()}">@ {input->getCreatedUtc()}</time>
-		</div>
-
-		<div>
-			<textarea name="code"></textarea>
-			<code itemprop="articleBody">{input->getCode()}</code>
-		</div>
-
-		<div id="options">
-			<div>
-				<select class="valid" name="version" id="version" disabled="disabled">
-					{foreach ($this->quickVersionList as $this->version)}
-						<option>{version}
-					{/}
-				</select>
-			</div>
-
-			<div>
-				<input class="valid" name="archived" id="archived_1" value="1" type="checkbox" data-ran-archived="{input->runArchived}" />
-				<label for="archived_1" title="{if ($this->input->runArchived)}[v] {/}Include PHP versions that are older than 3 years">eol versions</label>
-			</div>
-
-			{if (isset($this->input->source) && !isset($this->input->source->runQuick))}
-				<div><a itemprop="isBasedOnUrl" href="/{input->source->short}"><i class="icon-share-alt"></i>based on {input->source->short}</a></div>
-			{/}
-
-			{if (isset($this->input->user))}
-				<div><a itemprop="author" rel="external" href="/~{input->user->name}"><i class="icon-user"></i>created by {input->user->name}</a></div>
-			{/}
-		</div>
-
-		{if (in_array($this->input->state, array('new', 'done', 'busy')))}
-			<input type="submit" value="eval();" title="shortcut: ctrl+enter" />
-		{/}
-	</form>
+	{$formAction = new PhpShell_Action_New;}
+	{$formAction->input = $this->input;}
+	{print Basic_Userinput::getHtmlFor($formAction, null, ['code' => $this->input->getCode(), 'title' => $this->input->title]);}
 
 	<noscript>
 		{if ('busy' == $this->input->state)}
@@ -51,7 +15,7 @@
 		{/}
 
 		<div class="alert warning">
-			{!-- because we don't output code in textarea in html (for spiders it is in <code>) --}
+			{!-- because we don't output code in textarea in html (for spiders it is in CODE) --}
 			<h2>Enable javascript to submit</h2>
 			<p>You have javascript disabled. You will not be able to edit any code.</p>
 		</div>

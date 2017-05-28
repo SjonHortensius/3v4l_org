@@ -1,5 +1,9 @@
+{!-- disabled by default so non-js people will still submit fully, instead of quick (because input is located in normal form by default) --}
+
 <select class="{if ($this->input->required)}required {/}{state}" name="version" id="version" disabled="disabled">
-	{foreach ($this->input->values as $this->value => $this->description)}
+	{!-- fetch values manually since Basic_Userinput::getHtmlFor will not run init(), not populating the values --}
+
+	{foreach (PhpShell_Action_New::getPreviewVersions() as $this->value => $this->description)}
 		<option{if ($this->value == $this->rawValue)} selected="selected"{/}>
 			{description}
 	{/}

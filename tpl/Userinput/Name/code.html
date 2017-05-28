@@ -1,8 +1,8 @@
-<textarea name="code">
+<textarea name="code"></textarea>
+<code itemprop="articleBody" class="{if ($this->input->required)}required {/}{state}">
 	{if (isset($this->input->rawValue))}
 		{input->rawValue}
 	{:}
 		{input->default}
 	{/}
-</textarea>
-<code class="{if ($this->input->required)}required {/}{state}"></code>
+</code>

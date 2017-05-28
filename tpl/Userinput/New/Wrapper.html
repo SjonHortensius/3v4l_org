@@ -1,3 +1,10 @@
 <div>
 	{*userInputHtml}
 </div>
+
+{if ('code' == $this->input->source['key'])}
+	<div id="options">
+{/}
+{if ('archived' == $this->input->source['key'])}
+	</div>
+{/}

@@ -36,14 +36,20 @@ class PhpShell_Action_New extends PhpShell_Action
 
 	public function init()
 	{
-		$this->userinputConfig['version']['values'] = Basic::$cache->get('quickVersionList', function(){
+		$this->userinputConfig['version']['values'] = self::getPreviewVersions();
+
+		parent::init();
+	}
+
+	// separate method for version.html
+	public static function getPreviewVersions(): array
+	{
+		return Basic::$cache->get('quickVersionList', function(){
 			# exclude all versions that aren't always stored by the daemon
 			$v = PhpShell_Version::find("NOT name IN('vld', 'segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
 
 			return $v->getSimpleList('name', 'name');
 		}, 30);
-
-		parent::init();
 	}
 
 	public function run()
@@ -116,7 +122,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		if (!isset($version))
 		{
 			usleep(250 * 1000);
-			die(header('Location: /'. $input->short, 302));
+			Basic::$controller->redirect($input->short);
 		}
 
 		//BUG? this will return directly for non-new inputs

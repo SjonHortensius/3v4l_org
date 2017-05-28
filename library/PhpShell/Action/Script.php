@@ -48,17 +48,10 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$_REQUEST[0] = str_replace('.json', '', Basic::$userinput['script']);
 		}
 
-		// copied from PhpShell_Action_New::init
-		$this->quickVersionList = Basic::$cache->get('quickVersionList', function(){
-			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("NOT name IN('vld', 'segfault', 'hhvm-bytecode')", [], ['"isHelper"' => true, 'version.order' => false]);
-
-			return $v->getSimpleList('name', 'name');
-		}, 30);
-
-		// Rebecca
-		if (Basic::$userinput['script'] == '1bYJv')
+		// Rebecca, April 1st
+		if (in_array(Basic::$userinput['script'], ['1bYJv', 'p32ZU']))
 			array_push($this->cspDirectives['child-src'], 'https://www.youtube.com');
+
 		parent::init();
 	}
 
