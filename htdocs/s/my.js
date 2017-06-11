@@ -78,6 +78,10 @@ var evalOrg = {};
 
 		textarea.value = code.textContent;
 
+		// If ace somehow doesn't load; make sure js doesn't crash
+		if ('object' != typeof ace)
+			document.body.classList.add('mobile');
+
 		// Disable ace for mobile-devices; see https://github.com/ajaxorg/ace/issues/37
 		if (document.body.classList.contains('mobile'))
 			return;
@@ -486,6 +490,7 @@ var evalOrg = {};
 		}
 
 		outputAddExpander();
+		outputAddDiff();
 	};
 
 	var perfAddHeader = function(el, name, sum)
