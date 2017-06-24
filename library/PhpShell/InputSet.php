@@ -8,7 +8,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 	{
 		// Using Current produces incomplete variance and ~time but is ~4 times faster
 		$this->addJoin(PhpShell_ResultCurrent::class, "result_current.input = input.id AND result_current.version >= 32");
-		$this->_fields []= "(COUNT(DISTINCT output)-1) * 100 / COUNT(output) variance";
+		$this->_fields []= "(COUNT(DISTINCT result_current.output)-1) * 100 / COUNT(result_current.output) variance";
 
 		return $this;
 	}
@@ -16,7 +16,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 	public function includePerformance()
 	{
 		$this->includeVariance();
-		$this->fields []= 'AVG("userTime") "userTime", AVG("systemTime") "systemTime", AVG("maxMemory") "maxMemory"';
+		$this->_fields []= 'AVG("userTime") "userTime", AVG("systemTime") "systemTime", AVG("maxMemory") "maxMemory"';
 
 		return $this;
 	}

@@ -28,7 +28,7 @@
 			<td><time datetime="{result->getCreatedUtc()}">{result->getCreatedUtc()}</time></td>
 			<td>{result->run}</td>
 			<td>{result->operationCount}</td>
-			<td>{result->listOperations()}</td>
+			<td>{print substr($this->result->operations, 0, 64);}</td>
 		</tr>
 		{/}
 	</tbody>

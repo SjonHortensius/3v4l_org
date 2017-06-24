@@ -53,7 +53,9 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
 
-		$this->entries = PhpShell_Input::find("input.id NOT IN (SELECT input FROM bughunt_blacklist)", [])->setOrder(['input.id' => true]);
+		$this->entries = PhpShell_Input::find("input.id NOT IN (SELECT input FROM bughunt_blacklist)", [])
+			->setOrder(['input.id' => true])
+			->includeOperations();
 
 		foreach (['versions', 'controls'] as $idx)
 			foreach (Basic::$userinput[$idx] as $i => $v)
