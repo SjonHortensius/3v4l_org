@@ -12,9 +12,9 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
-	"sync"
 )
 
 type Version struct {
@@ -36,7 +36,7 @@ type Input struct {
 	run          int
 	runArchived  bool
 	lastSubmit   time.Time
-	src struct{
+	src          struct {
 		sync.RWMutex
 		inUse int
 	}
@@ -87,7 +87,7 @@ func (this *Input) setBusy(newRun bool) {
 
 	this.src.Lock(); this.src.inUse++
 	if 1 == this.src.inUse {
-		if f, err := os.Create("/in/"+ this.short); err != nil {
+		if f, err := os.Create("/in/" + this.short); err != nil {
 			exitError("setBusy: could not create file: %s", err)
 		} else {
 			var raw []byte
@@ -244,13 +244,13 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	// Perform date fixation
 	if this.lastSubmit.IsZero() {
 		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit); err != nil {
-			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short);
+			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
 		}
 	}
 
 	if !this.lastSubmit.IsZero() {
 		cmd.Env = append(cmd.Env, []string{
-			"TIME="+ strconv.FormatInt(this.lastSubmit.Unix(), 10),
+			"TIME=" + strconv.FormatInt(this.lastSubmit.Unix(), 10),
 			"LD_PRELOAD=/usr/bin/daemon-preload.so",
 		}...)
 	}
@@ -278,7 +278,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	go func(c *exec.Cmd, r io.Reader) {
 		limit := l.output
 		if v.isHelper {
-			limit = 256*1024
+			limit = 256 * 1024
 		}
 
 		output := make([]byte, 0)
@@ -401,14 +401,14 @@ func canBatch(doSleep bool) (bool, error) {
 		return false, err
 	} else if int(l) > runtime.NumCPU() {
 		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), sleeping...\n", l, runtime.NumCPU())
-		time.Sleep(time.Duration(3 * l) * time.Second)
+		time.Sleep(time.Duration(3*l) * time.Second)
 	}
 
 	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
 		return false, err
 	} else if int(l) > runtime.NumCPU() {
 		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
-		time.Sleep(time.Duration(30 * l) * time.Second)
+		time.Sleep(time.Duration(30*l) * time.Second)
 		return false, nil
 	}
 
@@ -457,8 +457,6 @@ func batchScheduleNewVersions(target *Version) {
 }
 
 func batchSingleFix() {
-	return
-
 	rs, err := db.Query(`
 		SELECT id, short, created, "runArchived"
 		FROM input
@@ -580,9 +578,9 @@ func background() {
 	go func() {
 		ticker := time.NewTicker(1 * time.Hour)
 		for range ticker.C {
-			stats.Lock();
+			stats.Lock()
 			fmt.Printf("Stats %v\n", stats.c)
-			stats.c = make(map[string]int);
+			stats.c = make(map[string]int)
 			stats.Unlock()
 		}
 	}()
@@ -593,7 +591,7 @@ var (
 	l        *pq.Listener
 	versions []*Version
 	isBatch  bool
-	stats    struct{
+	stats    struct {
 		sync.RWMutex
 		c map[string]int
 	}

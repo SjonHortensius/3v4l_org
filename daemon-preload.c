@@ -58,6 +58,7 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 	if (tp->tv_usec < diff.tv_usec) {
 		tp->tv_sec--;
 		tp->tv_usec = 1000*1000 + tp->tv_usec;
+//fprintf(stderr, "\n%s correcting overflow for %ld < %ld\n", __FUNCTION__, tp->tv_usec, diff.tv_usec);
 	}
 	tp->tv_usec -= diff.tv_usec;
 
@@ -67,14 +68,12 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 }
 
 time_t time(time_t *t) {
-	struct timeval a;
-	gettimeofday(&a, NULL);
-	time_t r = a.tv_sec;
+	if (!initDone)
+		_initLib();
 
-	// time() performs better then gettimeofday() because it is less precise. Emulate lack-of-precision
-	// http://stackoverflow.com/questions/6498972#6499061 or run https://3v4l.org/WkNOd without preload
-	if (a.tv_usec < 3000)
-		r--;
+	time_t r = org_time(t);
+
+	r -= diff.tv_sec;
 
 	if (t)
 		*t = r;

@@ -24,7 +24,7 @@ cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 
-vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}
+vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}; [[ $vers == *a* ]] && vers=${vers:0:3}0
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
@@ -48,7 +48,7 @@ make -j10 &>build.log || { rm -R */; tail build.log; exit 1; }
 # verify correct build
 ./sapi/cli/php -i >/dev/null
 
-strip sapi/cli/php modules/*.so && upx -qq ./sapi/cli/php
+strip sapi/cli/php modules/*.so # && upx -qq ./sapi/cli/php
 mv -v sapi/cli/php ../../out/php-$version
 mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
 cd ../..
