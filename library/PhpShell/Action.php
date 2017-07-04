@@ -54,7 +54,7 @@ class PhpShell_Action extends Basic_Action
 		foreach ($this->cspDirectives as $directive => $settings)
 			$csp .= $directive .' '.implode(' ', $settings). '; ';
 
-		header('Content-Security-Policy: '. $csp .'report-uri https://3v4l.report-uri.io/r/default/csp/enforce');
+		header('Content-Security-Policy: '. $csp);
 
 		if (0 && $_GET['waa']=='meukee')
 		{

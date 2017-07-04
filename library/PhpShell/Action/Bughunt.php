@@ -29,7 +29,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	);
 	protected $_cacheLength = '4 hours';
 	public $entries;
-	public $blackList = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid'];
+	public $blackList = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes'];
 
 	public function init()
 	{
@@ -53,7 +53,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
 
-		$this->entries = PhpShell_Input::find("input.id NOT IN (SELECT input FROM bughunt_blacklist)", [])
+		$this->entries = PhpShell_Input::find("NOT input.\"bughuntIgnore\"", [])
 			->setOrder(['input.id' => true])
 			->includeOperations();
 

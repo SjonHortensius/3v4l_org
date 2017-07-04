@@ -67,6 +67,11 @@ class PhpShell_Action_New extends PhpShell_Action
 			JOIN input ON (input.id = submit.input)
 			WHERE ip = ? AND now() - submit.created < ?", [ $_SERVER['REMOTE_ADDR'], '1 day' ])->fetchArray()[0]['p'];
 
+#FIXME
+		$pending = count(PhpShell_Input::find("state = 'busy' AND ip = ?", [ $_SERVER['REMOTE_ADDR'] ])
+				->addJoin(PhpShell_Submit::class, "submit.input = input.id"));
+		$penalty += 5E6 * $pending;
+
 		usleep($penalty);
 
 		try
