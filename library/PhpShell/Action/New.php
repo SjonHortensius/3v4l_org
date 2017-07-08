@@ -61,13 +61,12 @@ class PhpShell_Action_New extends PhpShell_Action
 		if (isset(Basic::$userinput['version']))
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
-		$penalty = Basic::$database->query("
-			SELECT SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END) p
-			FROM submit
-			JOIN input ON (input.id = submit.input)
-			WHERE ip = ? AND now() - submit.created < ?", [ $_SERVER['REMOTE_ADDR'], '1 day' ])->fetchArray()[0]['p'];
+		$penalty = PhpShell_Submit::find("ip = ? AND NOW()- submit.created < ?", [$_SERVER['REMOTE_ADDR'], '1 day'])
+			->addJoin(PhpShell_Input::class, "input.id = submit.input")
+			->getAggregate("SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END)")
+			->fetchColumn(0);
 
-#FIXME
+#FIXME include in query above
 		$pending = count(PhpShell_Input::find("state = 'busy' AND ip = ?", [ $_SERVER['REMOTE_ADDR'] ])
 				->addJoin(PhpShell_Submit::class, "submit.input = input.id"));
 		$penalty += 5E6 * $pending;

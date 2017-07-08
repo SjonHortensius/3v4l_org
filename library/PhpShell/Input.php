@@ -144,7 +144,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function trigger(PhpShell_Version $version = null)
 	{
-		if (Basic::$database->query("SELECT COUNT(*) c FROM queue WHERE input = ?", [$this->short])->fetchArray('c')[0] > 0)
+		if (count(PhpShell_QueuedInput::find("input = ?", [$this->short])) > 0)
 			return false;
 
 		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
@@ -282,7 +282,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getLastModified()
 	{
-		return Basic::$database->query("SELECT MAX(created) max FROM result WHERE input = ? AND run = ?", [$this->id, $this->run])->fetchArray('max')[0];
+		return $this->getRelated('PhpShell_Result')->getSubset("run = ?", [$this->run])->getAggregate("MAX(created)")->fetchColumn(0);
 	}
 
 	public function getResult(PhpShell_Version $version)

@@ -23,25 +23,15 @@ abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 
 	public function generate()
 	{
-		$functions = Basic::$cache->get(__CLASS__.'::popularOperands', function(){
-			return iterator_to_array(Basic::$database->query("
-	SELECT operand AS text, SUM(operations.count) AS size
-	FROM operations
-	WHERE operation = 'INIT_FCALL' AND operand NOT IN ('var_dump', 'print_r')
-	GROUP BY operand
-	ORDER BY size DESC
-	LIMIT 150"));
-		}, 86400);
-
-		foreach ($functions as $f)
+		foreach (Basic::$database->query("SELECT * FROM search_popularOperands")->fetchArray('size', 'text') as $text => $size)
 		{
-			array_push($this->words, ['text' => $f['text'], 'size' => $f['size']]);
+			array_push($this->words, ['text' => $text, 'size' => $size]);
 
 			if (!isset($this->min, $this->max))
-				$this->max = $this->min = $f['size'];
+				$this->max = $this->min = $size;
 
-			$this->max = max($this->max, $f['size']);
-			$this->min = min($this->min, $f['size']);
+			$this->max = max($this->max, $size);
+			$this->min = min($this->min, $size);
 		}
 	}
 }

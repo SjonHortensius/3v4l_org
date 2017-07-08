@@ -30,17 +30,13 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		],
 	);
 	protected $_cacheLength = '24 hours';
-	public $noOperand;
+	public $haveOperand = [];
 
 	public function init()
 	{
-		$opCount = Basic::$cache->get(__CLASS__.'::counts', function(){
-			$v= [];
-			foreach (PhpShell_Operation::find()->getAggregate("COUNT(*), operation", 'operation', ['count' => false])->fetchArray('count', 'operation') as $op => $count)
-				$v[$op] = $op .' ('. number_format($count) .' occurrences)';
-			return $v;
-		}, (86400/3*2));
-
+		$opCount = [];
+		foreach (Basic::$database->query("SELECT * FROM search_operationCount")->fetchArray('count', 'operation') as $op => $count)
+			$opCount[$op] = $op .' ('. number_format($count) .' occurrences)';
 		Basic::$userinput->operation->values = $opCount;
 
 		if (isset($_REQUEST[1]))
@@ -48,12 +44,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		if (isset($_REQUEST[2]))
 			Basic::$userinput->operand->setValue($_REQUEST[2]);
 
-		$this->haveOperand = Basic::$cache->get(__CLASS__.'::haveOperand', function(){
-			$ops = [];
-			foreach (Basic::$database->query("SELECT DISTINCT operation FROM operations WHERE NOT operand ISNULL") as $row)
-				array_push($ops, $row['operation']);
-			return $ops;
-		}, 86400);
+		$this->haveOperand = Basic::$database->query("SELECT * FROM search_haveOperand")->fetchArray('operation');
 
 		// for the tagcloud
 		if (!Basic::$userinput->operation->isValid())
