@@ -1,0 +1,62 @@
+<table>
+<thead>
+<tr>
+	<th>name</th>
+	<th>created</th>
+	{if ($this->entries->includesPerformance)}
+		<th>~ userTime</th>
+		<th>~ systemTime</th>
+		<th>~ maxMemory</th>
+	{/}
+	<th># runs</th>
+	<th># operations</th>
+	{if ($this->entries->includesVariance)}
+		<th>% variance</th>
+	{/}
+	{if ($this->entries->includesOperations)}
+		<th>operations</th>
+	{/}
+</tr>
+</thead>
+
+<tbody>
+{$this->count=0;}
+{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->row)}
+	{$this->count++;}
+	<tr>
+		<td>
+			{if ($this->prevrow->sourceId === $this->row->id)}
+				<i class="icon icon-edit" title="draft for {prevrow->short}"></i>
+			{:}
+				{if ($this->row->bughuntIgnore)}
+					<i class="icon icon-random" title="unstable, ignored in /bughunt"></i>
+				{:}
+					{if ($this->row->runArchived)}
+						<i class="icon icon-briefcase" title="includes archived versions"></i>
+					{:}
+						<i class="icon-"></i>
+					{/}
+				{/}
+			{/}
+			 <a href="/{row->short}">{row->short}</a>{if (isset($this->row->title))} <i>{row->title}</i>{/}
+		</td>
+		<td><time datetime="{row->getCreatedUtc()}">{print $this->row->getCreatedUtc('H:i:s');}</time></td>
+		{if ($this->entries->includesPerformance)}
+			<td>{print round($this->row->userTime, 2);} s</td>
+			<td>{print round($this->row->systemTime, 2);} s</td>
+			<td>{print round($this->row->maxMemory/1024);} MiB</td>
+		{/}
+		<td>{row->run}</td>
+		<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
+		{if ($this->entries->includesVariance)}
+			<td>{row->variance}</td>
+		{/}
+		{if ($this->entries->includesOperations)}
+			<td>{print substr($this->row->operations, 0, 64);}</td>
+		{/}
+	</tr>
+
+	{$this->prevrow = $this->row;}
+{/}
+</tbody>
+</table>

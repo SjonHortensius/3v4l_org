@@ -15,7 +15,7 @@ class PhpShell_InputSource extends PhpShell_Entity
 		rewind($stream);
 		$data['raw'] = $stream;
 
-		$q->execute($data, ['input' => PDO::PARAM_INT, 'raw' => PDO::PARAM_LOB]);
+		$q->execute($data);
 
 		return self::getStub($data);
 	}

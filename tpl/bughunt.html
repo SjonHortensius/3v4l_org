@@ -6,33 +6,7 @@
 	<h2>List of scripts where the output from ({print implode(' == ', Basic::$userinput['versions']);}) != ({print implode(' == ', Basic::$userinput['controls']);})</h2>
 	<p>Blacklisting all scripts that use any of these methods: <i>{print implode(', ', PhpShell_Input::BUGHUNT_BLACKLIST);}</i>.</p>
 
-	<table>
-	<thead>
-		<tr>
-			<th>name</th>
-			<th>created</th>
-			<th># runs</th>
-			<th># operations</th>
-			<th>operations</th>
-		</tr>
-	</thead>
-
-	<tbody>
-		{$count=0;}
-		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
-			{$count++;}
-		<tr>
-			<td>
-				<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
-			</td>
-			<td><time datetime="{result->getCreatedUtc()}">{result->getCreatedUtc()}</time></td>
-			<td>{result->run}</td>
-			<td>{result->operationCount}</td>
-			<td>{print substr($this->result->operations, 0, 64);}</td>
-		</tr>
-		{/}
-	</tbody>
-	</table>
+	{$this->show('_listInputs');}
 
 	<p class="pagination">
 		{$this->base = '/bughunt/'. implode('+', Basic::$userinput['versions']).'/'.implode('+', Basic::$userinput['controls']);}
@@ -45,7 +19,7 @@
 
 		{userinput['page']}
 
-		{if ($count==25)}
+		{if ($this->count==25)}
 			&hellip;
 			{$this->nextPage = Basic::$userinput['page']+1;}
 			<a href="{base}/{nextPage}">{nextPage}</a>

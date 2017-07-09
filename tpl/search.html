@@ -5,39 +5,7 @@
 </ul>
 
 <div>
-	<table>
-	<thead>
-		<tr>
-			<th>name</th>
-			<th>created</th>
-			<th>~ userTime</th>
-			<th>~ systemTime</th>
-			<th>~ maxMemory</th>
-			<th># runs</th>
-			<th># operations</th>
-			<th>% variance</th>
-		</tr>
-	</thead>
-
-	<tbody>
-		{$count=0;}
-		{foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->result)}
-			{$count++;}
-		<tr>
-			<td>
-				<a href="/{result->short}">{result->short}</a>{if (isset($this->result->title))} <i>{result->title}</i>{/}
-			</td>
-			<td><time datetime="{result->getCreatedUtc()}">{result->getCreatedUtc()}</time></td>
-			<td>{print round($this->result->userTime, 2);} s</td>
-			<td>{print round($this->result->systemTime, 2);} s</td>
-			<td>{print round($this->result->maxMemory/1024);} MiB</td>
-			<td>{result->run}</td>
-			<td>{result->operationCount}</td>
-			<td>{result->variance}</td>
-		</tr>
-		{/}
-	</tbody>
-	</table>
+	{$this->show('_listInputs');}
 
 	<p class="pagination">
 		{$this->base = '/search/'. Basic::$userinput['operation'].'/'.Basic::$userinput['operand'];}
@@ -50,7 +18,7 @@
 
 		{userinput['page']}
 
-		{if ($count==25)}
+		{if ($this->count==25)}
 			&hellip;
 			{$this->nextPage = Basic::$userinput['page']+1;}
 			<a href="{base}/{nextPage}">{nextPage}</a>
