@@ -393,8 +393,8 @@ var evalOrg = {};
 
 		if (!$('#tabs'))
 		{
-			// Used when submitting a preview from a non-script page such as the homepage
-			$$('#newForm ~ div, #newForm ~ ul').forEach(function(div){
+			// Used when submitting a preview from a non-script page (homepage)
+			$$('#newForm ~ div').forEach(function(div){
 				div.parentNode.removeChild(div);
 			});
 
@@ -402,7 +402,7 @@ var evalOrg = {};
 			var tab = document.createElement('div'); tab.setAttribute('id', 'tab');
 			tab.appendChild(document.createElement('dl'));
 
-			$('#newForm').parentNode.insertBefore(tab, $('#newForm').nextSibling);
+			$('#newForm').parentNode.insertBefore(tab, $('#previewForm').nextSibling);
 			$('#newForm').parentNode.insertBefore(ul, tab);
 		}
 		else if (r.script.state != 'busy')
