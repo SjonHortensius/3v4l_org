@@ -1,6 +1,6 @@
 <?php
 
-class PhpShell_ResultCurrent extends PhpShell_Entity
+class PhpShell_ResultBughunt extends PhpShell_Entity
 {
 	protected static $_primary = null;
 	protected static $_relations = [
@@ -12,6 +12,6 @@ class PhpShell_ResultCurrent extends PhpShell_Entity
 
 	public static function getTable(): string
 	{
-		return 'result_current';
+		return 'result_bughunt';
 	}
 }

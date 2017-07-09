@@ -53,7 +53,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
 
-		$this->entries = PhpShell_Input::find("NOT input.\"bughuntIgnore\"", [])
+		$this->entries = PhpShell_Input::find()
 			->setOrder(['input.id' => true])
 			->includeOperations();
 
@@ -62,7 +62,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			{
 				$alias = $idx[0].$i;
 
-				$this->entries = $this->entries->addJoin(PhpShell_ResultCurrent::class, "{$alias}.input = input.id AND {$alias}.run = input.run", $alias, "INNER", false)
+				$this->entries = $this->entries->addJoin(PhpShell_ResultBughunt::class, "{$alias}.input = input.id AND {$alias}.run = input.run", $alias, "INNER", false)
 					->getSubset("\n{$alias}.version = ?", [PhpShell_Version::byName($v)->id]);
 
 				if ('controls' == $idx)
