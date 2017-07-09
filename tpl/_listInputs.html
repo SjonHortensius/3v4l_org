@@ -28,8 +28,8 @@
 			{if ($this->prevrow->sourceId === $this->row->id)}
 				<i class="icon icon-edit" title="draft for {prevrow->short}"></i>
 			{:}
-				{if ($this->row->bughuntIgnore)}
-					<i class="icon icon-random" title="unstable, ignored in /bughunt"></i>
+				{if ($this->row->bughuntIgnore && !($this->entries->includesVariance || 0 == $this->row->variance))}
+					<i class="icon icon-random" title="unstable or no variance, ignored in /bughunt"></i>
 				{:}
 					{if ($this->row->runArchived)}
 						<i class="icon icon-briefcase" title="includes archived versions"></i>

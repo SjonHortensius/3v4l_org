@@ -9,9 +9,8 @@ class PhpShell_InputSet extends Basic_EntitySet
 
 	public function includeVariance()
 	{
-		// Using Current produces incomplete variance and ~time but is ~4 times faster
-		$this->addJoin(PhpShell_ResultCurrent::class, "result_current.input = input.id AND result_current.version >= 32");
-		$this->_fields []= "(COUNT(DISTINCT result_current.output)-1) * 100 / COUNT(result_current.output) variance";
+		$this->addJoin(PhpShell_Result::class, "result.input = input.id AND result.version >= 32");
+		$this->_fields []= "(COUNT(DISTINCT result.output)-1) * 100 / COUNT(result.output) variance";
 
 		$this->includesVariance = true;
 		return $this;

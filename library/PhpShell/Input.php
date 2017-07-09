@@ -98,12 +98,12 @@ class PhpShell_Input extends PhpShell_Entity
 
 		// Parse vld first, then update db accordingly
 		$ops = [];
-		$bughuntIgnore = false;
+		$bughuntIgnore = (0==$this->getVariance());
 		foreach ($operations as $match)
 		{
 			$key = isset($match['operand']) ? $match['op'].':'.$match['operand'] : $match['op'];
 
-			if (isset($match['operand']) && in_array($match['op'], ['DO_FCALL', 'INIT_FCALL']) && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
+			if (!$bughuntIgnore && isset($match['operand']) && in_array($match['op'], ['DO_FCALL', 'INIT_FCALL']) && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
 				$bughuntIgnore = true;
 
 			if (isset($ops[$key]))
@@ -145,6 +145,13 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
+	}
+
+	public function getVariance(): int
+	{
+		return count($this->getRelated(PhpShell_Result::class)
+			->addJoin(PhpShell_Version::class, "version.id = result.version")
+			->getSubset("\"isHelper\" = ?", [false]));
 	}
 
 	public function trigger(PhpShell_Version $version = null)
