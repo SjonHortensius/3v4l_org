@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Script extends PhpShell_Action
 {
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'script' => [
 			'valueType' => 'scalar',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 0],
@@ -29,13 +29,13 @@ class PhpShell_Action_Script extends PhpShell_Action
 				'rfc' => 'RFC branches',
 			]
 		],
-	);
+	];
 	public $input;
 	public $showTab = [];
 	public $bodyClass = 'script';
 	public $quickVersionList;
 
-	public function init()
+	public function init(): void
 	{
 		$this->bodyClass .= ' '. Basic::$userinput['tab'];
 		$this->title = Basic::$userinput['tab'] .' for '. Basic::$userinput['script'];
@@ -55,7 +55,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		parent::init();
 	}
 
-	public function run()
+	public function run(): void
 	{
 		try
 		{

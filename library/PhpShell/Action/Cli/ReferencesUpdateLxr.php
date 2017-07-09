@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 {
-	public function run()
+	public function run(): void
 	{
 		if (!is_dir('/tmp/php-src/Zend'))
 			throw new Exception('FEED ME A STRAY CAT @ `/tmp/php-src/`');

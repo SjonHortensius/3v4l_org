@@ -4,7 +4,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 {
 	public $title = 'Search our database for certain opcodes';
 	public $formSubmit = 'array_search();';
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'operation' => [
 			'valueType' => 'scalar',
 //			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
@@ -28,11 +28,11 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
-	);
+	];
 	protected $_cacheLength = '24 hours';
 	public $haveOperand = [];
 
-	public function init()
+	public function init(): void
 	{
 		$opCount = [];
 		foreach (Basic::$database->query("SELECT * FROM search_operationCount")->fetchArray('count', 'operation') as $op => $count)
@@ -53,7 +53,7 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		parent::init();
 	}
 
-	public function run()
+	public function run(): void
 	{
 		$this->entries = PhpShell_Input::find()
 			->includePerformance()
@@ -64,6 +64,6 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		if (isset(Basic::$userinput['operand']))
 			$this->entries = $this->entries->getSubset("operand = ?", [Basic::$userinput['operand']]);
 
-		return parent::run();
+		parent::run();
 	}
 }

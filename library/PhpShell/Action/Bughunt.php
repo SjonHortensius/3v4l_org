@@ -4,7 +4,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 {
 	public $title = 'Find scripts where one version differs from the others';
 	public $formSubmit = 'array_intersect_uassoc();';
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'versions' => [
 			'description' => 'Select one version you want to focus on when comparing',
 //			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
@@ -26,12 +26,12 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
-	);
+	];
 	protected $_cacheLength = '4 hours';
 	public $entries;
 	public $blackList = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes'];
 
-	public function init()
+	public function init(): void
 	{
 		$versions = PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [])
 				->setOrder(['version.order' => false])
@@ -48,7 +48,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 		parent::init();
 	}
 
-	public function run()
+	public function run(): void
 	{
 		if (1 != count(Basic::$userinput['versions']) || 2 != count(Basic::$userinput['controls']))
 			throw new PhpShell_Action_Bughunt_TooFewVersionsOrControlsSelectedException('Please select exactly one version and two controls');
@@ -72,6 +72,6 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 					$this->entries = $this->entries->getSubset("{$alias}.output = {$idx[0]}0.output");
 			}
 
-		return parent::run();
+		parent::run();
 	}
 }

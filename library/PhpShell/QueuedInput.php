@@ -9,7 +9,7 @@ class PhpShell_QueuedInput extends Basic_Entity
 	];
 */
 
-	public static function getTable()
+	public static function getTable(): string
 	{
 		return 'queue';
 	}

@@ -3,7 +3,7 @@
 class PhpShell_Action_New extends PhpShell_Action
 {
 	public $formSubmit = 'eval();';
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'title' => [
 			'valueType' => 'scalar',
 			'regexp' => '~^[\x20-\x7e\x80-\xff]*$~',
@@ -32,9 +32,9 @@ class PhpShell_Action_New extends PhpShell_Action
 				1 => 'eol versions'
 			],
 		],
-	);
+	];
 
-	public function init()
+	public function init(): void
 	{
 		$this->userinputConfig['version']['values'] = self::getPreviewVersions();
 
@@ -48,11 +48,11 @@ class PhpShell_Action_New extends PhpShell_Action
 			# exclude all versions that aren't always stored by the daemon
 			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%'", [], ['"isHelper"' => true, 'version.order' => false]);
 
-			return $v->getSimpleList('name', 'name');
+			return iterator_to_array($v->getSimpleList('name', 'name'));
 		}, 30);
 	}
 
-	public function run()
+	public function run(): void
 	{
 		$title = Basic::$userinput['title'];
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);

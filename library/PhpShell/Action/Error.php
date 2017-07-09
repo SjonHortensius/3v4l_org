@@ -5,15 +5,15 @@
 class PhpShell_Action_Error extends PhpShell_Action
 {
 	public $title = 'Error';
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'code' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'integer',
 			'required' => true,
 		],
-	);
+	];
 
-	public function run()
+	public function run(): void
 	{
 		switch (Basic::$userinput['code'])
 		{

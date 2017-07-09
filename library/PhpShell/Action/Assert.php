@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Assert extends PhpShell_Action
 {
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'script' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'scalar',
@@ -18,9 +18,9 @@ class PhpShell_Action_Assert extends PhpShell_Action
 			'valueType' => 'scalar',
 			'required' => true,
 		],
-	);
+	];
 
-	public function run()
+	public function run(): void
 	{
 		if (!isset($this->user))
 			throw new PhpShell_LoginRequiredException('This page requires you to login', [], 404);

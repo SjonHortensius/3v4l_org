@@ -45,7 +45,7 @@ class PhpShell_Operation extends PhpShell_Entity
 		return true;
 	}
 
-	public function delete()
+	public function delete(): void
 	{
 		$this->_checkPermissions('delete');
 		$this->removeCached();
@@ -65,7 +65,7 @@ class PhpShell_Operation extends PhpShell_Entity
 			throw new Basic_Entity_DeleteException('An error occured while deleting `%s`:`%s`', [get_class($this), $this->id]);
 	}
 
-	public static function getTable()
+	public static function getTable(): string
 	{
 		return 'operations';
 	}

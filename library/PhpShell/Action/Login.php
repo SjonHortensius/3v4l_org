@@ -2,19 +2,19 @@
 
 class PhpShell_Action_Login extends PhpShell_Action
 {
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'provider' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'values' => [],
 			'required' => true,
 			'options' => ['valuesToKeys'],
 		],
-	);
+	];
 	protected $_client;
 
-	public function init()
+	public function init(): void
 	{
-		spl_autoload_register(array('OpenReact_Exception', 'autocreate'));
+		spl_autoload_register(['OpenReact_Exception', 'autocreate']);
 
 		$this->_client = new OpenReact_XmlRpc_ServicesClient(
 			['http://social.react.com/XmlRpc_v2' => ['OAuthServer', 'Twitter']],
@@ -27,7 +27,7 @@ class PhpShell_Action_Login extends PhpShell_Action
 		parent::init();
 	}
 
-	public function run()
+	public function run(): void
 	{
 		if (isset($this->user) && empty(array_diff($_SESSION['providers'], Basic::$userinput->provider->values)))
 			throw new PhpShell_Action_Login_AlreadyConnectedException('You are logged in and already connected to all known providers', null, 410);

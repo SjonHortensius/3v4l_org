@@ -10,7 +10,7 @@ class PhpShell_ResultCurrent extends PhpShell_Entity
 	];
 	protected static $_numerical = ['maxMemory', 'run'];
 
-	public static function getTable()
+	public static function getTable(): string
 	{
 		return 'result_current';
 	}

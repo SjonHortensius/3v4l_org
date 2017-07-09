@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Cli_BughuntBlacklistUpdate extends PhpShell_Action_Cli
 {
-	public function run()
+	public function run(): void
 	{
 		$vars = get_class_vars(PhpShell_Action_Bughunt);
 

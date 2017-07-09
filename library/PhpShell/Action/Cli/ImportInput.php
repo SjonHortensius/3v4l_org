@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Cli_ImportInput extends PhpShell_Action_Cli
 {
-	public function init()
+	public function init(): void
 	{
 		parent::init();
 
@@ -10,7 +10,7 @@ class PhpShell_Action_Cli_ImportInput extends PhpShell_Action_Cli
 		Basic::$config->PRODUCTION_MODE = true;
 	}
 
-	public function run()
+	public function run(): void
 	{
 		$prev = Basic::$database->query("SELECT MAX(input) FROM input_src")->fetchColumn();
 

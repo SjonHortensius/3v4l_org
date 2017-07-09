@@ -9,11 +9,11 @@ class PhpShell_Input extends PhpShell_Entity
 	];
 	protected static $_numerical = ['operationCount', 'run', 'penalty'];
 
-	protected static $_exitCodes = array(
+	protected static $_exitCodes = [
 		139 => 'Segmentation Fault',
 		137 => 'Process was killed',
 		255 => 'Generic Error',
-	);
+	];
 	const VLD_MATCH = '~ *(?<line>\d*) *\d+ *[ E]?[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
 
 	public function getCode()
@@ -33,7 +33,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public static function clean($code)
 	{
-		return trim(str_replace(array("\r\n", "\r", "\xE2\x80\x8B"), array("\n", "\n", ""), $code));
+		return trim(str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code));
 	}
 
 	public static function getHash($code)
@@ -108,7 +108,7 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 
 		// Delete or update db by going through all existing rows
-		foreach ($this->getRelated(PhpShell_Operation) as $op)
+		foreach ($this->getRelated(PhpShell_Operation::class) as $op)
 		{
 			$key = isset($op->operand) ? $op->operation.':'.$op->operand : $op->operation;
 
@@ -188,7 +188,7 @@ class PhpShell_Input extends PhpShell_Entity
 			return str_replace(['hhvm-', 'php7@'], '', $name);
 		};
 
-		$outputs = array();
+		$outputs = [];
 		foreach ($results as $result)
 		{
 			$output = $result->output->getRaw($result->input, $result->version->name);
@@ -233,7 +233,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
 
-		$versions = array();
+		$versions = [];
 		foreach ($outputs as $output)
 		{
 			// Process unclosed slots
@@ -315,7 +315,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
 	}
 
-	protected function _checkPermissions($action): void
+	protected function _checkPermissions(string $action): void
 	{
 		if (!($action == 'save' && isset($this->_dbData->title) && $this->title !== $this->_dbData->title))
 			return;

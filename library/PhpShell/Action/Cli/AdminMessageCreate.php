@@ -18,7 +18,7 @@ class PhpShell_Action_Cli_AdminMessageCreate extends PhpShell_Action_Cli
 		],
 	];
 
-	public function run()
+	public function run(): void
 	{
 		Basic::$cache->set(Basic::$userinput['type'].'Message::'. Basic::$userinput['ip'], Basic::$userinput['message']);
 

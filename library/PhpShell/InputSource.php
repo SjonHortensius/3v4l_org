@@ -25,7 +25,7 @@ class PhpShell_InputSource extends PhpShell_Entity
 		return stream_get_contents($this->raw);
 	}
 
-	public static function getTable()
+	public static function getTable(): string
 	{
 		return 'input_src';
 	}

@@ -6,7 +6,7 @@ class PhpShell_Reference extends PhpShell_Entity
 		'parent' => PhpShell_Reference::class,
 	];
 
-	public static function getTable()
+	public static function getTable(): string
 	{
 		return 'references';
 	}

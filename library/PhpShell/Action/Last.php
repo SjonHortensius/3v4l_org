@@ -3,17 +3,17 @@
 class PhpShell_Action_Last extends PhpShell_Action
 {
 	public $title = 'Recent submissions';
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'page' => [
 			'valueType' => 'integer',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'default' => 1,
 			'options' => ['minValue' => 1, 'maxValue' => 9],
 		],
-	);
+	];
 	public $entries;
 
-	public function run()
+	public function run(): void
 	{
 		$this->entries = PhpShell_Input::find()
 			->includeVariance()

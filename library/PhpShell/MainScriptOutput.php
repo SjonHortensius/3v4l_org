@@ -11,7 +11,7 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 			->addJoin(PhpShell_Assertion::class, "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
 	}
 
-	protected function _query(string $fields, $groupBy = null): Basic_DatabaseQuery
+	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
 	{
 		$fields = 'result.input, result."exitCode",
 			output.hash as "output$hash", output.raw as "output$raw",
@@ -22,9 +22,9 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 		return parent::_query($fields, $groupBy);
 	}
 
-	public function getIterator()
+	public function getIterator(string $fields = '*'): Generator
 	{
-		foreach (parent::getIterator() as $id => $entity)
+		foreach (parent::getIterator($fields) as $id => $entity)
 		{
 			$entity->output = PhpShell_Output::getStub([
 				'hash' => $entity->{'output$hash'},

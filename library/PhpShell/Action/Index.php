@@ -8,7 +8,7 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 	public $popular;
 	protected $_cacheLength = '45 seconds';
 
-	public function init()
+	public function init(): void
 	{
 		parent::init();
 

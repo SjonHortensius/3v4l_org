@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Cli_OperationsReparse extends PhpShell_Action_Cli
 {
-	public function run()
+	public function run(): void
 	{
 		for ($found = $i = 0; ($i==0 || $found >= $i*250); $i++)
 		{

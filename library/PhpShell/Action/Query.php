@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Query extends PhpShell_Action
 {
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'bookmark' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'scalar',
@@ -20,10 +20,10 @@ EOQ
 ,
 			],
 		],
-	);
+	];
 	protected $_cacheLength = '4 hours';
 
-	public function run()
+	public function run(): void
 	{
 		echo Basic::$database->query(Basic::$userinput->bookmark->values[ Basic::$userinput['bookmark'] ])->show();
 

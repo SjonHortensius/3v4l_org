@@ -2,19 +2,19 @@
 // Extended by _Search
 abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 {
-	public $userinputConfig = array(
+	public $userinputConfig = [
 		'ip' => [
 			'valueType' => 'scalar',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'regexp' => '~^(%|[0-9.]+)$~',
 			'default' => '%',
 		],
-	);
+	];
 	public $words = [];
 	public $max;
 	public $min;
 
-	public function init()
+	public function init(): void
 	{
 //		$this->userinputConfig['ip']['default'] = $_SERVER['REMOTE_ADDR'];
 

@@ -4,7 +4,7 @@ class PhpShell_Action_Stats extends PhpShell_Action
 {
 	public $inputPerWeek;
 
-	public function run()
+	public function run(): void
 	{
 		if (Basic::$config->PRODUCTION_MODE)
 			throw new PhpShell_Action_Stats_NotAvailableException('Not available');
@@ -32,6 +32,6 @@ GROUP BY ip
 ORDER BY SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) DESC
 LIMIT 30;")->show();
 
-		return parent::run();
+		parent::run();
 	}
 }

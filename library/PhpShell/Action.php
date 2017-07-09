@@ -27,7 +27,7 @@ class PhpShell_Action extends Basic_Action
 		]
 	];
 
-	public function init()
+	public function init(): void
 	{
 		// For now; don't autoStart sessions
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
@@ -113,7 +113,7 @@ class PhpShell_Action extends Basic_Action
 		parent::_handleLastModified();
 	}
 
-	public static function resolve($action, $hasClass, $hasTemplate)
+	public static function resolve(string $action, bool $hasClass, bool $hasTemplate)
 	{
 		if ($hasClass)
 			return;
