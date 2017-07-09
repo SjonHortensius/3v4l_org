@@ -15,6 +15,7 @@ class PhpShell_Input extends PhpShell_Entity
 		255 => 'Generic Error',
 	];
 	const VLD_MATCH = '~ *(?<line>\d*) *\d+ *[ E]?[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes'];
 
 	public function getCode()
 	{
@@ -97,9 +98,13 @@ class PhpShell_Input extends PhpShell_Entity
 
 		// Parse vld first, then update db accordingly
 		$ops = [];
+		$bughuntIgnore = false;
 		foreach ($operations as $match)
 		{
 			$key = isset($match['operand']) ? $match['op'].':'.$match['operand'] : $match['op'];
+
+			if (isset($match['operand']) && in_array($match['op'], ['DO_FCALL', 'INIT_FCALL']) && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
+				$bughuntIgnore = true;
 
 			if (isset($ops[$key]))
 				$ops[$key]++;
@@ -135,11 +140,11 @@ class PhpShell_Input extends PhpShell_Entity
 			}
 			catch (PhpShell_Operation_InvalidDataException $e)
 			{
-					// ignore
+				// ignore, probably operand is too long
 			}
 		}
 
-		$this->save(['operationCount' => count($operations)]);
+		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
 	}
 
 	public function trigger(PhpShell_Version $version = null)
@@ -282,12 +287,12 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getLastModified()
 	{
-		return $this->getRelated('PhpShell_Result')->getSubset("run = ?", [$this->run])->getAggregate("MAX(created)")->fetchColumn(0);
+		return $this->getRelated(PhpShell_Result::class)->getSubset("run = ?", [$this->run])->getAggregate("MAX(created)")->fetchColumn(0);
 	}
 
 	public function getResult(PhpShell_Version $version)
 	{
-		return $this->getRelated('PhpShell_Result')->getSubset("run = ? AND version = ?", [$this->run, $version]);
+		return $this->getRelated(PhpShell_Result::class)->getSubset("run = ? AND version = ?", [$this->run, $version]);
 	}
 
 	public function getSegfault()

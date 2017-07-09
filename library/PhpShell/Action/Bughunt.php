@@ -29,13 +29,13 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	];
 	protected $_cacheLength = '4 hours';
 	public $entries;
-	public $blackList = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes'];
 
 	public function init(): void
 	{
-		$versions = PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [])
-				->setOrder(['version.order' => false])
-				->getSimpleList('name', 'name');
+		$versions = iterator_to_array(PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [])
+			->setOrder(['version.order' => false])
+			->getSimpleList('name', 'name'));
+
 		Basic::$userinput->versions->values = $versions;
 		Basic::$userinput->controls->values = $versions;
 
