@@ -491,6 +491,9 @@ var evalOrg = {};
 
 		outputAddExpander();
 		outputAddDiff();
+
+		if (r.script.state == 'abusive')
+			alert('Your script was stopped while abusing our resources');
 	};
 
 	var perfAddHeader = function(el, name, sum)

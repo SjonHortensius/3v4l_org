@@ -8,6 +8,14 @@ GROUP BY short
 HAVING COUNT(DISTINCT output) < 3
 LIMIT 30;
 
+# current views
+CREATE MATERIALIZED VIEW search_operationCount AS (SELECT COUNT(*), operation FROM "operations" GROUP BY operation ORDER BY count DESC) WITH DATA;
+CREATE MATERIALIZED VIEW search_haveOperand AS (SELECT DISTINCT operation FROM operations WHERE NOT operand ISNULL) WITH DATA;
+CREATE MATERIALIZED VIEW search_tagCloud AS (SELECT operand AS text, SUM(operations.count) AS size FROM operations WHERE operation = 'INIT_FCALL' AND operand NOT IN ('var_dump', 'print_r')GROUP BY operand ORDER BY size DESC LIMIT 150) WITH DATA;
+CREATE MATERIALIZED VIEW search_popularOperands AS (SELECT operand AS text, SUM(operations.count) AS size FROM operations WHERE operation = 'INIT_FCALL' AND operand NOT IN ('var_dump', 'print_r')GROUP BY operand ORDER BY size DESC LIMIT 150) WITH DATA;
+CREATE MATERIALIZED VIEW result_bughunt AS (SELECT r.* FROM result_current r JOIN input i ON i.id=input JOIN version v ON v.id=version WHERE NOT "bughuntIgnore" AND ("isHelper" = false OR name LIKE 'rfc-%') AND eol>now() AND now()-released < '1 year' AND r.run=i.run) WITH DATA;
+
+
 # archive a version. First up archive limit, then update trigger + move rows, then up current limit.
 # determine list of eol-versions: SELECT array_agg(id) FROM version WHERE eol < now();
 

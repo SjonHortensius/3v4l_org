@@ -560,6 +560,10 @@ func doWork() {
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, rMax)
+
+				if input.penalty > 512 {
+					break
+				}
 			}
 		}
 
