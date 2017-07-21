@@ -4,6 +4,12 @@
 #   ar p hhvm_$v~jessie_amd64.deb data.tar.xz|tar xJv ./usr/bin/hhvm; \
 #   strip usr/bin/hhvm; mv usr/bin/hhvm /srv/http/3v4l.org/bin/hhvm-$v
 
+# for debian:
+#
+# apt-get install libxml2-dev libssl-dev pkg-config zlib1g-dev libcurl4-openssl-dev curl-devel libcurl4-gnutls-dev libgmp-dev libmcrypt-dev
+# ln -s x86_64-linux-gnu/curl /usr/include/curl
+# ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
+
 set -e
 cd `dirname $0`/in/
 

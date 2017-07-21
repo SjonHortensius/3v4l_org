@@ -294,12 +294,16 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getLastModified()
 	{
-		return $this->getRelated(PhpShell_Result::class)->getSubset("run = ?", [$this->run])->getAggregate("MAX(created)")->fetchColumn(0);
+		return $this->getRelated(PhpShell_Result::class)
+			->getSubset("run = ?", [$this->run])
+			->getAggregate("MAX(created)")
+			->fetchColumn(0);
 	}
 
 	public function getResult(PhpShell_Version $version)
 	{
-		return $this->getRelated(PhpShell_Result::class)->getSubset("run = ? AND version = ?", [$this->run, $version]);
+		return $this->getRelated(PhpShell_Result::class)
+			->getSubset("run = ? AND version = ?", [$this->run, $version]);
 	}
 
 	public function getSegfault()
