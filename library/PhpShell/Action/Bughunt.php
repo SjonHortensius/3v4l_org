@@ -24,7 +24,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			'valueType' => 'integer',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 3],
 			'default' => 1,
-			'options' => ['minValue' => 1, 'maxValue' => 9],
+			'options' => ['minValue' => 1, 'maxValue' => 99],
 		],
 	];
 	protected $_cacheLength = '4 hours';

@@ -14,8 +14,8 @@ class PhpShell_Input extends PhpShell_Entity
 		137 => 'Process was killed',
 		255 => 'Generic Error',
 	];
-	const VLD_MATCH = '~ *(?<line>\d*) *\d+ *[ E]?[ >]+(?<op>[A-Z_]+) *(?<ext>[0-9A-F]*) *(?<return>[0-9:$]*)\s+(\'(?<operand>.*)\')?~';
-	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes'];
+	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
 
 	public function getCode()
 	{

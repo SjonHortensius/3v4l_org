@@ -28,7 +28,7 @@
 			{if ($this->prevrow->sourceId === $this->row->id)}
 				<i class="icon icon-edit" title="draft for {prevrow->short}"></i>
 			{:}
-				{if ($this->row->bughuntIgnore && !($this->entries->includesVariance || 0 == $this->row->variance))}
+				{if ($this->row->bughuntIgnore && (!$this->entries->includesVariance || $this->row->variance>95))}
 					<i class="icon icon-random" title="unstable or no variance, ignored in /bughunt"></i>
 				{:}
 					{if ($this->row->runArchived)}

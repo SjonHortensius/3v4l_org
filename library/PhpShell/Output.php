@@ -5,7 +5,7 @@ class PhpShell_Output extends PhpShell_Entity
 	protected static $_primary = 'hash';
 	protected $_raw;
 
-	public function getRaw(PhpShell_Input $input, $version)
+	public function getRaw(PhpShell_Input $input, $version): string
 	{
 		if ($version instanceof PhpShell_Version)
 			$version = $version->name;

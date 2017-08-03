@@ -12,6 +12,7 @@ class PhpShell_Action extends Basic_Action
 			"'self'",
 			'cdn.jsdelivr.net',
 		],
+		'manifest-src' => ["'self'"],
 		'child-src' => [ # valid sources for web-workers
 			"'self'",
 			'cdn.jsdelivr.net',
