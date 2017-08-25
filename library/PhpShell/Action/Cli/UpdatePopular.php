@@ -11,6 +11,9 @@ class PhpShell_Action_Cli_UpdatePopular extends PhpShell_Action_Cli
 		{
 			list($count, $url) = explode(' ', ltrim($line));
 
+			if ($url == '/manifest')
+				continue;
+
 			if (false !== strpos($url, '?'))
 				$url = substr($url, 0, strpos($url, '?'));
 
