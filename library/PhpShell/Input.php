@@ -115,7 +115,7 @@ class PhpShell_Input extends PhpShell_Entity
 		// Delete or update db by going through all existing rows
 		foreach ($this->getRelated(PhpShell_Operation::class) as $op)
 		{
-			$key = isset($op->operand) ? $op->operation.':'.$op->operand : $op->operation;
+			$key = $op->operation. (isset($op->operand) ? ':'.$op->operand : '');
 
 			if (!isset($ops[$key]))
 				$op->delete();

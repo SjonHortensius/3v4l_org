@@ -467,7 +467,7 @@ input.busy
 
 div.column
 {
-	padding: 0 2em;
+	padding: 0 1em;
 	width: 50%;
 	box-sizing: border-box;
 	float: left;
@@ -770,4 +770,9 @@ body.query caption
 body.sponsor h2:first-of-type + ul li
 {
 	background-color: #cbffba;
+}
+
+body.sponsor ul
+{
+	padding-left: 25px;
 }
