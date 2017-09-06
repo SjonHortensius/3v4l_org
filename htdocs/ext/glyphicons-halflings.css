@@ -454,8 +454,7 @@ http://getbootstrap.com/2.3.2/assets/css/bootstrap.css
 }
 
 .icon-random {
-  width: 16px;
-  background-position: -216px -120px;
+  width: 16px;background-position: -216px -120px;
 }
 
 .icon-comment {
@@ -483,13 +482,11 @@ http://getbootstrap.com/2.3.2/assets/css/bootstrap.css
 }
 
 .icon-folder-close {
-  width: 16px;
-  background-position: -384px -120px;
+  width: 16px;background-position: -384px -120px;
 }
 
 .icon-folder-open {
-  width: 16px;
-  background-position: -408px -120px;
+  width: 16px;background-position: -408px -120px;
 }
 
 .icon-resize-vertical {
