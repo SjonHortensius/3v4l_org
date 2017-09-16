@@ -19,7 +19,7 @@ ISTEMP=0
 [[ $version == *a* || $version == *RC* ]] && ISTEMP=1
 
 echo -ne "Downloading...\r"
-[[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl3.php.net/distributions/php-$version.tar.bz2
+[[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl1.php.net/distributions/php-$version.tar.bz2
 [[ `du php-$version.tar.bz2|cut -f1` -lt 999 ]] && rm php-$version.tar.bz2
 [[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
 
@@ -30,11 +30,12 @@ cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 
-vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}; [[ $vers == *a* ]] && vers=${vers:0:3}0
+vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}; [[ $vers == *a* || $vers == *RC* ]] && vers=${vers:0:3}0
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
 [[ $vers -gt 5414 ]] && confFlags="$confFlags --with-openssl"
+[[ $vers -gt 7000 ]] && confFlags="$confFlags --with-password-argon2"
 
 if [[ $ISTEMP -eq 1 ]]; then
 	EXTENSION_DIR=/usr/lib/php/${version:0:3}/modules; export EXTENSION_DIR

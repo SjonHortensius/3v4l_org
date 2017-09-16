@@ -180,6 +180,13 @@ body.index:not(.js) textarea
 	background: #fff;
 }
 
+/* this is only to reduce the fouc before the editor initializes */
+body.js code:not(.ace_editor)
+{
+	border-left: 53px solid #f7f7f7;
+	width: calc(100% - 53px);
+}
+
 /* selector is less specific than above */
 textarea[name=code]
 {

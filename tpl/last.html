@@ -1,5 +1,6 @@
 <ul id="tabs">
-	<li class="active"><a href="/last">Recent submissions</a></li>
+	<li{if (!Basic::$userinput['mine'])} class="active"{/}><a href="/last">Recent submissions</a></li>
+	<li{if (Basic::$userinput['mine'])} class="active"{/}><a href="/last?mine=1">My recent submissions</a></li>
 </ul>
 
 <div>
