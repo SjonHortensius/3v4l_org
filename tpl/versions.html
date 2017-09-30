@@ -3,12 +3,14 @@
 </ul>
 
 <div>
+	<h2>List of all {print count($this->versions);} versions currently installed</h2>
+
 	<table>
 	<thead>
 		<tr>
 			<th>name</th>
 			<th>released</th>
-			<th>eol</th>
+			<th>status</th>
 		</tr>
 	</thead>
 
@@ -17,7 +19,7 @@
 		<tr>
 			<td>{version->name}</td>
 			<td>{version->released}</td>
-			<td>{version->eol}</td>
+			<td>{if ($this->version->eol < date('Y-m-d'))}<b>end-of-life</b> since{:}supported until{/} {version->eol}</td>
 		</tr>
 		{/}
 	</tbody>
