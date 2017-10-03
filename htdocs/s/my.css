@@ -489,7 +489,7 @@ div.column
 	position: fixed;
 	right: 0;
 	top: 50%;
-	z-index: 9999;
+	z-index: 9;
 	margin-top: -86px;
 	background: #cc6d00 url(/ext/uvBg.png) 50% 0 no-repeat;
 }
@@ -499,6 +499,7 @@ div.column
 	display: block;
 	padding: 39px 5px 10px 5px;
 }
+
 
 small
 {
