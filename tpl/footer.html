@@ -6,9 +6,12 @@
 	{/}
 
 	{!-- ace version must be updated in evalOrg::richEditor()+htdocs/s/worker-php.js as well --}
-	<script
-		 src="https://cdn.jsdelivr.net/g/ace@1.2.6(min/ace.js+min/theme-chrome.js+min/mode-php.js+min/ext-language_tools.js)"
-		 integrity="sha256-9a38SUQirmhSRRFRuME6LOkGioaBLvpvMYCxFY8jRzQ= sha256-u2y8xEtloDLLKXa6tl0EPm0KCBPv970SEjDi/dX0b24= sha256-aGi4AkCmA4UahWr4cmYzNaAmefQ6VOVoEhRlDwIILv8= sha256-ijjjg6luDAA2VlIk3nk8xK3VvKJhBOljkTeHkQRFLY8 sha256-ipLTZHG/Sz/kUEykCsAIfGU1BeBBpF9eEefsVPi/FkI= sha256-RaeUTnVk5Tl9XbWEBu8zf9mfK1GeqkIH4X5j8RMk3ns="
-		 async crossorigin="anonymous"></script>
+	{foreach ([
+		'ace' => 'Ey7yytuYkFq5kRIEz+Pc0FgrP+xwLgtrR/d1nt7P3KpOzr3RZHC0e+jk4PKdVvYx',
+		'ext-language_tools' => '+FQId6L/1rlnxZtcZKMGCqzbfJcU/dn/13xTEatZpEesX9dLE20nhIT1xv7KYefK',
+		'mode-php' => 'vnyNmrQW5sIEMzOnvljvF7wJs1QExFwvB0FqWBtwEAli+3NTPPajtWbaOOI410cR',
+		'theme-chrome' => 'bJzbP5BpjKOtSe8y+d5AK/pOJsQfmHy7KPdJMNOCxbLh7X6ASQMhY8UWq0YhMn/L'] as $this->src => $this->sha384)}
+			<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>
+	{/}
 </body>
 </html>

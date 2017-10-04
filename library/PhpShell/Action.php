@@ -15,6 +15,7 @@ class PhpShell_Action extends Basic_Action
 		'manifest-src' => ["'self'"],
 		'child-src' => [ # valid sources for web-workers
 			"'self'",
+			"blob:", # required by ace 1.2.8
 			'cdn.jsdelivr.net',
 			'www.youtube.com', # for rebecca
 		],
