@@ -13,7 +13,9 @@
 	"created": {input->getCreatedUtc()},
 	"state": {input->state},
 	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done')));},
-	"code": {input->getCode()},
+	{if (!$this->scriptSkipCode)}
+		"code": {input->getCode()},
+	{/}
 	"tabs": {showTab}
 },
 

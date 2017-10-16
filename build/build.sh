@@ -36,6 +36,7 @@ vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}; [[ $ver
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
 [[ $vers -gt 5414 ]] && confFlags="$confFlags --with-openssl"
 [[ $vers -gt 7000 ]] && confFlags="$confFlags --with-password-argon2"
+[[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
 
 if [[ $ISTEMP -eq 1 ]]; then
 	EXTENSION_DIR=/usr/lib/php/${version:0:3}/modules; export EXTENSION_DIR
