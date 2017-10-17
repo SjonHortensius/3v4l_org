@@ -758,11 +758,16 @@ body.query caption
 	ul#tabs li.disabled{	display: none; }
 	ul#tabs li a{			padding: 5px; }
 	#options:not(:empty){	margin-top: 0; }
-	#previewForm{			display: none; }
+	#previewForm{			display: none !important; }
 	#uvTab{					display: none; }
 	header span{			display: none; }
 	header ul{				padding-right: 0; }
 	body.index .column li{	margin-bottom: 1em; }
+	#uvTab{					display: none; }
+}
+
+@media (max-width: 800px)
+{
 	/* keep menu on single line, remove bughunt & search; prevent LI from taking up space */
 	nav li:nth-of-type(2),
 	nav li:nth-of-type(3){	display: none; }
@@ -772,6 +777,7 @@ body.query caption
 {
 	input#title { width: 96% !important; }
 	form { padding: 0.5em; }
+	#previewForm { margin-top: -63px; }
 	ul#tabs + div { padding: 0.5em; }
 }
 
