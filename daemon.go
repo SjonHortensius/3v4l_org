@@ -151,7 +151,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-		var duplicateKey = "pq: duplicate key value violates unique constraint \"output_hash_key\""
+		var duplicateKey = "pq: duplicate key value violates unique constraint \"output_hash\""
 		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2)`, o.hash, o.raw); err != nil && err.Error() != duplicateKey {
 			exitError("Output: failed to store: %s", err)
 		}
