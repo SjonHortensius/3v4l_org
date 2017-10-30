@@ -1,8 +1,6 @@
-NodeList.prototype.forEach =
- HTMLCollection.prototype.forEach =
- DOMTokenList.prototype.forEach = function (cb){
-	Array.prototype.forEach.call(this, cb);
-};
+            NodeList.prototype.forEach == NodeList.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
+HTMLCollection.prototype.forEach == HTMLCollection.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
+    DOMTokenList.prototype.forEach == DOMTokenList.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
 
 HTMLSelectElement.prototype.getSelected = function(){
 	var s = [];
