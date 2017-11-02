@@ -459,6 +459,7 @@ input.busy
 	background: #f7f7f7;
 	box-shadow: 0 0 30px #0074CC;
 	border-radius: 0.5em;
+	z-index: 3;
 }
 
 .alert h2

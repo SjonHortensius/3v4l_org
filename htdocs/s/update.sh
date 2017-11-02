@@ -14,6 +14,6 @@ cd `dirname $0`
 
 { cat ./my.js | php -r "require('/srv/http/.common/jsminplus.php');ini_set('memory_limit', '256M');echo JSMinPlus::minify(file_get_contents('php://stdin'));"; cat ../ext/diff.js; } > c.js
 
-[[ $1 == 'q' ]] && exit 0
+# [[ $1 == 'q' ]] && exit 0
 
 # curl -s -d compilation_level=SIMPLE_OPTIMIZATIONS -d output_format=text -d output_info=compiled_code --data-urlencode "js_code@c.js" http://closure-compiler.appspot.com/compile > c2.js && mv c2.js c.js

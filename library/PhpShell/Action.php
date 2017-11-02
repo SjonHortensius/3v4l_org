@@ -67,13 +67,28 @@ class PhpShell_Action extends Basic_Action
 				Basic::$log->start(get_class(Basic::$action) .'::init');
 		}
 
-		if ($_GET['resetOpcache'] == sha1_file(APPLICATION_PATH .'/htdocs/index.php'))
+		if (isset($_GET['resetOpcache']) && $_GET['resetOpcache'] == sha1_file(APPLICATION_PATH .'/htdocs/index.php'))
 			die(print_r(opcache_get_status(false)+['RESET' => opcache_reset()]));
 
 		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'application/json';
 		elseif ('text/plain' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'text/plain';
+
+		if (Basic::$config->PRODUCTION_MODE && 'text/html' == $this->contentType)
+		{
+			$preloads = Basic::$cache->get(__CLASS__.'::staticPreloads', function(){
+				// match hashes put in tpls by update-online
+				return [
+					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
+					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
+					'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/worker-php.js' => 'script',
+				];
+			});
+
+			foreach ($preloads as $link => $type)
+				header('Link: <'. $link .'>; rel=preload; as='. $type, false);
+		}
 
 		// Since we resolve everything to 'script'; prevent random strings in bodyClass
 		if (! Basic::$action instanceof PhpShell_Action_Script)
