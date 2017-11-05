@@ -4,15 +4,9 @@
 
 <form method="post" action="{formAction}" id="{print str_replace('/', '', $this->formAction);}Form"{if ($this->formContainsFile)} enctype="multipart/form-data"{/}{if ($this->hasBeenSubmitted)} class="submit-attempted"{/}>
 	{foreach (Basic::$userinput as $this->input)}
-		{$this->inputs .= $this->input->getHtml();}
+		{*input->getHtml()}
 	{/}
 	{unset($this->input);}
-
-	{if (empty($this->inputs))}
-		{throw new PhpShell_MissingInputException('Missing parameters', null, 404);}
-	{/}
-
-	{*inputs}
 
 	<input type="submit" value="{formSubmit}" title="shortcut: ctrl+enter" />
 </form>
