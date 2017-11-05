@@ -6,13 +6,13 @@
 	{foreach (Basic::$userinput as $this->input)}
 		{$this->inputs .= $this->input->getHtml();}
 	{/}
+	{unset($this->input);}
 
 	{if (empty($this->inputs))}
 		{throw new PhpShell_MissingInputException('Missing parameters', null, 404);}
-	{:}
-		{*inputs}
-		{unset($this->input);}
 	{/}
+
+	{*inputs}
 
 	<input type="submit" value="{formSubmit}" title="shortcut: ctrl+enter" />
 </form>

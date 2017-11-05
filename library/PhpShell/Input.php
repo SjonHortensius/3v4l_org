@@ -318,13 +318,6 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->getResult(PhpShell_Version::byName('vld'));
 	}
 
-	public function getBytecode()
-	{
-		$version = PhpShell_Version::byName('hhvm-bytecode');
-
-		return $this->getResult($version)->getSubset('"exitCode" = 0');
-	}
-
 	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
 	{
 		$dt = new DateTime($this->created, new DateTimeZone('UTC'));

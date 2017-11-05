@@ -201,7 +201,6 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 
 	switch v.name {
 		case "vld":				if exitCode == 0 {  r.store(); }
-		case "hhvm-bytecode":	if exitCode == 0 {  r.store(); }
 		case "segfault":		if exitCode == 139{ r.store(); }
 
 		default:
