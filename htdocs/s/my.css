@@ -307,7 +307,7 @@ dd
 	overflow: auto;
 	font-family: monospace;
 	white-space: pre;
-	transition: max-height 0.3s ease-out;
+	transition: max-height 30s cubic-bezier(1,0,1,0);
 }
 
 dt:target + dd

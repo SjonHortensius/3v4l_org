@@ -404,6 +404,9 @@ var evalOrg = {};
 		try
 		{
 			var r = JSON.parse(this.responseText);
+
+			if (!r.script)
+				throw 'invalid response';
 		}
 		catch (e)
 		{
