@@ -1,5 +1,5 @@
 {print $this->show('Userinput/Type/text');}
 
 {if (isset(Basic::$action->input))}
-	<time itemprop="datePublished" datetime="{print Basic::$action->input->getCreatedUtc();}">@ {print Basic::$action->input->getCreatedUtc();}</time>
+	<time itemprop="datePublished" datetime="{action->input->getCreatedUtc()}">@ {action->input->getCreatedUtc}</time>
 {/}

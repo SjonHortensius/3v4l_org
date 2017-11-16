@@ -17,7 +17,6 @@ class PhpShell_Action extends Basic_Action
 			"'self'",
 			"blob:", # required by ace 1.2.8
 			'cdn.jsdelivr.net',
-			'www.youtube.com', # for rebecca
 		],
 		'connect-src' => [
 			"'self'", # for xhr

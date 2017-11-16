@@ -6,6 +6,7 @@
 	{/}
 
 	{$formAction = new PhpShell_Action_New;}
+	{$formAction->input = $this->input;}
 	{print Basic_Userinput::getHtmlFor($formAction, ['code' => $this->input->getCode(), 'title' => $this->input->title]);}
 
 	<noscript>
