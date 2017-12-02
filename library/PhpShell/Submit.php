@@ -8,12 +8,12 @@ class PhpShell_Submit extends PhpShell_Entity
 	];
 	protected static $_numerical = ['count'];
 
-	public static function create(array $data = [], bool $reload = true): Basic_Entity
+	public static function create(array $data = [], bool $reload = false): Basic_Entity
 	{
-		Basic::$database->query("WITH upsert AS (UPDATE submit SET updated = timezone('UTC'::text, now()), count = count + 1 WHERE input = :input AND ip = :ip RETURNING *)
-			INSERT INTO submit SELECT :input, :ip, timezone('UTC'::text, now()), null, 1 WHERE NOT EXISTS (SELECT * FROM upsert)",
-			$data);
+		Basic::$database->query("INSERT INTO submit (input, ip, \"isQuick\") VALUES(:input, :ip, :isQuick)
+			ON CONFLICT (input, ip) DO UPDATE SET updated = timezone('UTC'::text, now()), count = submit.count + 1
+		", $data);
 
-		return PhpShell_Submit::getStub($data);
+		return self::getStub($data);
 	}
 }

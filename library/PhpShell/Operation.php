@@ -8,13 +8,15 @@ class PhpShell_Operation extends PhpShell_Entity
 	];
 	protected static $_numerical = ['count'];
 
-	public static function create(array $data = [], bool $reload = true): Basic_Entity
+	public static function create(array $data = [], bool $reload = false): Basic_Entity
 	{
 		if (isset($data['operand']) && strlen($data['operand']) > 64)
 			throw new PhpShell_Operation_InvalidDataException('Operand too long');
 
 		// Cannot use parent::create because psql will log "currval of sequence "operations_id_seq" is not yet defined in this session"
-		Basic::$database->query("INSERT INTO operations VALUES (:input, :operation, :operand, :count)", $data);
+		// ON CONFLICT seems redundant looking at Input::updateOperations but it really is required!
+		Basic::$database->query("INSERT INTO operations VALUES (:input, :operation, :operand, :count)
+			ON CONFLICT (input, operation, operand) DO UPDATE SET count = operations.count + 1", $data);
 
 		return self::getStub($data);
 	}

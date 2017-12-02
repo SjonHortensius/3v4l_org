@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.6.3
--- Dumped by pg_dump version 9.6.3
+-- Dumped from database version 10.1
+-- Dumped by pg_dump version 10.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -446,7 +446,7 @@ CREATE MATERIALIZED VIEW search_popularoperands AS
  SELECT operations.operand AS text,
     sum(operations.count) AS size
    FROM operations
-  WHERE (((operations.operation)::text = 'INIT_FCALL'::text) AND ((operations.operand)::text <> ALL ((ARRAY['var_dump'::character varying, 'print_r'::character varying])::text[])))
+  WHERE (((operations.operation)::text = 'INIT_FCALL'::text) AND ((operations.operand)::text <> ALL (ARRAY[('var_dump'::character varying)::text, ('print_r'::character varying)::text])))
   GROUP BY operations.operand
   ORDER BY (sum(operations.count)) DESC
  LIMIT 150
@@ -463,8 +463,8 @@ CREATE TABLE submit (
     input integer NOT NULL,
     ip inet NOT NULL,
     created timestamp without time zone DEFAULT timezone('UTC'::text, now()),
-    updated timestamp without time zone DEFAULT timezone('UTC'::text, now()),
-    count integer
+    updated timestamp without time zone,
+    count integer DEFAULT 1
 );
 
 
@@ -804,6 +804,13 @@ ALTER TABLE version CLUSTER ON version_pkey;
 
 
 --
+-- Name: inputAlias; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "inputAlias" ON input USING btree (alias);
+
+
+--
 -- Name: input_bhignore; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -825,17 +832,17 @@ CREATE INDEX operations_search_quick ON operations USING brin (operation) WITH (
 
 
 --
+-- Name: resultBughunt; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "resultBughunt" ON result_bughunt USING btree (input, version, run);
+
+
+--
 -- Name: result_exitCode; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_exitCode" ON result_current USING brin ("exitCode");
-
-
---
--- Name: resultbughuntivr; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX resultbughuntivr ON result_bughunt USING btree (input, version, run);
 
 
 --
@@ -1046,8 +1053,8 @@ GRANT SELECT,INSERT ON TABLE assertion TO website;
 -- Name: input; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE input TO daemon;
 GRANT SELECT,INSERT,UPDATE ON TABLE input TO website;
+GRANT SELECT ON TABLE input TO daemon;
 
 
 --
@@ -1104,17 +1111,17 @@ GRANT SELECT,USAGE ON SEQUENCE input_id_seq TO website;
 --
 
 REVOKE ALL ON TABLE input_src FROM postgres;
-GRANT SELECT ON TABLE input_src TO daemon;
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE input_src TO postgres;
 GRANT SELECT,INSERT ON TABLE input_src TO website;
+GRANT SELECT ON TABLE input_src TO daemon;
 
 
 --
 -- Name: operations; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE operations TO daemon;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations TO website;
+GRANT SELECT ON TABLE operations TO daemon;
 
 
 --
@@ -1181,8 +1188,15 @@ GRANT SELECT ON TABLE result_current TO website;
 -- Name: version; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE version TO daemon;
 GRANT SELECT ON TABLE version TO website;
+GRANT SELECT ON TABLE version TO daemon;
+
+
+--
+-- Name: result_bughunt; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE result_bughunt TO website;
 
 
 --
@@ -1210,8 +1224,8 @@ GRANT SELECT ON TABLE search_popularoperands TO website;
 -- Name: submit; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE submit TO daemon;
 GRANT SELECT,INSERT,UPDATE ON TABLE submit TO website;
+GRANT SELECT ON TABLE submit TO daemon;
 
 
 --

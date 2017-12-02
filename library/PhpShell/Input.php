@@ -49,7 +49,7 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	/** @return self */
-	public static function create(array $data = [], bool $reload = true): Basic_Entity
+	public static function create(array $data = [], bool $reload = false): Basic_Entity
 	{
 		if (false !== strpos($data['code'], 'pcntl_fork(') || false !== strpos($data['code'], ':|:&') || false !== strpos($data['code'], ':|: &'))
 			throw new PhpShell_Input_GoFuckYourselfException('You must be really proud of yourself, trying to break a free service', [], 402);
@@ -159,7 +159,7 @@ class PhpShell_Input extends PhpShell_Entity
 		if (count(PhpShell_QueuedInput::find("input = ?", [$this->short])) > 0)
 			return false;
 
-		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR']]);
+		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR'], 'isQuick' => isset($version)]);
 		Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
 
 		$this->waitUntilNoLonger('new');
