@@ -633,15 +633,8 @@ var evalOrg = {};
 		$('#searchForm').addEventListener('submit', function(e){
 			e.preventDefault();
 
-			var url = '/search/'+ encodeURIComponent($('#operation').value);
-			if ($('#operand').value.length > 0)
-				url += '/'+ encodeURIComponent($('#operand').value);
+			var url = '/search/'+ encodeURIComponent($('#query').value);
 			window.location.href = url;
-		});
-
-		var haveOperand = JSON.parse($('dfn[data-have-operands]').dataset['haveOperands']);
-		$('select[name=operation]').addEventListener('change', function(e){
-			$('input[name=operand]').classList.toggle('noOperand', (-1 == haveOperand.indexOf(e.target.value)));
 		});
 
 		if ($('div#tagCloud'))
@@ -713,7 +706,7 @@ var evalOrg = {};
 
 		$$('g text').forEach(function (el){
 			var w = document.createElementNS(svgNs, 'a');
-			w.setAttributeNS(ns, 'xlink:href', '/search/INIT_FCALL/'+ el.textContent);
+			w.setAttributeNS(ns, 'xlink:href', '/search/'+ el.textContent);
 			w.setAttributeNS(ns, 'target', '_top');
 			w.appendChild(el.cloneNode(true));
 			el.parentNode.replaceChild(w, el);

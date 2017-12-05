@@ -8,7 +8,7 @@
 	{$this->show('_listInputs');}
 
 	<p class="pagination">
-		{$this->base = '/search/'. Basic::$userinput['operation'].'/'.Basic::$userinput['operand'];}
+		{$this->base = '/search/'. urlencode(Basic::$userinput['query']);}
 		Pages:&nbsp;
 		{if (Basic::$userinput['page'] > 1)}
 			{$this->prevPage = Basic::$userinput['page']-1;}

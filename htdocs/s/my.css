@@ -59,7 +59,8 @@ form > div:not(:first-child)
 
 form p
 {
-	margin-left: 12em;
+	margin-left: 11.5em;
+	margin-top: 0.5em;
 }
 
 input[type=text],
@@ -619,11 +620,6 @@ body.script input[type=submit]
 body.script dt i.icon-ok
 {
 	margin-left: 0.5em;
-}
-
-body.search input.noOperand
-{
-	opacity: 0.3;
 }
 
 body.search svg
