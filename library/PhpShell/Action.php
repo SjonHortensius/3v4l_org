@@ -84,7 +84,7 @@ class PhpShell_Action extends Basic_Action
 					'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/worker-php.js' => 'script',
 					'/ext/uvTab.png' => 'image',
 				];
-			});
+			}, 3600);
 
 			foreach ($preloads as $link => $type)
 				header('Link: <'. $link .'>; rel=preload; as='. $type, false);
