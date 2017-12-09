@@ -122,12 +122,12 @@ class PhpShell_Action extends Basic_Action
 		parent::init();
 	}
 
-	protected function _handleLastModified(): ?bool
+	protected function _handleLastModified(): void
 	{
 		if (isset($_SESSION['userId']) || 'text/html' != $this->contentType)
 			$this->_cacheLength = 0;
 
-		return parent::_handleLastModified();
+		parent::_handleLastModified();
 	}
 
 	public static function resolve(string $action, bool $hasClass, bool $hasTemplate): ?string
