@@ -34,7 +34,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public static function clean($code)
 	{
-		return trim(str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code));
+		return str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code);
 	}
 
 	public static function getHash($code)
