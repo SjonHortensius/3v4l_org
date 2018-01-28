@@ -398,8 +398,7 @@ CREATE MATERIALIZED VIEW result_bughunt AS
     r.created,
     r."userTime",
     r."systemTime",
-    r."maxMemory",
-    r.run
+    r."maxMemory"
    FROM ((result_current r
      JOIN input i ON ((i.id = r.input)))
      JOIN version v ON ((v.id = r.version)))
@@ -835,7 +834,7 @@ CREATE INDEX operations_search_quick ON operations USING brin (operation) WITH (
 -- Name: resultBughunt; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "resultBughunt" ON result_bughunt USING btree (input, version, run);
+CREATE INDEX "resultBughunt" ON result_bughunt USING btree (input, version);
 
 
 --

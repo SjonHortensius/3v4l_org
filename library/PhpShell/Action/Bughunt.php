@@ -62,7 +62,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 			{
 				$alias = $idx[0].$i;
 
-				$this->entries = $this->entries->addJoin(PhpShell_ResultBughunt::class, "{$alias}.input = input.id AND {$alias}.run = input.run", $alias, "INNER", false)
+				$this->entries = $this->entries->addJoin(PhpShell_ResultBughunt::class, "{$alias}.input = input.id", $alias, "INNER", false)
 					->getSubset("\n{$alias}.version = ?", [PhpShell_Version::byName($v)->id]);
 
 				if ('controls' == $idx)
