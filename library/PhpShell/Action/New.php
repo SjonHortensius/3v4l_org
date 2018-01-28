@@ -97,7 +97,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			$source = null;
 
 			// ignore submits from /#preview which have no correct referer
-			if (!isset($version))
+			if (!isset(Basic::$userinput['version']))
 			{
 				if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
 					$match = $match[1];

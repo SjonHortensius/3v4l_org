@@ -23,6 +23,8 @@ echo -ne "Downloading...\r"
 [[ `du php-$version.tar.bz2|cut -f1` -lt 999 ]] && rm php-$version.tar.bz2
 [[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
 
+ls php-$version.tar.bz2 >/dev/null
+
 echo -ne "Extracting...\r"
 [[ -d ../root/$version/ ]] && rm -R ../root/$version/
 tar xjf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2

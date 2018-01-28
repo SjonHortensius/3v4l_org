@@ -3,7 +3,7 @@ set -e ; cd `dirname $0`/htdocs/
 
 rm sitemap*.* ||:
 
-sudo -u postgres psql phpshell -tc "SELECT short, TO_CHAR(created, 'YYYY-MM-DD') FROM input WHERE created>'1970-01-01'" | while read n x d
+sudo -u postgres psql phpshell -tc "SELECT short, TO_CHAR(created, 'YYYY-MM-DD') FROM input WHERE created>'1970-01-01' AND state='done'" | while read n x d
 do
 	[[ -z $n ]] && continue
 
