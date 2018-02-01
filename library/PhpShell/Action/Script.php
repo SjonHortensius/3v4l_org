@@ -49,7 +49,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		// Rebecca, April 1st
 		if (in_array(Basic::$userinput['script'], ['1bYJv', 'p32ZU']))
-			array_push($this->cspDirectives['child-src'], 'https://www.youtube.com');
+			$this->cspDirectives['frame-src'] = ['https://www.youtube.com'];
 
 		parent::init();
 	}

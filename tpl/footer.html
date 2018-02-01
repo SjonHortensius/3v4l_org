@@ -6,12 +6,13 @@
 	{/}
 
 	{!-- ace version must be updated in tpl/script.html+evalOrg::richEditor()+htdocs/s/worker-php.js as well --}
+	{!-- openssl dgst -sha384 -binary FILENAME.js | openssl base64 -A --}
 	{foreach ([
-		'ace' => 'Ey7yytuYkFq5kRIEz+Pc0FgrP+xwLgtrR/d1nt7P3KpOzr3RZHC0e+jk4PKdVvYx',
-		'ext-language_tools' => '+FQId6L/1rlnxZtcZKMGCqzbfJcU/dn/13xTEatZpEesX9dLE20nhIT1xv7KYefK',
-		'mode-php' => 'vnyNmrQW5sIEMzOnvljvF7wJs1QExFwvB0FqWBtwEAli+3NTPPajtWbaOOI410cR',
-		'theme-chrome' => 'bJzbP5BpjKOtSe8y+d5AK/pOJsQfmHy7KPdJMNOCxbLh7X6ASQMhY8UWq0YhMn/L'] as $this->src => $this->sha384)}
-			<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>
+		'ace'				=> 'IygDpbYfPnwZjvRBPuA0nuvLPC/Z/3to32lfn+Om3OGIQEW7LXbvGZ6K/yNSKyPa',
+		'ext-language_tools'=> 'vgiwXW9DFILuQY8u1soaCXaAX0VzAN0oEyaGmqcKdghjnQCMHHpePDuTgt7+Qs9B',
+		'mode-php'			=> 'qgkDF4659KEgkW45t8q4DImKvmtYJWUTCiRPY/GAC82yRV3jDybm2C457+IjjU4k',
+		'theme-chrome'		=> 'bJzbP5BpjKOtSe8y+d5AK/pOJsQfmHy7KPdJMNOCxbLh7X6ASQMhY8UWq0YhMn/L'] as $this->src => $this->sha384)}
+			<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.3.0/src-min-noconflict/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>
 	{/}
 </body>
 </html>

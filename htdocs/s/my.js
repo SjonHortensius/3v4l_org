@@ -84,7 +84,7 @@ var evalOrg = {};
 		if (document.body.classList.contains('mobile'))
 			return;
 
-		ace.config.set('basePath', 'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/');
+		ace.config.set('basePath', 'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.3.0/src-min-noconflict/');
 		// Use a shim to keep ff happy
 		ace.config.set('workerPath', '/s/');
 		ace.require('ace/ext/language_tools');

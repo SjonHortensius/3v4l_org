@@ -13,7 +13,7 @@ class PhpShell_Action extends Basic_Action
 			'cdn.jsdelivr.net',
 		],
 		'manifest-src' => ["'self'"],
-		'child-src' => [ # valid sources for web-workers
+		'worker-src' => [ # valid sources for web-workers
 			"'self'",
 			"blob:", # required by ace 1.2.8
 			'cdn.jsdelivr.net',
@@ -81,7 +81,7 @@ class PhpShell_Action extends Basic_Action
 				return [
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
-					'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.2.8/src-min-noconflict/worker-php.js' => 'script',
+					'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.3.0/src-min-noconflict/worker-php.js' => 'script',
 					'/ext/uvTab.png' => 'image',
 				];
 			}, 3600);
