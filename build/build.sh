@@ -31,8 +31,11 @@ tar xjf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2
 cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
+confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-mbstring --with-zlib --disable-cgi"
 
-vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:3}0${vers:4}; [[ $vers == *a* || $vers == *RC* ]] && vers=${vers:0:3}0
+vers=${version//./}
+  if [[  $ISTEMP -eq 1 ]]; then vers=${vers:0:2}0
+elif [[ ${#vers} -eq 3 ]]; then vers=${vers:0:2}0${vers:2}; fi
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
