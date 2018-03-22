@@ -20,8 +20,7 @@ struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
 // This could be called _init and we wouldn't need if(0==diff) checks; but that segfaults on hhvm because of pthreads
 // also: don't add _init(){ _initLib }; that breaks functionality in hhvm
 void
-_initLib(void)
-{
+_initLib(void) {
 	org_gettimeofday =  dlsym(RTLD_NEXT, "gettimeofday");
 	org_time =          dlsym(RTLD_NEXT, "time");
 	org_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
@@ -127,8 +126,8 @@ int ftime(struct timeb *tp) {
 	return 0;
 }
 
-int uname(struct utsname *buf)
-{
+// misc other overloads
+int uname(struct utsname *buf) {
 	if (!initDone)
 		_initLib();
 
@@ -139,4 +138,13 @@ int uname(struct utsname *buf)
 	strcpy(buf->machine, "x86_64");
 
 	return 0;
+}
+
+bool forkPrintedMsg = false;
+pid_t fork(void) {
+	if (!forkPrintedMsg) {
+		fprintf(stderr, "\n%s has been disabled for security reasons\n", __FUNCTION__);
+		forkPrintedMsg=true;
+	}
+    return 0;
 }

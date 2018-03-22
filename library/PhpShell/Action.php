@@ -50,7 +50,7 @@ class PhpShell_Action extends Basic_Action
 		header('X-Frame-Options: DENY');
 		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
-		header('Referrer-Policy: unsafe-url');
+		header('Referrer-Policy: origin-when-cross-origin');
 
 		$csp = "default-src 'none'; ";
 		foreach ($this->cspDirectives as $directive => $settings)
