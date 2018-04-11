@@ -22,3 +22,5 @@ do
 done
 
 echo '</sitemapindex>' >> sitemap.xml
+
+exit 0

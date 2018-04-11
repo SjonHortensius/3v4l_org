@@ -9,6 +9,69 @@ body
 	padding-top: 4em;
 }
 
+body.hz
+{
+	max-width: none;
+	padding-top: 3.7em;
+}
+
+/*
+https://paulund.co.uk/playground/demo/css_box_shadow/
+https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+*/
+body.hz header
+{
+	margin-bottom: 0;
+	box-shadow: 0 10px 6px -6px #0f0;
+}
+
+body.hz header li
+{
+	border-left: 0;
+	box-shadow: 3px 0px 3px -3px #0f0;
+}
+
+body.hz header li:last-child
+{
+	box-shadow: none;
+}
+
+body.hz > div[itemtype] /* fixme unwanted schema.org dep - introduce <content> / main whatever ?*/
+{
+	display: flex;
+	flex-flow: row wrap;
+}
+
+body.hz ul#tabs
+{
+	flex: 2 100%;
+	order: 1;
+	margin-top: 0;
+}
+
+body.hz form#newForm
+{
+/*	flex: 1 1 auto;*/
+	order: 2;
+	width: 650px;
+}
+
+body.hz form, body.hz dd
+{
+	border-radius: 0;
+}
+
+body.hz form
+{
+	padding: 0;
+}
+
+body.hz div#tab
+{
+	flex: 1 auto;
+	order: 3;
+}
+
 form
 {
 	padding: 2em;
@@ -529,6 +592,7 @@ header h1
 	overflow: hidden;
 	color: transparent;
 	margin: 0;
+	box-shadow: 3px 0px 3px -3px #000;
 
 	background: url(/s/logo.png) no-repeat center;
 	transition: background-color 250ms ease-in;
