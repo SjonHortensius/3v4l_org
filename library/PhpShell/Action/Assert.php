@@ -7,7 +7,8 @@ class PhpShell_Action_Assert extends PhpShell_Action
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'valueType' => 'scalar',
 			'required' => true,
-			'options' => ['minLength' => 5, 'maxLength' => 6],
+			'minLength' => 5,
+			'maxLength' => 6,
 		],
 		'version' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 2],

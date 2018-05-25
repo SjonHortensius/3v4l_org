@@ -8,7 +8,8 @@ class PhpShell_Action_Last extends PhpShell_Action
 			'valueType' => 'integer',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'default' => 1,
-			'options' => ['minValue' => 1, 'maxValue' => 9],
+			'minValue' => 1,
+			'maxValue' => 9,
 		],
 		'mine' => [
 			'valueType' => 'integer',

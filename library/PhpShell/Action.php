@@ -13,6 +13,7 @@ class PhpShell_Action extends Basic_Action
 			'cdn.jsdelivr.net',
 		],
 		'manifest-src' => ["'self'"],
+		'frame-ancestors' => ["'none'"],
 		'worker-src' => [ # valid sources for web-workers
 			"'self'",
 			"blob:", # required by ace 1.2.8
@@ -47,7 +48,6 @@ class PhpShell_Action extends Basic_Action
 		}
 
 		header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
-		header('X-Frame-Options: DENY');
 		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
 		header('Referrer-Policy: origin-when-cross-origin');

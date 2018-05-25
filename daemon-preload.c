@@ -146,5 +146,6 @@ pid_t fork(void) {
 		fprintf(stderr, "\n%s has been disabled for security reasons\n", __FUNCTION__);
 		forkPrintedMsg=true;
 	}
-    return 0;
+
+	return 0;
 }

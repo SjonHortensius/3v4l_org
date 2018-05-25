@@ -11,7 +11,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			 * generic 400-'unknown action' instead of 404-'unknown script' error. This is
 			 * caused by us interpreting everything as a script in PhpShell_Action::resolve
 			 */
-//			'options' => ['minLength' => 5, 'maxLength' => 6],
+//			'minLength' => 5, 'maxLength' => 6,
 		],
 		'tab' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],

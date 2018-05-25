@@ -4,12 +4,6 @@
 #   ar p hhvm_$v~jessie_amd64.deb data.tar.xz|tar xJv ./usr/bin/hhvm; \
 #   strip usr/bin/hhvm; mv usr/bin/hhvm /srv/http/3v4l.org/bin/hhvm-$v
 
-# for debian:
-#
-# apt-get install libxml2-dev libssl-dev pkg-config zlib1g-dev libcurl4-openssl-dev curl-devel libcurl4-gnutls-dev libgmp-dev libmcrypt-dev
-# ln -s x86_64-linux-gnu/curl /usr/include/curl
-# ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
-
 set -e
 cd `dirname $0`/in/
 
@@ -19,11 +13,9 @@ ISTEMP=0
 [[ $version == *a* || $version == *RC* ]] && ISTEMP=1
 
 echo -ne "Downloading...\r"
-[[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl1.php.net/distributions/php-$version.tar.bz2
+[[ ! -f php-$version.tar.bz2 ]] && curl -OsS http://nl3.php.net/distributions/php-$version.tar.bz2
 [[ `du php-$version.tar.bz2|cut -f1` -lt 999 ]] && rm php-$version.tar.bz2
 [[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
-
-ls php-$version.tar.bz2 >/dev/null
 
 echo -ne "Extracting...\r"
 [[ -d ../root/$version/ ]] && rm -R ../root/$version/
@@ -32,15 +24,13 @@ cd ../root/php-$version/
 
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-mbstring --with-zlib --disable-cgi"
+confFlags="$confFlags --with-curl=/usr"
 
-vers=${version//./}
-  if [[  $ISTEMP -eq 1 ]]; then vers=${vers:0:2}0
-elif [[ ${#vers} -eq 3 ]]; then vers=${vers:0:2}0${vers:2}; fi
+vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:2}0${vers:2}; [[ $vers == *a* ]] && vers=${vers:0:3}0
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
-[[ $vers -gt 5414 ]] && confFlags="$confFlags --with-openssl"
-[[ $vers -gt 7000 ]] && confFlags="$confFlags --with-password-argon2"
+[[ $vers -gt 7000-1 ]] && confFlags="$confFlags --with-password-argon2"
 [[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
 
 if [[ $ISTEMP -eq 1 ]]; then
@@ -68,6 +58,7 @@ cd ../..
 rm -R root/php-$version/
 
 echo -e "Done...       \r"
+exit 0
 echo -n "Publish? [Yn]"; read p
 
 [[ $p == "N" || $p == "n"  ]] && exit 0

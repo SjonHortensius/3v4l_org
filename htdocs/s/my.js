@@ -718,10 +718,22 @@ var evalOrg = {};
 		tableSorter.initialize();
 	};
 
+	this.handleSponsor = function()
+	{
+/*
+		var offset = (new Date).setMonth((new Date).getMonth() - 12);
+
+		$$('ul li i').forEach(function (el){
+			var d = new Date(el.textContent).getTime();
+			if (d < offset)
+				el.parentNode.style.opacity = 1 - Number( (offset-d) / (400*365*24*3600)).toFixed(2);
+		});
+*/	};
+
 	this.handleStats = function()
 	{
 		this.localTime(false, 'tbody td:nth-child(2)');
-	}
+	};
 }).apply(evalOrg);
 
 // Possibility to apply css before onload gets fired (which is after parsing ace.js)

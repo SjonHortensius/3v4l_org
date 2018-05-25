@@ -7,9 +7,9 @@ class PhpShell_Action_New extends PhpShell_Action
 		'title' => [
 			'valueType' => 'scalar',
 			'regexp' => '~^[\x20-\x7e\x80-\xff]*$~',
+			'maxLength' => 64,
+//			'minLength' => 0,
 			'options' => [
-				'maxLength' => 64,
-//				'minLength' => 0,
 				'placeholder' => 'Untitled',
 			],
 		],
