@@ -36,10 +36,6 @@ type Input struct {
 	run          int
 	runArchived  bool
 	lastSubmit   time.Time
-	src          struct {
-		sync.RWMutex
-		inUse int
-	}
 }
 
 type Output struct {
@@ -85,8 +81,8 @@ func (this *Input) setBusy(newRun bool) {
 		incRun = 1
 	}
 
-	this.src.Lock(); this.src.inUse++
-	if 1 == this.src.inUse {
+	inputs.Lock(); inputs.srcUse[this.short]++
+	if 1 == inputs.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
 			exitError("setBusy: could not create file: %s", err)
 		} else {
@@ -100,7 +96,7 @@ func (this *Input) setBusy(newRun bool) {
 			f.Close()
 		}
 	}
-	this.src.Unlock()
+	inputs.Unlock()
 
 	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE id = $1`, this.id, incRun); err != nil {
 		exitError("Input: failed to update run+state: %s", err)
@@ -125,13 +121,15 @@ func (this *Input) setDone() {
 		exitError("Input: failed to update: %s", err)
 	}
 
-	this.src.Lock(); this.src.inUse--
-	if 0 == this.src.inUse {
+	inputs.Lock(); inputs.srcUse[this.short]--
+	if 0 == inputs.srcUse[this.short] {
 		if err := os.Remove("/in/"+ this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 		}
+
+		delete(inputs.srcUse, this.short)
 	}
-	this.src.Unlock()
+	inputs.Unlock()
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
@@ -455,28 +453,6 @@ func batchScheduleNewVersions(target *Version) {
 	}
 }
 
-func batchSingleFix() {
-	rs, err := db.Query(`
-		SELECT id, short, created, "runArchived"
-		FROM input
-		WHERE id IN (SELECT DISTINCT input FROM result_current WHERE "exitCode" > 0 AND "exitCode" < 255)
-		ORDER BY RANDOM()`)
-	if err != nil {
-		exitError("doBatch: error in SELECT query: %s", err)
-	}
-
-	for rs.Next() {
-		input := &Input{uniqueOutput: map[string]bool{}}
-		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
-			exitError("doBatch: error fetching work: %s", err)
-		}
-
-		_batchResetHard(input)
-	}
-
-	stats.RLock(); fmt.Printf("batchSingleFix: completed @ %v\n", stats.c); stats.RUnlock()
-}
-
 func batchRefreshRandomScripts() {
 	for {
 		rs, err := db.Query(`
@@ -501,7 +477,7 @@ func batchRefreshRandomScripts() {
 	}
 }
 
-func _batchResetHard(input *Input){
+func _batchResetHard(input *Input) {
 	//fixme
 	l := ResourceLimit{0, 2500, 32768}
 
@@ -594,6 +570,10 @@ var (
 	l        *pq.Listener
 	versions []*Version
 	isBatch  bool
+	inputs   struct {
+		sync.Mutex
+		srcUse map[string]int
+	}
 	stats    struct {
 		sync.RWMutex
 		c map[string]int
@@ -624,7 +604,8 @@ func init() {
 		exitError("Failed to ping db: %s", err)
 	}
 
-	stats.c = make(map[string]int);
+	stats.c = make(map[string]int)
+	inputs.srcUse = make(map[string]int)
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:    2,
