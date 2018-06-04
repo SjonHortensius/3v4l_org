@@ -1,0 +1,4 @@
+This is a Brave Payments publisher verification file.
+
+Domain: 3v4l.org
+Token: 497af18edbdab42ead6d228067ebc92d795eabda0695737070fe5ebaf01b5315

@@ -7,6 +7,7 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 	public $last;
 	public $popular;
 	protected $_cacheLength = '45 seconds';
+	const ACTIVE_SCRIPTS = 9;
 
 	public function init(): void
 	{

@@ -25,7 +25,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 //				'rel' => 'Related',
 				'segfault' => 'Segmentation fault',
 				'rfc' => 'RFC branches',
-				'hhvm' => null, #legacy
 			]
 		],
 	];
@@ -74,10 +73,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 			Basic::$controller->redirect($this->input->short. ('output' != Basic::$userinput['tab'] ? '/'. Basic::$userinput['tab'] : ''), true);
 		}
 
-		// legacy, redirect to /script
-		if ('hhvm' == Basic::$userinput['tab'])
-			Basic::$controller->redirect($this->input->short, true);
-
 		if (!in_array($this->input->state, ['busy', 'new']))
 		{
 			$this->_lastModified = $this->input->getLastModified();
@@ -99,10 +94,10 @@ class PhpShell_Action_Script extends PhpShell_Action
 		$this->showTab['segfault'] = (count($this->input->getSegfault()) > 0);
 		$this->showTab['refs'] = (count(iterator_to_array($this->input->getRefs())) > 0);
 
-		unset($this->showTab['hhvm']);
-
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);
+
+		$this->input->logHit();
 
 		parent::run();
 	}

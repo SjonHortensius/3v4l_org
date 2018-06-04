@@ -263,6 +263,28 @@ class PhpShell_Input extends PhpShell_Entity
 		return $versions;
 	}
 
+	public function logHit()
+	{
+		$hits = Basic::$cache->increment('Hits:'. $this->short .':'. (date('w')), 1, 1, 3*24*60*60) +
+				Basic::$cache->get('Hits:'. $this->short .':'.((date('w')+5)%6), function(){ return 0; });
+
+		$popular = Basic::$cache->get('Hits:popular', function(){ return []; });
+
+		if (count($popular) >= PhpShell_Action_Index::ACTIVE_SCRIPTS)
+		{
+			$minimum = array_reduce($popular, function(int $min, int $v){ return min($v, $min); }, 999);
+
+			if ($hits <= $minimum)
+				return;
+		}
+
+		$popular[ $this->short ] = $hits;
+		$popular = array_filter($popular, function(int $v){ return $v > $minimum; });
+		arsort($popular);
+
+		Basic::$cache->set('Hits:popular', $popular);
+	}
+
 	public function getPerf()
 	{
 		return Basic::$database->query("
