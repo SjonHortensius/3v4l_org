@@ -9,14 +9,16 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			'valueType' => 'scalar',
 //			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'required' => true,
-			'options' => ['minLength' => 2, 'maxLength' => 28],
+			'minLength' => 2,
+			'maxLength' => 28,
 			'description' => 'sql LIKE syntax supported, eg. array\_%',
 		],
 		'page' => [
 			'valueType' => 'integer',
 			'source' => ['superglobal' => 'REQUEST', 'key' => 2],
 			'default' => 1,
-			'options' => ['minValue' => 1, 'maxValue' => 9],
+			'minValue' => 1,
+			'maxValue' => 9,
 		],
 	];
 	protected $_cacheLength = '24 hours';
