@@ -58,7 +58,7 @@ cd ../..
 rm -R root/php-$version/
 
 echo -e "Done...       \r"
-exit 0
+# exit 0
 echo -n "Publish? [Yn]"; read p
 
 [[ $p == "N" || $p == "n"  ]] && exit 0

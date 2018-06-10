@@ -272,15 +272,15 @@ class PhpShell_Input extends PhpShell_Entity
 
 		if (count($popular) >= PhpShell_Action_Index::ACTIVE_SCRIPTS)
 		{
-			$minimum = array_reduce($popular, function(int $min, int $v){ return min($v, $min); }, 999);
+			$minimum = end($popular);
 
 			if ($hits <= $minimum)
 				return;
 		}
 
 		$popular[ $this->short ] = $hits;
-		$popular = array_filter($popular, function(int $v){ return $v > $minimum; });
 		arsort($popular);
+		$popular = array_slice($popular, 0, PhpShell_Action_Index::ACTIVE_SCRIPTS, true);
 
 		Basic::$cache->set('Hits:popular', $popular);
 	}

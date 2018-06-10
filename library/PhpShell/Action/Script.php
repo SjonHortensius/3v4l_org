@@ -50,6 +50,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (in_array(Basic::$userinput['script'], ['1bYJv', 'p32ZU']))
 			$this->cspDirectives['frame-src'] = ['https://www.youtube.com'];
 
+		if (in_array(Basic::$userinput['script'], ['aV2i2', 'XD6qI']) && 'Blackboard Safeassign' === $_SERVER['HTTP_USER_AGENT'])
+			die(http_response_code(429));
+
 		parent::init();
 	}
 

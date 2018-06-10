@@ -36,11 +36,11 @@
 
 <div class="column">
 {if (!empty($this->popular))}
-	<h2>Popular</h2>
+	<h2>Popular today</h2>
 	<ul>
-		{foreach ($this->popular as $this->url => $this->count)}
+		{foreach ($this->popular as $this->short => $this->count)}
 			<li>
-				<a href="{url}">{url}</a>
+				<a href="/{short}">{short}</a>
 			</li>
 		{/}
 	</ul>

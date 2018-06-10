@@ -17,6 +17,6 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 			->getSubset('input.run > 0 AND "runQuick" ISNULL', [])
 			->setOrder(['id' => false]);
 
-		$this->popular = Basic::$cache->get('active_scripts', function(){ return []; }, 60);
+		$this->popular = Basic::$cache->get('Hits:popular', function(){ return []; }, 60);
 	}
 }
