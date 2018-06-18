@@ -149,7 +149,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-		var duplicateKey = "pq: duplicate key value violates unique constraint \"output_hash\""
+		var duplicateKey = `pq: duplicate key value violates unique constraint "output_hash"`
 		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2)`, o.hash, o.raw); err != nil && err.Error() != duplicateKey {
 			exitError("Output: failed to store: %s", err)
 		}
@@ -412,11 +412,24 @@ func canBatch(doSleep bool) (bool, error) {
 	return true, nil
 }
 
+// Limits # of parallel execs by using a channel with a limited buffer
+type SizedWaitGroup struct {
+	current chan bool
+	*sync.WaitGroup
+}
+func newSizedWaitGroup(limit int) SizedWaitGroup {
+	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{} }
+}
+func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1); }
+func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done(); }
+
 func batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
 	//fixme
 	l := ResourceLimit{0, 2500, 32768}
+
+	wg := newSizedWaitGroup(3)
 
 	found := 1
 	for found > 0 {
@@ -424,7 +437,7 @@ func batchScheduleNewVersions(target *Version) {
 			SELECT id, short, i.run, created
 			FROM input i
 			WHERE
-				state = 'done' AND NOT "operationCount" IS NULL
+				state = 'done' AND NOT "operationCount" IS NULL AND NOT "bughuntIgnore"
 				AND (i."runArchived" OR i.created < $2::date)
 				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
 			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
@@ -446,10 +459,18 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
-			input.setBusy(false)
-			input.execute(target, &l)
-			input.setDone()
+			wg.Add()
+
+			go func(i *Input) {
+				defer wg.Done()
+
+				i.setBusy(false)
+				i.execute(target, &l)
+				i.setDone()
+			}(input)
 		}
+
+		wg.Wait()
 	}
 }
 
