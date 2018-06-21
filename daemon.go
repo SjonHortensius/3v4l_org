@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
@@ -123,7 +124,7 @@ func (this *Input) setDone() {
 
 	inputs.Lock(); inputs.srcUse[this.short]--
 	if 0 == inputs.srcUse[this.short] {
-		if err := os.Remove("/in/"+ this.short); err != nil {
+		if err := os.Remove("/in/" + this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 		}
 
@@ -417,11 +418,12 @@ type SizedWaitGroup struct {
 	current chan bool
 	*sync.WaitGroup
 }
+
 func newSizedWaitGroup(limit int) SizedWaitGroup {
-	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{} }
+	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
 }
-func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1); }
-func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done(); }
+func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
+func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
 
 func batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
@@ -439,8 +441,8 @@ func batchScheduleNewVersions(target *Version) {
 			WHERE
 				state = 'done' AND NOT "operationCount" IS NULL AND NOT "bughuntIgnore"
 				AND (i."runArchived" OR i.created < $2::date)
-				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1)
-			LIMIT 999;`, target.id, target.eol.Format("2006-01-02"))
+				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1);`,
+			target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
 			exitError("doBatch: error in SELECT query: %s", err)
 		}
@@ -587,15 +589,16 @@ func background() {
 }
 
 var (
-	db       *sql.DB
-	l        *pq.Listener
-	versions []*Version
-	isBatch  bool
-	inputs   struct {
+	db             *sql.DB
+	l              *pq.Listener
+	versions       []*Version
+	isBatch        bool
+	shutdownSignal chan os.Signal
+	inputs         struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
-	stats    struct {
+	stats struct {
 		sync.RWMutex
 		c map[string]int
 	}
@@ -609,6 +612,9 @@ const (
 func init() {
 	var err error
 	isBatch = len(os.Args) > 1 && os.Args[1] == "--batch"
+
+	shutdownSignal = make(chan os.Signal, 1)
+	signal.Notify(shutdownSignal, os.Interrupt)
 
 	if isBatch {
 		db, err = sql.Open("postgres", DSN+" port=5434")
@@ -674,7 +680,7 @@ func main() {
 
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
-			if v.isHelper || len(v.name) > 6 {
+			if v.isHelper {
 				fmt.Printf("batchScheduleNewVersions: skipping %s\n", v.name)
 				continue
 			}
@@ -701,10 +707,13 @@ func main() {
 	// Process pending work
 	doWork()
 
+LOOP:
 	for {
 		select {
 		case <-l.Notify:
 			go doWork()
+		case <-shutdownSignal:
+			break LOOP
 		}
 	}
 }
