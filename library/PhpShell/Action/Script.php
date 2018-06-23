@@ -28,6 +28,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			]
 		],
 	];
+	/** @var $input PhpShell_Input */
 	public $input;
 	public $showTab = [];
 	public $bodyClass = 'script';
@@ -95,7 +96,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
 		$this->showTab['vld'] = (isset($this->input->operationCount) && $this->input->operationCount > 0);
 		$this->showTab['segfault'] = (count($this->input->getSegfault()) > 0);
-		$this->showTab['refs'] = (count(iterator_to_array($this->input->getRefs())) > 0);
+		$this->showTab['refs'] = (count($this->input->getRefs()) > 0);
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);

@@ -301,20 +301,10 @@ class PhpShell_Input extends PhpShell_Entity
 			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
 
-	public function getRefs()
+	public function getRefs(): Basic_EntitySet
 	{
-		return Basic::$database->query("
-			WITH RECURSIVE recRefs(id, operation, link, name, parent) AS (
-				SELECT id, r.operation, link, name, parent
-				FROM operations o
-				INNER JOIN \"references\" r ON r.operation = o.operation AND (o.operand = r.operand OR r.operand IS NULL)
-				WHERE input = ?
-				UNION ALL
-				SELECT C.id, C.operation, C.link, C.name, C.parent
-				FROM recRefs P
-				INNER JOIN \"references\" C on P.id = C.parent
-			)
-			SELECT link, name FROM recRefs ORDER BY name ASC;", [$this->id]);
+		return $this->getRelated(PhpShell_Operation::class)
+			->addJoin(PhpShell_Reference::class, "r.operation = operations.operation AND operations.operand = r.operand", "r");
 	}
 
 	public function getLastModified()
@@ -325,20 +315,20 @@ class PhpShell_Input extends PhpShell_Entity
 			->fetchColumn(0);
 	}
 
-	public function getResult(PhpShell_Version $version)
+	public function getResult(PhpShell_Version $version): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("run = ? AND version = ?", [$this->run, $version]);
 	}
 
-	public function getSegfault()
+	public function getSegfault(): Basic_EntitySet
 	{
 		$version = PhpShell_Version::byName('segfault');
 
 		return $this->getResult($version)->getSubset('"exitCode" = 139');
 	}
 
-	public function getVld()
+	public function getVld(): Basic_EntitySet
 	{
 		return $this->getResult(PhpShell_Version::byName('vld'));
 	}

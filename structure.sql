@@ -298,11 +298,10 @@ ALTER TABLE references_id_seq OWNER TO postgres;
 
 CREATE TABLE "references" (
     id integer DEFAULT nextval('references_id_seq'::regclass) NOT NULL,
-    operation character varying(24),
-    operand character varying(64),
+    operation character varying(24) NOT NULL,
+    operand character varying(64) NOT NULL,
     link character varying(128) NOT NULL,
     name character varying(96) NOT NULL,
-    parent integer
 );
 
 
