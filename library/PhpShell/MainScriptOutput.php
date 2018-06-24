@@ -7,17 +7,14 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 		parent::__construct(PhpShell_Result::class);
 
 		$this->addJoin(PhpShell_Output::class, "output.id = result.output")
-			->addJoin(PhpShell_Version::class, "version.id = result.version")
-			->addJoin(PhpShell_Assertion::class, "assert.input = result.input AND assert.\"outputHash\" = output.hash", 'assert', 'LEFT');
+			->addJoin(PhpShell_Version::class, "version.id = result.version");
 	}
 
 	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
 	{
 		$fields = 'result.input, result."exitCode",
 			output.hash as "output$hash", output.raw as "output$raw",
-			version.name as "version$name", version.order as "version$order", version.released as "version$released",
-			CASE WHEN assert.input IS NULL THEN false ELSE true END AS "isAsserted"
-		';
+			version.name as "version$name", version.order as "version$order", version.released as "version$released"';
 
 		return parent::_query($fields, $groupBy);
 	}
