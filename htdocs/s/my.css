@@ -842,7 +842,7 @@ body.query caption
 	ul#tabs + div { padding: 0.5em; }
 }
 
-body.sponsor h2:first-of-type + ul li
+body.sponsor h2:first-of-type + ul li:not([data-expired="1"])
 {
 	background-color: #cbffba;
 }

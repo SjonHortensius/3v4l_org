@@ -12,9 +12,7 @@ class PhpShell_MainScriptOutput extends Basic_EntitySet
 
 	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
 	{
-		$fields = 'result.input, result."exitCode",
-			output.hash as "output$hash", output.raw as "output$raw",
-			version.name as "version$name", version.order as "version$order", version.released as "version$released"';
+		$fields = 'result.input, result."exitCode", output.hash as "output$hash", output.raw as "output$raw", version.name as "version$name", version.order as "version$order", version.released as "version$released"';
 
 		return parent::_query($fields, $groupBy);
 	}

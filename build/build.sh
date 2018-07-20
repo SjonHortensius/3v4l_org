@@ -32,6 +32,7 @@ vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:2}0${vers:2}; [[ $ver
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
 [[ $vers -gt 7000-1 ]] && confFlags="$confFlags --with-password-argon2"
 [[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
+[[ $vers -gt 7300-1 ]] && confFlags="$confFlags --without-curl"
 
 if [[ $ISTEMP -eq 1 ]]; then
 	EXTENSION_DIR=/usr/lib/php/${version:0:3}/modules; export EXTENSION_DIR
@@ -58,7 +59,7 @@ cd ../..
 rm -R root/php-$version/
 
 echo -e "Done...       \r"
-# exit 0
+exit 0
 echo -n "Publish? [Yn]"; read p
 
 [[ $p == "N" || $p == "n"  ]] && exit 0

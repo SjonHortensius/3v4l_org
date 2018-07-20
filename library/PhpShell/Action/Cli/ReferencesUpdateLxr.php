@@ -9,7 +9,7 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 		chdir('/tmp/php-src/');
 
 		Basic::$database->beginTransaction();
-		Basic::$database->execute("DELETE FROM \"references\"");
+		Basic::$database->query("DELETE FROM \"references\"");
 		$statement = Basic::$database->prepare("INSERT INTO \"references\" (operation, operand, link, name) VALUES (?, ?, ?, ?)");
 
 		foreach (explode("\n", `grep -nrE '^(PHP|ZEND)_FUNCTION\(' ext/ main/ Zend/|grep -F .c:`) as $line)
