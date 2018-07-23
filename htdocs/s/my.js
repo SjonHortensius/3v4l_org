@@ -375,6 +375,7 @@ var evalOrg = {};
 			xhr.open('get', window.location.pathname+'.json');
 			xhr.setRequestHeader('Accept', 'application/json');
 			xhr.onload = _refreshOutput;
+			xhr.timeout = 500;
 		}
 
 		xhr.send();

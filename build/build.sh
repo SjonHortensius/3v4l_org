@@ -34,10 +34,9 @@ vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:2}0${vers:2}; [[ $ver
 [[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
 [[ $vers -gt 7300-1 ]] && confFlags="$confFlags --without-curl"
 
-if [[ $ISTEMP -eq 1 ]]; then
-	EXTENSION_DIR=/usr/lib/php/${version:0:3}/modules; export EXTENSION_DIR
-else
-	EXTENSION_DIR=/usr/lib/php/$version/modules; export EXTENSION_DIR
+EXTENSION_DIR=/usr/lib/php/$version/modules; export EXTENSION_DIR
+
+if [[ $ISTEMP -eq 0 ]]; then
 	for ext in intl bcmath; do confFlags="$confFlags --enable-$ext=shared"; done
 	for ext in curl gmp iconv mcrypt; do confFlags="$confFlags --with-$ext=shared"; done
 fi
