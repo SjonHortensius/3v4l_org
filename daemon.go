@@ -269,7 +269,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 	cmdR := io.MultiReader(stdout, stderr)
 
 	if err := cmd.Start(); err != nil {
-		fmt.Printf("While starting: %s\n", err)
+		fmt.Fprintf(os.Stderr, "While starting: %s\n", err)
 		return &Result{}
 	}
 
@@ -283,7 +283,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
 			if err != nil {
-				fmt.Printf("While reading output: %s\n", err)
+				fmt.Fprintf(os.Stderr, "While reading output: %s\n", err)
 				break
 			}
 
@@ -316,7 +316,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		state, err := c.Process.Wait()
 
 		if err != nil {
-			fmt.Printf("While waiting for process: %s\n", err)
+			fmt.Fprintf(os.Stderr, "While waiting for process: %s\n", err)
 		}
 
 		procDone <- state
@@ -457,7 +457,7 @@ func batchScheduleNewVersions(target *Version) {
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
-					exitError("Unable to check load: %s\n", err)
+					exitError("Unable to check load: %s", err)
 				}
 			}
 
@@ -520,7 +520,7 @@ func _batchResetHard(input *Input) {
 	for _, v := range versions {
 		for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 			if err != nil {
-				exitError("Unable to check load: %s\n", err)
+				exitError("Unable to check load: %s", err)
 			}
 		}
 
@@ -660,7 +660,7 @@ func init() {
 
 	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			fmt.Printf("While creating listener: %s\n", err)
+			fmt.Fprintf(os.Stderr, "While creating listener: %s\n", err)
 		}
 	})
 
