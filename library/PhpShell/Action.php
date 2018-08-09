@@ -78,12 +78,13 @@ class PhpShell_Action extends Basic_Action
 		if (Basic::$config->PRODUCTION_MODE && 'text/html' == $this->contentType)
 		{
 			$preloads = Basic::$cache->get(__CLASS__.'::staticPreloads', function(){
-				// match hashes put in tpls by update-online
 				return [
+					'/ext/uvTab.png' => 'image',
+					// match hashes put in tpls by update-online
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
-					'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.3.0/src-min-noconflict/worker-php.js' => 'script',
-					'/ext/uvTab.png' => 'image',
+					// dynamically fetch correct version
+					explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1] => 'script',
 				];
 			}, 3600);
 
