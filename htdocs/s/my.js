@@ -296,8 +296,33 @@ var evalOrg = {};
 
 	this.enablePreview = function()
 	{
+		// If script cannot be submitted (eg. due to abuse) don't bother enabling the preview
+		if (!$('form#previewForm'))
+			return;
 		if (!$('input[type=submit]'))
 			return $('form#previewForm').remove();
+
+		var select = $('select#version');
+		var versions = JSON.parse(select.dataset['values']);
+
+		Object.keys(versions).forEach(function(key) {
+			var group = document.createElement('optgroup'), options = [];
+			group.label = (key.substr(-1) === '.') ? key.substr(0, key.length-1) : key;
+
+			if (typeof versions[key] === 'number')
+				for (var i = versions[key]; i >= 0; i--)
+					options.push(i);
+			else
+				options = versions[key];
+
+			options.forEach(function (v){
+				var o = document.createElement('option');
+				o.appendChild(document.createTextNode(key + v));
+				group.appendChild(o);
+			});
+
+			select.appendChild(group);
+		});
 
 		$('#previewForm button').addEventListener('click', this.preview.bind(this));
 	};

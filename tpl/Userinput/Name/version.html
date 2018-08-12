@@ -1,17 +1,1 @@
-<select class="{if ($this->input->required)}required {/}{state}" name="version" id="version">
-	{!-- fetch values manually since Basic_Userinput::getHtmlFor will not run init(), not populating the values --}
-
-	{foreach (PhpShell_Action_New::getPreviewVersions() as $this->value)}
-		{if (isset($prev) && substr($prev, 0, 3) != substr($this->value, 0, 3))}
-			</optgroup>
-		{/}
-
-		{if (!isset($prev) || substr($prev, 0, 3) != substr($this->value, 0, 3))}
-			<optgroup label="{print rtrim(substr($this->value, 0, 4), '.');}">
-		{/}
-		<option{if ($this->value == $this->rawValue)} selected="selected"{/}>
-			{value}
-		{$prev = $this->value;}
-	{/}
-	</optgroup>
-</select>
+<select class="{if ($this->input->required)}required {/}{state}" name="version" id="version" data-values='{print json_encode(PhpShell_Action_New::getPreviewVersions(true), JSON_NUMERIC_CHECK);}'></select>

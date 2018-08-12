@@ -42,13 +42,38 @@ class PhpShell_Action_New extends PhpShell_Action
 	}
 
 	// separate method for version.html
-	public static function getPreviewVersions(): array
+	public static function getPreviewVersions(bool $forJson = false): array
 	{
-		return Basic::$cache->get('quickVersionList', function(){
+		return Basic::$cache->get('quickVersionList:'.intval($forJson), function() use($forJson){
 			# exclude all versions that aren't always stored by the daemon
 			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%'", [], ['"isHelper"' => true, 'version.order' => false]);
 
-			return iterator_to_array($v->getSimpleList('name', 'name'));
+			$list = iterator_to_array($v->getSimpleList('name', 'name'));
+
+			if (!$forJson)
+				return $list;
+
+			$o = [];
+			foreach ($list as $v)
+			{
+				if (in_array(substr($v, 5, 2), ['al', 'be', 'rc']))
+					$k = substr($v, 0, 5);
+				else
+					$k = substr($v, 0, 4);
+
+				if (!isset($o[$k]))
+					$o[$k] = [];
+
+				$o[$k] []= substr($v, strlen($k));
+			}
+
+			foreach ($o as &$l)
+			{
+				if (array_sum($l) == array_sum(array_keys($l)))
+					$l = max($l);
+			}
+
+			return $o;
 		}, 30);
 	}
 
