@@ -17,7 +17,7 @@ class PhpShell_Input extends PhpShell_Entity
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
 
-	public function getCode()
+	public function getCode(): string
 	{
 		if ($this->state == 'private')
 			throw new PhpShell_Input_PrivateException('This script is marked as private', [], 401);
@@ -32,7 +32,7 @@ class PhpShell_Input extends PhpShell_Entity
 		}
 	}
 
-	public static function clean($code)
+	public static function clean(string $code): string
 	{
 		$code = trim(str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code));
 
@@ -43,13 +43,13 @@ class PhpShell_Input extends PhpShell_Entity
 		return $code;
 	}
 
-	public static function getHash($code)
+	public static function getHash(string $code): string
 	{
 		return gmp_strval(gmp_init(sha1($code), 16), 58);
 	}
 
 	/** @return self */
-	public static function byHash($hash)
+	public static function byHash(string $hash): self
 	{
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
@@ -85,7 +85,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $input;
 	}
 
-	public function updateOperations()
+	public function updateOperations(): void
 	{
 		try
 		{
@@ -157,10 +157,10 @@ class PhpShell_Input extends PhpShell_Entity
 			->getSubset("\"isHelper\" = ?", [false]));
 	}
 
-	public function trigger(PhpShell_Version $version = null)
+	public function trigger(PhpShell_Version $version = null): void
 	{
 		if (count(PhpShell_QueuedInput::find("input = ?", [$this->short])) > 0)
-			return false;
+			return;
 
 		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR'], 'isQuick' => isset($version)]);
 		Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
@@ -170,7 +170,7 @@ class PhpShell_Input extends PhpShell_Entity
 		usleep(100 * 1000);
 	}
 
-	public function waitUntilNoLonger($state)
+	public function waitUntilNoLonger($state): void
 	{
 		$i = 0;
 		do
@@ -186,17 +186,22 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->run = $input->run;
 	}
 
-	public function getRfcOutput()
+	public function getRfcOutput(): Basic_EntitySet
 	{
-		$results = (new PhpShell_MainScriptOutput)->getSubset('result.input = ? AND result.run = ? AND version.name LIKE \'rfc%\'', [$this->id, $this->run]);
+		$results = $this->getRelated(PhpShell_Result::class)
+			->getSubset("result.run = ? AND version.name LIKE 'rfc%'", [$this->run])
+			->includeOutput()->includeVersion()
+			->setOrder(['version.released' => false]);
 
-		return $results->setOrder(['version.released' => false]);
+		return $results;
 	}
 
-	public function getOutput()
+	public function getOutput(): array
 	{
-		$results = (new PhpShell_MainScriptOutput)->getSubset('result.input = ? AND result.run = ? AND NOT version."isHelper"', [$this->id, $this->run]);
-		$results->setOrder(['version.order' => true]);
+		$results = $this->getRelated(PhpShell_Result::class)
+			->getSubset("result.run = ? AND NOT version.\"isHelper\"", [$this->run])
+			->includeOutput()->includeVersion()
+			->setOrder(['version.order' => true]);
 
 		$abbrMax = function($name)
 		{
@@ -263,7 +268,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $versions;
 	}
 
-	public function logHit()
+	public function logHit(): void
 	{
 		$hits = Basic::$cache->increment('Hits:'. $this->short .':'. (date('w')), 1, 1, 3*24*60*60) +
 				Basic::$cache->get('Hits:'. $this->short .':'.((date('w')+5)%6), function(){ return 0; });
@@ -285,7 +290,7 @@ class PhpShell_Input extends PhpShell_Entity
 		Basic::$cache->set('Hits:popular', $popular);
 	}
 
-	public function getPerf()
+	public function getPerf(): Basic_DatabaseQuery
 	{
 		return Basic::$database->query("
 			SELECT
@@ -333,7 +338,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->getResult(PhpShell_Version::byName('vld'));
 	}
 
-	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z')
+	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z'): string
 	{
 		$dt = new DateTime($this->created, new DateTimeZone('UTC'));
 		return $dt->setTimezone(new DateTimeZone('UTC'))->format($format);
