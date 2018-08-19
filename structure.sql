@@ -326,8 +326,7 @@ ALTER TABLE public.references_id_seq OWNER TO postgres;
 
 CREATE TABLE public."references" (
     id integer DEFAULT nextval('public.references_id_seq'::regclass) NOT NULL,
-    operation character varying(24) NOT NULL,
-    operand character varying(64) NOT NULL,
+    function character varying(64) NOT NULL,
     link character varying(128) NOT NULL,
     name character varying(96) NOT NULL,
     parent integer

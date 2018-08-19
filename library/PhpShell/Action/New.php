@@ -74,7 +74,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			}
 
 			return $o;
-		}, 30);
+		}, 150);
 	}
 
 	public function run(): void

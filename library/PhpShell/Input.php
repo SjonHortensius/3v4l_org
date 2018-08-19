@@ -108,7 +108,7 @@ class PhpShell_Input extends PhpShell_Entity
 				continue;
 
 			// Only store valid functionCalls, nothing from userspace
-			if (PhpShell_Reference::find("operation = 'INIT_FCALL' AND operand = ?", [$match['operand']])->count() < 1)
+			if (PhpShell_Reference::find("function = ?", [$match['operand']])->count() < 1)
 				continue;
 
 			if (!$bughuntIgnore && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
@@ -292,7 +292,7 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getRefs(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_FunctionCall::class)
-			->addJoin(PhpShell_Reference::class, "r.operation = 'INIT_FCALL' AND r.operand = \"functionCall\".function", "r");
+			->addJoin(PhpShell_Reference::class, "r.function = \"functionCall\".function", "r");
 	}
 
 	public function getLastModified(): string

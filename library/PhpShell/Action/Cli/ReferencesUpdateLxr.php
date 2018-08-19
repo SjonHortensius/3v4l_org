@@ -10,7 +10,7 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 
 		Basic::$database->beginTransaction();
 		Basic::$database->query("DELETE FROM \"references\"");
-		$statement = Basic::$database->prepare("INSERT INTO \"references\" (operation, operand, link, name) VALUES (?, ?, ?, ?)");
+		$statement = Basic::$database->prepare("INSERT INTO \"references\" (function, link, name) VALUES (?, ?, ?, ?)");
 
 		foreach (explode("\n", `grep -nrE '^(static )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
 		{
@@ -31,8 +31,8 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 
 			print $match." ";
 
-			$statement->execute(['INIT_FCALL', $match, 'http://php.net/manual/en/function.'.str_replace('_', '-', $match).'.php', $match.' - manual']);
-			$statement->execute(['INIT_FCALL', $match, 'https://lxr.room11.org/xref/php-src@master/'.$file.'#'.$line, $match.' - source']);
+			$statement->execute([$match, 'http://php.net/manual/en/function.'.str_replace('_', '-', $match).'.php', $match.' - manual']);
+			$statement->execute([$match, 'https://lxr.room11.org/xref/php-src@master/'.$file.'#'.$line, $match.' - source']);
 		}
 
 		Basic::$database->commit();
