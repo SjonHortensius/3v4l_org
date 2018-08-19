@@ -85,7 +85,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $input;
 	}
 
-	public function updateOperations(): void
+	public function updateFunctionCalls(): void
 	{
 		try
 		{
@@ -100,52 +100,35 @@ class PhpShell_Input extends PhpShell_Entity
 		$vld->output->removeCached();
 
 		// Parse vld first, then update db accordingly
-		$ops = [];
+		$calls = [];
 		$bughuntIgnore = (0==$this->getVariance());
 		foreach ($operations as $match)
 		{
-			$key = isset($match['operand']) ? $match['op'].':'.$match['operand'] : $match['op'];
+			if ($match['op'] != 'INIT_FCALL' || !isset($match['operand']) || isset($calls[ $match['operand'] ]))
+				continue;
 
-			if (!$bughuntIgnore && isset($match['operand']) && in_array($match['op'], ['DO_FCALL', 'INIT_FCALL']) && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
+			// Only store valid functionCalls, nothing from userspace
+			if (PhpShell_Reference::find("operation = 'INIT_FCALL' AND operand = ?", [$match['operand']])->count() < 1)
+				continue;
+
+			if (!$bughuntIgnore && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
 				$bughuntIgnore = true;
 
-			if (isset($ops[$key]))
-				$ops[$key]++;
-			else
-				$ops[$key] = 1;
+			$calls[ $match['operand'] ] = true;
 		}
 
 		// Delete or update db by going through all existing rows
-		foreach ($this->getRelated(PhpShell_Operation::class) as $op)
+		foreach ($this->getRelated(PhpShell_FunctionCall::class) as $f)
 		{
-			$key = $op->operation. (isset($op->operand) ? ':'.$op->operand : '');
+			if (!isset($calls[ $f->function ]))
+				$f->delete();
 
-			if (!isset($ops[$key]))
-				$op->delete();
-			elseif ($op->count != $ops[$key])
-				$op->save(['count' => $ops[$key]]);
-
-			unset($ops[$key]);
+			unset($calls[ $f->function ]);
 		}
 
-		// Now create all missing operations
-		foreach ($ops as $key => $count)
-		{
-			$operand = null;
-			if (false == strpos($key, ':'))
-				$operation = $key;
-			else
-				list($operation, $operand) = explode(':', $key, 2);
-
-			try
-			{
-				PhpShell_Operation::create(['input' => $this, 'operation' => $operation, 'operand' => $operand, 'count' => $count]);
-			}
-			catch (PhpShell_Operation_InvalidDataException $e)
-			{
-				// ignore, probably operand is too long
-			}
-		}
+		// Now create all missing entities
+		foreach ($calls as $function => $count)
+			PhpShell_FunctionCall::create(['input' => $this, 'function' => $function], false);
 
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
 	}
@@ -308,8 +291,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getRefs(): Basic_EntitySet
 	{
-		return $this->getRelated(PhpShell_Operation::class)
-			->addJoin(PhpShell_Reference::class, "r.operation = operations.operation AND operations.operand = r.operand", "r");
+		return $this->getRelated(PhpShell_FunctionCall::class)
+			->addJoin(PhpShell_Reference::class, "r.operation = 'INIT_FCALL' AND r.operand = \"functionCall\".function", "r");
 	}
 
 	public function getLastModified()

@@ -91,7 +91,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->trigger();
 
 		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || Basic::$config->PRODUCTION_MODE && mt_rand(0,9)<1))
-			$this->input->updateOperations();
+			$this->input->updateFunctionCalls();
 
 		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
 		$this->showTab['vld'] = (isset($this->input->operationCount) && $this->input->operationCount > 0);

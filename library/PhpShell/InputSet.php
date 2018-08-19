@@ -5,7 +5,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 	protected $_fields = [];
 	public $includesVariance = false;
 	public $includesPerformance = false;
-	public $includesOperations = false;
+	public $includesFunctionCalls = false;
 
 	public function includeVariance()
 	{
@@ -25,11 +25,11 @@ class PhpShell_InputSet extends Basic_EntitySet
 		return $this;
 	}
 
-	public function includeOperations()
+	public function includeFunctionCalls()
 	{
-		$this->_fields []= "(SELECT string_agg(operand, ', ') FROM (SELECT operand FROM operations WHERE input = id AND operation IN('FETCH_CLASS','INIT_FCALL') ORDER BY count DESC LIMIT 10) AS popularOperations) operations";
+		$this->_fields []= "(SELECT string_agg(function, ', ') FROM \"functionCall\" WHERE input = id LIMIT 10) \"functionCalls\"";
 
-		$this->includesOperations = true;
+		$this->includesFunctionCalls = true;
 		return $this;
 	}
 

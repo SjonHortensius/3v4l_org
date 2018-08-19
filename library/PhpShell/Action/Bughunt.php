@@ -56,7 +56,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 		$this->entries = PhpShell_Input::find()
 			->setOrder(['input.id' => true])
-			->includeOperations();
+			->includeFunctionCalls();
 
 		foreach (['versions', 'controls'] as $idx)
 			foreach (Basic::$userinput[$idx] as $i => $v)

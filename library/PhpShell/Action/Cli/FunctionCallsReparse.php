@@ -1,6 +1,6 @@
 <?php
 
-class PhpShell_Action_Cli_OperationsReparse extends PhpShell_Action_Cli
+class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 {
 	public $userinputConfig = [
 		'type' => [
@@ -17,9 +17,10 @@ class PhpShell_Action_Cli_OperationsReparse extends PhpShell_Action_Cli
 		{
 			Basic::$database->beginTransaction();
 
-			foreach (PhpShell_Input::find($filter)->getPage(1+$i, 250) as $id => $input)
+			/** @var $input PhpShell_Input */
+			foreach (PhpShell_Input::find($filter, [], ['created' => false])->getPage(1+$i, 250) as $id => $input)
 			{
-				$input->updateOperations();
+				$input->updateFunctionCalls();
 				$input->removeCached();
 
 				$found++;

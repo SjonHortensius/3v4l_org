@@ -13,8 +13,8 @@
 	{if ($this->entries->includesVariance)}
 		<th>% variance</th>
 	{/}
-	{if ($this->entries->includesOperations)}
-		<th>operations</th>
+	{if ($this->entries->includesFunctionCalls)}
+		<th>function calls</th>
 	{/}
 </tr>
 </thead>
@@ -51,8 +51,8 @@
 		{if ($this->entries->includesVariance)}
 			<td>{row->variance}</td>
 		{/}
-		{if ($this->entries->includesOperations)}
-			<td>{print substr($this->row->operations, 0, 64);}</td>
+		{if ($this->entries->includesFunctionCalls)}
+			<td>{print substr($this->row->functionCalls, 0, 64);}</td>
 		{/}
 	</tr>
 

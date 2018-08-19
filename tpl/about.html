@@ -21,15 +21,17 @@
 			<li><a href="versions">Versions</a> (including helpers):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
 			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
 			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
-			<li>Opcodes performed by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'operations';")->fetchColumn());}</b></li>
+			<li>Functions called by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'functionCall';")->fetchColumn());}</b></li>
 			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%';")->fetchColumn());}</b></li>
 			<li>Registered users:				 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
 		</ul>
 
-		<h2>Historic events</h2>
+		<h2>Major changes</h2>
 		<p>I have been adding features ever since I started. Here is a list with some major changes I made over the years:</p>
 
 		<ul>
+			<li><b>Aug 2018</b> - After moving the search from indexed operations (based on VLD) to SQL LIKE on raw script source, the entire dataset of indexed VLD opcodes was dropped</li>
+			<li><b>Apr 2018</b> - Instead of Archlinux, all binaries are now compiled on debian - because it's slower with updates</li>
 			<li><b>May 2016</b> - Existing scripts now maintain they original date/time (eg. <i>date('Y');</i> always outputs <b>2014</b>). This results in better <a href="/bughunt">/bughunt</a> output</li>
 			<li><b>Mar 2016</b> - All binaries were recompiled so I could add the <i>intl</i>, <i>bcmath</i>, <i>gmp</i>, <i>iconv</i>, <i>mcrypt</i> and <i>opcache</i> extensions</li>
 			<li><b>Sep 2015</b> - Scripts no longer run in all versions by default, plus we also had a minor redesign for our first-ever logo.</li>

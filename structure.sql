@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.4
--- Dumped by pg_dump version 10.4
+-- Dumped from database version 10.5
+-- Dumped by pg_dump version 10.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -130,6 +130,18 @@ CREATE TABLE public.assertion (
 ALTER TABLE public.assertion OWNER TO postgres;
 
 --
+-- Name: functionCall; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."functionCall" (
+    input integer NOT NULL,
+    function character varying(64) NOT NULL
+);
+
+
+ALTER TABLE public."functionCall" OWNER TO postgres;
+
+--
 -- Name: hits; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -213,25 +225,11 @@ CREATE TABLE public.input_src (
 ALTER TABLE public.input_src OWNER TO postgres;
 
 --
--- Name: operations; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.operations (
-    input integer NOT NULL,
-    operation character varying(32) NOT NULL,
-    operand character varying(64),
-    count smallint DEFAULT 1
-);
-
-
-ALTER TABLE public.operations OWNER TO postgres;
-
---
 -- Name: output; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.output (
-    hash character varying(28) NOT NULL,
+    hash character(28) NOT NULL,
     raw bytea NOT NULL,
     id integer NOT NULL
 );
@@ -407,49 +405,21 @@ CREATE MATERIALIZED VIEW public.result_bughunt AS
 ALTER TABLE public.result_bughunt OWNER TO postgres;
 
 --
--- Name: search_haveoperand; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
+-- Name: search_popularOperands; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
 
-CREATE MATERIALIZED VIEW public.search_haveoperand AS
- SELECT DISTINCT operations.operation
-   FROM public.operations
-  WHERE (NOT (operations.operand IS NULL))
-  WITH NO DATA;
-
-
-ALTER TABLE public.search_haveoperand OWNER TO postgres;
-
---
--- Name: search_operationcount; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
---
-
-CREATE MATERIALIZED VIEW public.search_operationcount AS
- SELECT count(*) AS count,
-    operations.operation
-   FROM public.operations
-  GROUP BY operations.operation
+CREATE MATERIALIZED VIEW public."search_popularOperands" AS
+ SELECT "functionCall".function AS text,
+    count(*) AS size
+   FROM public."functionCall"
+  WHERE (("functionCall".function)::text <> ALL (ARRAY[('var_dump'::character varying)::text, ('print_r'::character varying)::text]))
+  GROUP BY "functionCall".function
   ORDER BY (count(*)) DESC
-  WITH NO DATA;
-
-
-ALTER TABLE public.search_operationcount OWNER TO postgres;
-
---
--- Name: search_popularoperands; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
---
-
-CREATE MATERIALIZED VIEW public.search_popularoperands AS
- SELECT operations.operand AS text,
-    sum(operations.count) AS size
-   FROM public.operations
-  WHERE (((operations.operation)::text = 'INIT_FCALL'::text) AND ((operations.operand)::text <> ALL (ARRAY[('var_dump'::character varying)::text, ('print_r'::character varying)::text])))
-  GROUP BY operations.operand
-  ORDER BY (sum(operations.count)) DESC
  LIMIT 150
   WITH NO DATA;
 
 
-ALTER TABLE public.search_popularoperands OWNER TO postgres;
+ALTER TABLE public."search_popularOperands" OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -697,16 +667,6 @@ ALTER TABLE public.input_src CLUSTER ON input_src_pkey;
 
 
 --
--- Name: operations operations_inputOp; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.operations
-    ADD CONSTRAINT "operations_inputOp" UNIQUE (input, operation, operand);
-
-ALTER TABLE public.operations CLUSTER ON "operations_inputOp";
-
-
---
 -- Name: output output_hash; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -801,6 +761,13 @@ ALTER TABLE public.version CLUSTER ON version_pkey;
 
 
 --
+-- Name: functionCall_input; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "functionCall_input" ON public."functionCall" USING btree (input);
+
+
+--
 -- Name: inputAlias; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -812,20 +779,6 @@ CREATE INDEX "inputAlias" ON public.input USING btree (alias);
 --
 
 CREATE INDEX input_bhignore ON public.input USING btree ("bughuntIgnore") WHERE (NOT "bughuntIgnore");
-
-
---
--- Name: operations_inputopshort; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX operations_inputopshort ON public.operations USING brin (input, operation, operand);
-
-
---
--- Name: operations_search; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX operations_search ON public.operations USING btree (operand, operation) WHERE (NOT (operand IS NULL));
 
 
 --
@@ -880,6 +833,14 @@ ALTER TABLE ONLY public.assertion
 
 
 --
+-- Name: functionCall functionCall_input_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."functionCall"
+    ADD CONSTRAINT "functionCall_input_fkey" FOREIGN KEY (input) REFERENCES public.input(id);
+
+
+--
 -- Name: input input_runQuick_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -909,14 +870,6 @@ ALTER TABLE ONLY public.input_src
 
 ALTER TABLE ONLY public.input
     ADD CONSTRAINT input_user_fkey FOREIGN KEY ("user") REFERENCES public."user"(id) ON UPDATE RESTRICT ON DELETE SET NULL;
-
-
---
--- Name: operations operations_input_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.operations
-    ADD CONSTRAINT operations_input_fkey FOREIGN KEY (input) REFERENCES public.input(id) ON UPDATE RESTRICT ON DELETE CASCADE;
 
 
 --
@@ -1047,6 +1000,13 @@ GRANT SELECT,INSERT ON TABLE public.assertion TO website;
 
 
 --
+-- Name: TABLE "functionCall"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,DELETE ON TABLE public."functionCall" TO website;
+
+
+--
 -- Name: TABLE input; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -1111,14 +1071,6 @@ REVOKE ALL ON TABLE public.input_src FROM postgres;
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE ON TABLE public.input_src TO postgres;
 GRANT SELECT,INSERT ON TABLE public.input_src TO website;
 GRANT SELECT ON TABLE public.input_src TO daemon;
-
-
---
--- Name: TABLE operations; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.operations TO website;
-GRANT SELECT ON TABLE public.operations TO daemon;
 
 
 --
@@ -1197,24 +1149,10 @@ GRANT SELECT ON TABLE public.result_bughunt TO website;
 
 
 --
--- Name: TABLE search_haveoperand; Type: ACL; Schema: public; Owner: postgres
+-- Name: TABLE "search_popularOperands"; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public.search_haveoperand TO website;
-
-
---
--- Name: TABLE search_operationcount; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.search_operationcount TO website;
-
-
---
--- Name: TABLE search_popularoperands; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.search_popularoperands TO website;
+GRANT SELECT ON TABLE public."search_popularOperands" TO website;
 
 
 --

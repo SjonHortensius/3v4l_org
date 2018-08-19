@@ -23,7 +23,7 @@ class PhpShell_Action_Last extends PhpShell_Action
 	{
 		$this->entries = PhpShell_Input::find()
 			->includeVariance()
-			->includeOperations()
+			->includeFunctionCalls()
 			->setOrder(['id' => false]);
 
 		if ($_GET['draft']==1)
