@@ -12,7 +12,7 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 		Basic::$database->query("DELETE FROM \"references\"");
 		$statement = Basic::$database->prepare("INSERT INTO \"references\" (operation, operand, link, name) VALUES (?, ?, ?, ?)");
 
-		foreach (explode("\n", `grep -nrE '^(PHP|ZEND)_FUNCTION\(' ext/ main/ Zend/|grep -F .c:`) as $line)
+		foreach (explode("\n", `grep -nrE '^(static )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
 		{
 			list($file, $line, $match, $trash) = explode(':', $line, 4);
 
@@ -22,12 +22,12 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 				continue;
 			}
 
-			if (!preg_match('~^(?:ZEND|PHP)_FUNCTION\((.*)\)(?!;)~', $match, $m) || strlen($m[1]) > 64)
+			if (!preg_match('~^(static )?(?:ZEND|PHP)_FUNCTION\((.*)\)(?!;)~', $match, $m) || strlen($m[1]) > 64)
 			{
 				fprintf(STDERR, "skipping: %s\n", $match);
 				continue;
 			}
-			$match = $m[1];
+			$match = trim($m[1]);
 
 			print $match." ";
 

@@ -14,16 +14,9 @@ abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 	public $max;
 	public $min;
 
-	public function init(): void
-	{
-//		$this->userinputConfig['ip']['default'] = $_SERVER['REMOTE_ADDR'];
-
-		parent::init();
-	}
-
 	public function generate()
 	{
-		foreach (Basic::$database->query("SELECT * FROM search_popularOperands")->fetchArray('size', 'text') as $text => $size)
+		foreach (Basic::$database->query("SELECT * FROM \"search_popularOperands\"")->fetchArray('size', 'text') as $text => $size)
 		{
 			array_push($this->words, ['text' => $text, 'size' => $size]);
 
