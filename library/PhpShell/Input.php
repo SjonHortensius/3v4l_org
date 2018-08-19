@@ -49,7 +49,7 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	/** @return self */
-	public static function byHash(string $hash): self
+	public static function byHash(string $hash): Basic_Entity
 	{
 		return self::find('hash = ?', [$hash])->getSingle();
 	}
@@ -295,8 +295,14 @@ class PhpShell_Input extends PhpShell_Entity
 			->addJoin(PhpShell_Reference::class, "r.operation = 'INIT_FCALL' AND r.operand = \"functionCall\".function", "r");
 	}
 
-	public function getLastModified()
+	public function getLastModified(): string
 	{
+		$cached = Basic::$database->query("SELECT max FROM \"inputLastResult\" WHERE input = ?", [$this->id])
+			->fetchColumn(0);
+
+		if ($cached != false)
+			return $cached;
+
 		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("run = ?", [$this->run])
 			->getAggregate("MAX(created)")

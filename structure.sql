@@ -192,6 +192,39 @@ CREATE TABLE public.input (
 ALTER TABLE public.input OWNER TO postgres;
 
 --
+-- Name: result; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result (
+    input integer NOT NULL,
+    output integer NOT NULL,
+    version smallint NOT NULL,
+    "exitCode" smallint NOT NULL,
+    created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    run smallint NOT NULL
+);
+
+
+ALTER TABLE public.result OWNER TO postgres;
+
+--
+-- Name: inputLastResult; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
+--
+
+CREATE MATERIALIZED VIEW public."inputLastResult" AS
+ SELECT result.input,
+    max(result.created) AS max
+   FROM public.result
+  GROUP BY result.input
+  WITH NO DATA;
+
+
+ALTER TABLE public."inputLastResult" OWNER TO postgres;
+
+--
 -- Name: input_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -302,25 +335,6 @@ CREATE TABLE public."references" (
 
 
 ALTER TABLE public."references" OWNER TO postgres;
-
---
--- Name: result; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result (
-    input integer NOT NULL,
-    output integer NOT NULL,
-    version smallint NOT NULL,
-    "exitCode" smallint NOT NULL,
-    created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    "userTime" real NOT NULL,
-    "systemTime" real NOT NULL,
-    "maxMemory" integer NOT NULL,
-    run smallint NOT NULL
-);
-
-
-ALTER TABLE public.result OWNER TO postgres;
 
 --
 -- Name: result_archive; Type: TABLE; Schema: public; Owner: postgres
@@ -775,6 +789,13 @@ CREATE INDEX "inputAlias" ON public.input USING btree (alias);
 
 
 --
+-- Name: inputLastResult_pkey; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "inputLastResult_pkey" ON public."inputLastResult" USING btree (input);
+
+
+--
 -- Name: input_bhignore; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1057,6 +1078,21 @@ GRANT SELECT("runQuick"),INSERT("runQuick"),UPDATE("runQuick") ON TABLE public.i
 
 
 --
+-- Name: TABLE result; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public.result TO website;
+GRANT SELECT,INSERT,DELETE ON TABLE public.result TO daemon;
+
+
+--
+-- Name: TABLE "inputLastResult"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public."inputLastResult" TO website;
+
+
+--
 -- Name: SEQUENCE input_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -1108,14 +1144,6 @@ GRANT SELECT,USAGE ON SEQUENCE public.references_id_seq TO website;
 --
 
 GRANT ALL ON TABLE public."references" TO website;
-
-
---
--- Name: TABLE result; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.result TO website;
-GRANT SELECT,INSERT,DELETE ON TABLE public.result TO daemon;
 
 
 --
@@ -1201,4 +1229,3 @@ GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
 --
 -- PostgreSQL database dump complete
 --
-
