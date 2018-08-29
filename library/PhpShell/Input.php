@@ -300,13 +300,13 @@ class PhpShell_Input extends PhpShell_Entity
 		$cached = Basic::$database->query("SELECT max FROM \"inputLastResult\" WHERE input = ?", [$this->id])
 			->fetchColumn(0);
 
-		if ($cached != false)
+		if (!empty($cached))
 			return $cached;
 
 		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("run = ?", [$this->run])
 			->getAggregate("MAX(created)")
-			->fetchColumn(0);
+			->fetchColumn(0) ?? "2010-01-01 00:00:00";
 	}
 
 	public function getResult(PhpShell_Version $version): Basic_EntitySet
