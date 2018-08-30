@@ -1,3 +1,7 @@
+{if (Basic::$action instanceof PhpShell_Action_Script && isset($this->input))}
+	<link rel="alternate" type="application/json+oembed" href="{baseHref}embed/{input->short}">
+{/}
+
 <div itemscope itemtype="http://schema.org/Article">
 	{if (isset($this->input->title))}
 		<meta itemprop="name" content="{input->title}" />

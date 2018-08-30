@@ -822,8 +822,11 @@ body.query caption
 	#previewForm{			display: none !important; }
 	#uvTab{					display: none; }
 	header span{			display: none; }
-	header ul{				padding-right: 0; }
+	header ul{				padding-right: 5px; padding: 0.5em; }
+	header h1{				height: 30px; }
+	header{					margin-bottom: 0; }
 	body.index .column li{	margin-bottom: 1em; }
+	body{					margin-top: 0; padding-top: 2.5em; }
 	#uvTab{					display: none; }
 }
 
