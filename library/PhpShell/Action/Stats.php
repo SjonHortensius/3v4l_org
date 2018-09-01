@@ -16,21 +16,10 @@ WHERE now() - created < '1 year'
 GROUP BY date_trunc('week', created)
 ORDER BY date_trunc('week', created) DESC;");
 
-		echo Basic::$database->query("
-			SELECT
-				ip,
-				MAX(submit.created) lastSeen,
-				SUM(submit.count) submits,
-				AVG(penalty) penalty,
-				JSON_AGG(input.short) inputs,
-				SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END) / 1000000 sleep
-			FROM submit
-
-JOIN input ON (input.id = submit.input)
-WHERE now()-submit.created < '24 hour'
-GROUP BY ip
-ORDER BY SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128))) DESC
-LIMIT 30;")->show();
+		echo PhpShell_Submit::find("NOW()- submit.created < ?", ['1 day'])
+			->includePenalties()
+			->getAggregate("ip, MAX(submit.created) lastSeen, SUM(submit.count) submits, SUM(penalty) penalties, JSON_AGG(input.short) inputs", "submit.ip", ["SUM(penalty)" => false])
+			->show();
 
 		parent::run();
 	}

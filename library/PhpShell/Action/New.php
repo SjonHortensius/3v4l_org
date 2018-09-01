@@ -86,15 +86,15 @@ class PhpShell_Action_New extends PhpShell_Action
 		if (isset(Basic::$userinput['version']))
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
-		$penalty = PhpShell_Submit::find("ip = ? AND NOW()- submit.created < ?", [$_SERVER['REMOTE_ADDR'], '1 day'])
-			->addJoin(PhpShell_Input::class, "input.id = submit.input")
-			->getAggregate("SUM((86400-date_part('epoch', now()-submit.created)) * submit.count * (1+(penalty/128)) * CASE WHEN \"runQuick\" IS NULL THEN 1 ELSE 0.1 END)")
-			->fetchColumn(0);
+		$stats = PhpShell_Submit::find("ip = ? AND NOW()- submit.created < ?", [$_SERVER['REMOTE_ADDR'], '1 day'])
+			->includePenalties()
+			->getAggregate()
+			->fetchArray();
+		$stats = current(iterator_to_array($stats));
+		$penalty = 1000 * ($stats['agePenalty'] * $stats['weightPenalty'] * $stats['busyPenalty']);
 
-#FIXME include in query above
-		$pending = count(PhpShell_Input::find("state = 'busy' AND ip = ?", [ $_SERVER['REMOTE_ADDR'] ])
-				->addJoin(PhpShell_Submit::class, "submit.input = input.id"));
-		$penalty += 5E6 * $pending;
+		if ($penalty > 9E6)
+			throw new PhpShell_TemporaryBlockedException('It seems you are submitting too many scripts - please come back later. Is this incorrect? Contact me! [penalty:%1.2f:%1d:%1d]', [$stats['agePenalty'], $stats['weightPenalty'], $stats['busyPenalty']], 402);
 
 		usleep($penalty);
 
