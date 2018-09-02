@@ -2,21 +2,21 @@
 // Extended by _Search
 abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 {
-	public $userinputConfig = [
-		'ip' => [
-			'valueType' => 'scalar',
-			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
-			'regexp' => '~^(%|[0-9.]+)$~',
-			'default' => '%',
-		],
-	];
 	public $words = [];
 	public $max;
 	public $min;
 
 	public function generate()
 	{
-		foreach (Basic::$database->query("SELECT * FROM \"search_popularOperands\"")->fetchArray('size', 'text') as $text => $size)
+		$popularFunctions = Basic::$cache->get(__CLASS__ .':'. __METHOD__, function(){
+			return array_slice(iterator_to_array(
+				PhpShell_FunctionCall::find("function NOT IN ('var_dump', 'print_r')")
+					->getAggregate("COUNT(*), function", "function", ["COUNT(*)" => false])
+					->fetchArray("count", "function")
+			), 0, 150);
+		}, 86400);
+
+		foreach ($popularFunctions as $text => $size)
 		{
 			array_push($this->words, ['text' => $text, 'size' => $size]);
 
