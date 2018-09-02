@@ -10,9 +10,9 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 
 		Basic::$database->beginTransaction();
 		Basic::$database->query("DELETE FROM \"references\"");
-		$statement = Basic::$database->prepare("INSERT INTO \"references\" (function, link, name) VALUES (?, ?, ?, ?)");
+		$statement = Basic::$database->prepare("INSERT INTO \"references\" (function, link, name) VALUES (?, ?, ?)");
 
-		foreach (explode("\n", `grep -nrE '^(static )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
+		foreach (explode("\n", `grep -nrP '^(?:static )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
 		{
 			list($file, $line, $match, $trash) = explode(':', $line, 4);
 
@@ -22,7 +22,7 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 				continue;
 			}
 
-			if (!preg_match('~^(static )?(?:ZEND|PHP)_FUNCTION\((.*)\)(?!;)~', $match, $m) || strlen($m[1]) > 64)
+			if (!preg_match('~^(?:static )?(?:ZEND|PHP)_FUNCTION\((.*)\)(?!;)~', $match, $m) || strlen($m[1]) > 64)
 			{
 				fprintf(STDERR, "skipping: %s\n", $match);
 				continue;
