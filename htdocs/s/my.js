@@ -108,7 +108,7 @@ var evalOrg = {};
 		this.editor.on('change', function(){
 			$('#newForm').classList.add('changed');
 
-			if ($('input[type=submit][disabled]'))
+			if ($('input[type=submit][disabled]') && !$('#tabs.abusive'))
 				$('input[type=submit]').removeAttribute('disabled');
 		});
 
@@ -124,11 +124,19 @@ var evalOrg = {};
 		if ('undefined' != typeof refreshTimer)
 			return;
 
-		this.richEditor();
-		this.enablePreview();
-
 		if ($('#tabs.busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
+
+		this.localTime(function(el, d){
+			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
+		}, 'input + time');
+	};
+
+	// Triggered on /new errorpage, eg. title too long
+	this.handleNew = function()
+	{
+		this.richEditor();
+		this.enablePreview();
 
 		document.body.addEventListener('keydown', function(e){
 			if (13 == e.keyCode && e.altKey)
@@ -157,10 +165,6 @@ var evalOrg = {};
 
 		// Attempt to reload a preview
 		window.onpopstate = this.previewStateLoad.bind(this);
-
-		this.localTime(function(el, d){
-			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
-		}, 'input + time');
 	};
 
 	this.handleRfc = function()
@@ -296,11 +300,10 @@ var evalOrg = {};
 
 	this.enablePreview = function()
 	{
-		// If script cannot be submitted (eg. due to abuse) don't bother enabling the preview
+		if ($('#tabs.abusive') && $('form#previewForm'))
+			$('form#previewForm').remove();
 		if (!$('form#previewForm'))
 			return;
-		if (!$('input[type=submit]'))
-			return $('form#previewForm').remove();
 
 		var select = $('select#version');
 		var versions = JSON.parse(select.dataset['values']);
@@ -317,6 +320,7 @@ var evalOrg = {};
 
 			options.forEach(function (v){
 				var o = document.createElement('option');
+				o.setAttribute('value', key + v);
 				o.appendChild(document.createTextNode(key + v));
 				group.appendChild(o);
 			});
@@ -385,7 +389,8 @@ var evalOrg = {};
 		if (!$('#tabs.busy') || refreshCount > 42)
 		{
 			window.clearInterval(refreshTimer);
-			return $('#tabs').classList.remove('busy');
+			$('#tabs').classList.remove('busy');
+			return;
 		}
 
 		refreshCount++;
@@ -438,8 +443,10 @@ var evalOrg = {};
 			return window.setTimeout(window.location.reload.bind(window.location), 200);
 		}
 
-		if (r.script.state != 'busy')
-			$('#tabs').classList.remove('busy');
+		// replace entire value by only current state
+		$('#tabs').removeAttribute('class');
+		if ('done' != r.script.state)
+			$('#tabs').classList.add(r.script.state);
 
 		// Update tab enabled/disabled state
 		$$('#tabs li').forEach(function (li) {
@@ -663,7 +670,7 @@ var evalOrg = {};
 		});
 
 		if ($('div#tagCloud'))
-			this.handleTagcloud();
+			this.showTagcloud();
 		else
 			this.localTime(function(el, d){
 				function pad(n){ return ('0'+n).slice(-2); }
@@ -692,7 +699,7 @@ var evalOrg = {};
 		}
 	};
 
-	this.handleTagcloud = function()
+	this.showTagcloud = function()
 	{
 		var tc = $('div#tagCloud');
 		var fill = d3.scale.category20();

@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Index extends PhpShell_Action_New
 {
-	public $bodyClass = 'script';
+	public $bodyClass = 'new script';
 	public $lastModified = 'now';
 	public $last;
 	public $popular;

@@ -31,7 +31,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	/** @var $input PhpShell_Input */
 	public $input;
 	public $showTab = [];
-	public $bodyClass = 'script';
+	public $bodyClass = 'new script';
 	public $quickVersionList;
 
 	public function init(): void

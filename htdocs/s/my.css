@@ -9,16 +9,17 @@ body
 	padding-top: 4em;
 }
 
+/*
+https://paulund.co.uk/playground/demo/css_box_shadow/
+https://css-tricks.com/snippets/css/a-guide-to-flexbox/
+*/
+/*
 body.hz
 {
 	max-width: none;
 	padding-top: 3.7em;
 }
 
-/*
-https://paulund.co.uk/playground/demo/css_box_shadow/
-https://css-tricks.com/snippets/css/a-guide-to-flexbox/
-*/
 body.hz header
 {
 	margin-bottom: 0;
@@ -36,7 +37,7 @@ body.hz header li:last-child
 	box-shadow: none;
 }
 
-body.hz > div[itemtype] /* fixme unwanted schema.org dep - introduce <content> / main whatever ?*/
+body.hz > div[itemtype]
 {
 	display: flex;
 	flex-flow: row wrap;
@@ -51,7 +52,7 @@ body.hz ul#tabs
 
 body.hz form#newForm
 {
-/*	flex: 1 1 auto;*/
+	tmp-flex: 1 1 auto;
 	order: 2;
 	width: 650px;
 }
@@ -71,6 +72,7 @@ body.hz div#tab
 	flex: 1 auto;
 	order: 3;
 }
+*/
 
 form
 {
@@ -453,6 +455,11 @@ input[type=submit]
 	transition: border linear 0.2s, box-shadow linear 0.2s;
 }
 
+#newForm input[type=submit]
+{
+	margin-left: 0;
+}
+
 input[type=submit]:not([disabled])
 {
 	background: linear-gradient(180deg, #08C, #05C) #0074CC repeat-x;
@@ -481,20 +488,17 @@ input:disabled + label
 #previewForm
 {
 	display: none;
-}
 
-#newForm.changed + #previewForm
-{
-	display: block;
-}
-
-#previewForm
-{
 	box-shadow: none;
 	padding: 0.5em 0 0.5em;
 	position: absolute;
 	margin-left: 125px;
 	margin-top: -82px;
+}
+
+#newForm.changed + #previewForm
+{
+	display: block;
 }
 
 select#version
@@ -516,7 +520,7 @@ input.busy
 
 .alert
 {
-	position: absolute;
+	position: fixed;
 	right: 20px;
 	top: 45px;
 	padding: 20px;
@@ -663,8 +667,7 @@ header ul a[data-funded="under"]
 }
 
 /* page specific styles */
-body.index input#title,
-body.new input#title
+body:not(.script) input#title
 {
 	width: 98.6%;
 }
@@ -674,14 +677,7 @@ body.index time
 	font-style: italic;
 }
 
-body.index input[type=submit],
-body.script input[type=submit]
-{
-	margin-left: 0;
-}
-
-/* assertions */
-body.script dt i.icon-ok
+body.script dt i.icon-ok /* assertions */
 {
 	margin-left: 0.5em;
 }
@@ -706,8 +702,7 @@ body.output dt a
 	float: right;
 }
 
-/* Rebecca */
-body.output dd iframe
+body.output dd iframe /* Rebecca */
 {
 	width: 925px;
 	height: 450px;
@@ -807,10 +802,14 @@ body.stats .bar text
 	color: black;
 }
 
-body.query caption
+body.sponsor h2:first-of-type + ul li:not([data-expired="1"])
 {
-	text-align: left;
-	font-family: Monospace;
+	background-color: #cbffba;
+}
+
+body.sponsor ul
+{
+	padding-left: 25px;
 }
 
 /* mobile specific */
@@ -843,14 +842,4 @@ body.query caption
 	form { padding: 0.5em; }
 	#previewForm { margin-top: -63px; }
 	ul#tabs + div { padding: 0.5em; }
-}
-
-body.sponsor h2:first-of-type + ul li:not([data-expired="1"])
-{
-	background-color: #cbffba;
-}
-
-body.sponsor ul
-{
-	padding-left: 25px;
 }
