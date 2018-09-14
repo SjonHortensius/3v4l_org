@@ -35,6 +35,8 @@ var evalOrg = {};
 
 	this.initialize = function()
 	{
+		window.onerror = this.postError;
+
 		$$('a[href^="http"]').forEach(function (el){
 			el.setAttribute('target', '_blank');
 			el.setAttribute('rel', 'noopener');
@@ -42,7 +44,7 @@ var evalOrg = {};
 
 		document.body.classList.forEach(function(c){
 			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
-				this[ 'handle'+c.ucFirst() ]();
+				setTimeout(this[ 'handle'+c.ucFirst() ].bind(this), 0);
 		}.bind(this));
 
 		// Allow #key=value pairs to specify defaults for certain form inputs
@@ -60,6 +62,14 @@ var evalOrg = {};
 		$$('.alert').forEach(function (el){
 			el.addEventListener('touchstart', function(){ el.remove(); });
 		});
+	};
+
+	this.postError = function(msg, url, line)
+	{
+		var xhr = new XMLHttpRequest();
+		xhr.open('post', '/javascript-error/'+ encodeURIComponent(msg));
+		xhr.setRequestHeader('Referer', url);
+		xhr.send();
 	};
 
 	this.richEditor = function()
