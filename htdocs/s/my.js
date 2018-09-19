@@ -149,27 +149,26 @@ var evalOrg = {};
 		this.enablePreview();
 
 		document.body.addEventListener('keydown', function(e){
-			if (13 == e.keyCode && e.altKey)
-				return this.preview();
-
-			// ignore ctrl/cmd+s
+			// cancel ctrl/cmd+s > prevent browser from saving page
 			if (83 == e.which && (e.ctrlKey || e.metaKey))
 			{
 				e.preventDefault();
 				return false;
 			}
 
-			if (13 != e.keyCode || !e.ctrlKey)
+			if ($('input[type=submit][disabled]') || 13 != e.keyCode)
 				return;
 
-			// Trigger submitEvent manually
+			if (e.altKey)
+				return this.preview();
+
 			var event = new Event('submit', {
 				'view': window,
 				'bubbles': true,
 				'cancelable': true
 			});
 			// None of the handlers called preventDefault.
-			if ($('#newForm').dispatchEvent(event))
+			if (e.ctrlKey && $('#newForm').dispatchEvent(event))
 				$('#newForm').submit();
 		}.bind(this));
 

@@ -8,7 +8,7 @@ abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 
 	public function generate()
 	{
-		$popularFunctions = Basic::$cache->get(__CLASS__ .':'. __METHOD__, function(){
+		$popularFunctions = Basic::$cache->get(__METHOD__, function(){
 			return array_slice(iterator_to_array(
 				PhpShell_FunctionCall::find("function NOT IN ('var_dump', 'print_r')")
 					->getAggregate("COUNT(*), function", "function", ["COUNT(*)" => false])

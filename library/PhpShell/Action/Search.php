@@ -29,11 +29,11 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		if (isset($_REQUEST[1]))
 			Basic::$userinput->query->setValue(rawurldecode($_REQUEST[1]));
 
+		parent::init();
+
 		// for tagcloud on form-page
 		if (!Basic::$userinput->query->isValid())
 			parent::generate();
-
-		parent::init();
 	}
 
 	public function run(): void

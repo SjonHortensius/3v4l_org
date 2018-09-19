@@ -31,6 +31,8 @@ class PhpShell_Action extends Basic_Action
 
 	public function init(): void
 	{
+		Basic::$cache = new PhpShell_ColdCacheStampede;
+
 		// For now; don't autoStart sessions
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
 		{
