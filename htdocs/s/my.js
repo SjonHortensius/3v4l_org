@@ -146,6 +146,15 @@ var evalOrg = {};
 	this.handleNew = function()
 	{
 		this.richEditor();
+
+		if ($('#tabs.abusive'))
+		{
+			if ($('form#previewForm'))
+				$('form#previewForm').remove();
+
+			this.editor.setReadOnly(true);
+		}
+
 		this.enablePreview();
 
 		document.body.addEventListener('keydown', function(e){
@@ -309,8 +318,6 @@ var evalOrg = {};
 
 	this.enablePreview = function()
 	{
-		if ($('#tabs.abusive') && $('form#previewForm'))
-			$('form#previewForm').remove();
 		if (!$('form#previewForm'))
 			return;
 

@@ -30,7 +30,7 @@ vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:2}0${vers:2}; [[ $ver
 [[ $vers -gt 5209 && $vers -lt 5407 ]] && patch -p0 <../../php-with-libxml2-29plus.patch
 [[ $vers -gt 5209 && $vers -lt 5400  ]] && patch -p0 <../../php-with-newer-gmp.patch
 [[ $vers -gt 5407 && $vers -lt 5415 ]] && confFlags="$confFlags --without-openssl";
-[[ $vers -gt 7000-1 ]] && confFlags="$confFlags --with-password-argon2"
+#[[ $vers -gt 7000-1 ]] && confFlags="$confFlags --with-password-argon2"
 [[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
 [[ $vers -gt 7300-1 ]] && confFlags="$confFlags --without-curl"
 
@@ -38,7 +38,7 @@ EXTENSION_DIR=/usr/lib/php/$version/modules; export EXTENSION_DIR
 
 if [[ $ISTEMP -eq 0 ]]; then
 	for ext in intl bcmath; do confFlags="$confFlags --enable-$ext=shared"; done
-	for ext in curl gmp iconv mcrypt; do confFlags="$confFlags --with-$ext=shared"; done
+	for ext in curl gmp iconv; do confFlags="$confFlags --with-$ext=shared"; done
 fi
 
 echo -ne "Configuring...\r"

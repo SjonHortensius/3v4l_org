@@ -219,6 +219,7 @@ CREATE MATERIALIZED VIEW public."inputLastResult" AS
     max(result.created) AS max
    FROM public.result
   GROUP BY result.input
+  ORDER BY result.input DESC
   WITH NO DATA;
 
 
@@ -416,23 +417,6 @@ CREATE MATERIALIZED VIEW public.result_bughunt AS
 
 
 ALTER TABLE public.result_bughunt OWNER TO postgres;
-
---
--- Name: search_popularOperands; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
---
-
-CREATE MATERIALIZED VIEW public."search_popularOperands" AS
- SELECT "functionCall".function AS text,
-    count(*) AS size
-   FROM public."functionCall"
-  WHERE (("functionCall".function)::text <> ALL (ARRAY[('var_dump'::character varying)::text, ('print_r'::character varying)::text]))
-  GROUP BY "functionCall".function
-  ORDER BY (count(*)) DESC
- LIMIT 150
-  WITH NO DATA;
-
-
-ALTER TABLE public."search_popularOperands" OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -798,14 +782,14 @@ CREATE UNIQUE INDEX "inputLastResult_pkey" ON public."inputLastResult" USING btr
 -- Name: input_bhignore; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX input_bhignore ON public.input USING btree ("bughuntIgnore") WHERE (NOT "bughuntIgnore");
+CREATE INDEX input_bhignore ON public.input USING btree ("bughuntIgnore");
 
 
 --
 -- Name: resultBughunt; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "resultBughunt" ON public.result_bughunt USING btree (input, version);
+CREATE UNIQUE INDEX "resultBughunt" ON public.result_bughunt USING btree (input, version);
 
 
 --
@@ -813,6 +797,13 @@ CREATE INDEX "resultBughunt" ON public.result_bughunt USING btree (input, versio
 --
 
 CREATE INDEX "result_exitCode" ON public.result_current USING brin ("exitCode");
+
+
+--
+-- Name: submit_penaltylookup; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX submit_penaltylookup ON public.submit USING btree (ip);
 
 
 --
@@ -1088,7 +1079,7 @@ GRANT SELECT,INSERT,DELETE ON TABLE public.result TO daemon;
 -- Name: TABLE "inputLastResult"; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public."inputLastResult" TO website;
+GRANT SELECT,INSERT,DELETE ON TABLE public."inputLastResult" TO website;
 
 
 --
@@ -1173,13 +1164,6 @@ GRANT SELECT ON TABLE public.version TO daemon;
 --
 
 GRANT SELECT ON TABLE public.result_bughunt TO website;
-
-
---
--- Name: TABLE "search_popularOperands"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public."search_popularOperands" TO website;
 
 
 --
