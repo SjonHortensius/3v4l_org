@@ -15,7 +15,8 @@ class PhpShell_Input extends PhpShell_Entity
 		255 => 'Generic Error',
 	];
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
-	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
+	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
 
 	public function getCode(): string
 	{
@@ -101,7 +102,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		// Parse vld first, then update db accordingly
 		$calls = [];
-		$bughuntIgnore = (0==$this->getVariance());
+		$bughuntIgnore = false;
 		foreach ($operations as $match)
 		{
 			if ($match['op'] != 'INIT_FCALL' || !isset($match['operand']) || isset($calls[ $match['operand'] ]))
@@ -111,10 +112,9 @@ class PhpShell_Input extends PhpShell_Entity
 			if (PhpShell_Reference::find("function = ?", [$match['operand']])->count() < 1)
 				continue;
 
-			if (!$bughuntIgnore && in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
-				$bughuntIgnore = true;
-
 			$calls[ $match['operand'] ] = true;
+
+			$bughuntIgnore = $bughuntIgnore || in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST);
 		}
 
 		// Delete or update db by going through all existing rows
@@ -131,13 +131,6 @@ class PhpShell_Input extends PhpShell_Entity
 			PhpShell_FunctionCall::create(['input' => $this, 'function' => $function], false);
 
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
-	}
-
-	public function getVariance(): int
-	{
-		return count($this->getRelated(PhpShell_Result::class)
-			->addJoin(PhpShell_Version::class, "version.id = result.version")
-			->getSubset("\"isHelper\" = ?", [false]));
 	}
 
 	public function trigger(PhpShell_Version $version = null): void
