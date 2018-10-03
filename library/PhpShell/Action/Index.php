@@ -14,7 +14,7 @@ class PhpShell_Action_Index extends PhpShell_Action_New
 		parent::init();
 
 		$this->last = PhpShell_Input::find()
-			->getSubset('input.run > 0 AND "runQuick" ISNULL', [])
+			->getSubset('"runQuick" ISNULL', [])
 			->setOrder(['id' => false]);
 
 		$this->popular = Basic::$cache->get('Hits:popular', function(){ return []; }, 60);

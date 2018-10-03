@@ -8,6 +8,15 @@ GROUP BY short
 HAVING COUNT(DISTINCT output) < 3
 LIMIT 30;
 
+# merge multiple runs into pg11 paritioned table
+# alter table input add lastResult /* only when result is different, not necessarily on run++ */
+INSERT INTO result_new
+SELECT input,version,MIN(output),MIN("exitCode"), AVG("userTime"), AVG("systemTime"), AVG("maxMemory"), COUNT(*) run, COUNT(DISTINCT(output::varchar||"exitCode"))-1 mutations
+FROM result
+GROUP BY input,version;
+
+
+
 # current views
 CREATE MATERIALIZED VIEW search_operationCount AS (SELECT COUNT(*), operation FROM "operations" GROUP BY operation ORDER BY count DESC) WITH DATA;
 CREATE MATERIALIZED VIEW search_haveOperand AS (SELECT DISTINCT operation FROM operations WHERE NOT operand ISNULL) WITH DATA;

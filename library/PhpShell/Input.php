@@ -7,7 +7,7 @@ class PhpShell_Input extends PhpShell_Entity
 		'source' => PhpShell_Input::class,
 		'runQuick' => PhpShell_Version::class,
 	];
-	protected static $_numerical = ['operationCount', 'run', 'penalty'];
+	protected static $_numerical = ['operationCount', 'penalty'];
 
 	protected static $_exitCodes = [
 		139 => 'Segmentation Fault',
@@ -159,13 +159,12 @@ class PhpShell_Input extends PhpShell_Entity
 		while (++$i < 15 && $input->state == $state);
 
 		$this->state = $input->state;
-		$this->run = $input->run;
 	}
 
 	public function getRfcOutput(): Basic_EntitySet
 	{
 		$results = $this->getRelated(PhpShell_Result::class)
-			->getSubset("result.run = ? AND version.name LIKE 'rfc%'", [$this->run])
+			->getSubset("version.name LIKE 'rfc%'")
 			->includeOutput()->includeVersion()
 			->setOrder(['version.released' => false]);
 
@@ -175,7 +174,7 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getOutput(): array
 	{
 		$results = $this->getRelated(PhpShell_Result::class)
-			->getSubset("result.run = ? AND NOT version.\"isHelper\"", [$this->run])
+			->getSubset("NOT version.\"isHelper\"")
 			->includeOutput()->includeVersion()
 			->setOrder(['version.order' => true]);
 
@@ -274,11 +273,11 @@ class PhpShell_Input extends PhpShell_Entity
 				ROUND(AVG(\"userTime\")::numeric, 3) as user,
 				ROUND(AVG(\"maxMemory\")/1024, 2) as memory,
 				MAX(version.name) as version,
-				SUM(result.\"exitCode\") as exit_sum
+				SUM(\"exitCode\") as exit_sum
 			FROM result
-			INNER JOIN version ON version.id = result.version
-			WHERE result.input = ? AND NOT version.\"isHelper\"
-			GROUP BY result.version
+			INNER JOIN version ON version.id = version
+			WHERE input = ? AND NOT version.\"isHelper\"
+			GROUP BY version
 			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
 
@@ -290,22 +289,13 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getLastModified(): string
 	{
-		$cached = Basic::$database->query("SELECT max FROM \"inputLastResult\" WHERE input = ?", [$this->id])
-			->fetchColumn(0);
-
-		if (!empty($cached))
-			return $cached;
-
-		return $this->getRelated(PhpShell_Result::class)
-			->getSubset("run = ?", [$this->run])
-			->getAggregate("MAX(created)")
-			->fetchColumn(0) ?? "2010-01-01 00:00:00";
+		return $this->lastResultChange ?? $this->created;
 	}
 
 	public function getResult(PhpShell_Version $version): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_Result::class)
-			->getSubset("run = ? AND version = ?", [$this->run, $version]);
+			->getSubset("version = ?", [$version]);
 	}
 
 	public function getSegfault(): Basic_EntitySet

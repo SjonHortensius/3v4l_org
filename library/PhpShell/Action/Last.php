@@ -29,7 +29,7 @@ class PhpShell_Action_Last extends PhpShell_Action
 		if ($_GET['draft']==1)
 			$this->entries = $this->entries->getSubset('NOT "runQuick" ISNULL', []);
 		else
-			$this->entries = $this->entries->getSubset('input.run > 0 AND "runQuick" ISNULL', []);
+			$this->entries = $this->entries->getSubset('"runQuick" ISNULL');
 
 		if (Basic::$userinput['mine'])
 			$this->entries = $this->entries->getSubset('submit.ip = ?', [$_SERVER['REMOTE_ADDR']])

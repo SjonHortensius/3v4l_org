@@ -34,9 +34,9 @@ type Input struct {
 	uniqueOutput map[string]bool
 	penalty      int
 	created      time.Time
-	run          int
 	runArchived  bool
 	lastSubmit   time.Time
+	mutations    int
 }
 
 type Output struct {
@@ -75,12 +75,7 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-func (this *Input) setBusy(newRun bool) {
-	incRun := 0
-	if newRun {
-		incRun = 1
-	}
-
+func (this *Input) setBusy() {
 	inputs.Lock(); inputs.srcUse[this.short]++
 	if 1 == inputs.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
@@ -98,14 +93,14 @@ func (this *Input) setBusy(newRun bool) {
 	}
 	inputs.Unlock()
 
-	if r, err := db.Exec(`UPDATE input SET run = run + $2, state = 'busy' WHERE id = $1`, this.id, incRun); err != nil {
-		exitError("Input: failed to update run+state: %s", err)
-	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		exitError("Input: failed to update run+state; %d rows affected, %s", a, err)
+	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
+		exitError("setBusy: could not get original mutation count: %s", err)
 	}
 
-	if err := db.QueryRow(`SELECT run FROM input WHERE short = $1`, this.short).Scan(&this.run); err != nil {
-		exitError("Input: failed to fetch run: %s", err)
+	if r, err := db.Exec(`UPDATE input SET state = 'busy' WHERE id = $1`, this.id); err != nil {
+		exitError("Input: failed to update state: %s", err)
+	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
+		exitError("Input: failed to update state; %d rows affected, %s", a, err)
 	}
 }
 
@@ -115,9 +110,14 @@ func (this *Input) setDone() {
 		state = "abusive"
 	}
 
+	var mutations int
+	if err := db.QueryRow(`SELECT SUM(mutations) - $1 FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
+		exitError("setBusy: could not get new mutation count: %s", err)
+	}
+
 	if _, err := db.Exec(`UPDATE input
-		SET penalty = (penalty * (run-1) + $2) / GREATEST(run, 1), state = $3
-		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state); err != nil {
+		SET penalty = penalty + $2, state = $3, "lastResultChange" = (CASE WHEN $4>0 THEN TIMEZONE('UTC'::text, NOW()) ELSE "lastResultChange" END)
+		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state, mutations); err != nil {
 		exitError("Input: failed to update: %s", err)
 	}
 
@@ -149,8 +149,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-		var duplicateKey = `pq: duplicate key value violates unique constraint "output_hash"`
-		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2)`, o.hash, o.raw); err != nil && err.Error() != duplicateKey {
+		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, o.hash, o.raw); err != nil {
 			exitError("Output: failed to store: %s", err)
 		}
 
@@ -189,7 +188,6 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		output:     newOutput(raw, i, v),
 		version:    v,
 		exitCode:   exitCode,
-		created:    time.Now().UTC(),
 		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
 		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
 		maxMemory:  usage.Maxrss,
@@ -210,13 +208,20 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 }
 
 func (this *Result) store() {
-	_, err := db.Exec(`INSERT INTO result VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		this.input.id, this.output.id, this.version.id, this.exitCode, this.created,
-		this.userTime, this.systemTime, this.maxMemory, this.input.run,
+	_, err := db.Exec(`
+		INSERT INTO result VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (input, version) DO UPDATE SET
+			output = excluded.output, "exitCode" = excluded."exitCode",
+			"userTime" =   ((result.runs * result."userTime"  + excluded."userTime")  / (result.runs+1)),
+			"systemTime" = ((result.runs * result."systemTime"+ excluded."systemTime")/ (result.runs+1)),
+			"maxMemory" =  ((result.runs * result."maxMemory" + excluded."maxMemory") / (result.runs+1)),
+			runs = result.runs + 1, mutations = result.mutations + (CASE WHEN (result.output!=excluded.output OR result."exitCode"!=excluded."exitCode") THEN 1 ELSE 0 END)`,
+		this.input.id, this.version.id, this.output.id, this.exitCode,
+		this.userTime, this.systemTime, this.maxMemory,
 	)
 
 	if err != nil {
-		fmt.Printf("Result: failed to store result: input=%s,version=%s,run=%d: %s\n", this.input.short, this.version.name, this.input.run, err)
+		fmt.Printf("Result: failed to store result: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
 	}
 }
 
@@ -368,10 +373,6 @@ func refreshVersions() {
 		newVersions = append(newVersions, &v)
 	}
 
-/*	if len(newVersions) > len(versions) {
-		go batchScheduleNewVersions(newVersions[len(newVersions)-1])
-	}
-*/
 	versions = newVersions
 }
 
@@ -434,7 +435,7 @@ func batchScheduleNewVersions(target *Version) {
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
-			SELECT id, short, i.run, created
+			SELECT id, short, created
 			FROM input i
 			WHERE
 				state = 'done' AND NOT "operationCount" IS NULL AND NOT "bughuntIgnore"
@@ -449,7 +450,7 @@ func batchScheduleNewVersions(target *Version) {
 		for rs.Next() {
 			found++
 			input := &Input{uniqueOutput: map[string]bool{}}
-			if err := rs.Scan(&input.id, &input.short, &input.run, &input.created); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.created); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
 
@@ -464,7 +465,7 @@ func batchScheduleNewVersions(target *Version) {
 			go func(i *Input) {
 				defer wg.Done()
 
-				i.setBusy(false)
+				i.setBusy()
 				i.execute(target, &l)
 				i.setDone()
 			}(input)
@@ -479,7 +480,7 @@ func batchRefreshRandomScripts() {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
 			FROM input
-			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version) AND (run>1 OR NOW()-created>'1 year')
+			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version) AND NOW()-created>'1 year'
 			AND "operationCount">2
 			ORDER BY run DESC, RANDOM()
 			LIMIT 999`)
@@ -509,11 +510,8 @@ func _batchResetHard(input *Input) {
 	if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
 		exitError("doBatch: could not delete existing results: %s", err)
 	}
-	if _, err := db.Exec(`UPDATE input SET run = 0 WHERE id = $1`, input.id); err != nil {
-		exitError("doBatch: could not reset input.run: %s", err)
-	}
 
-	input.setBusy(true)
+	input.setBusy()
 
 	for _, v := range versions {
 		for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
@@ -551,7 +549,7 @@ func doWork() {
 			exitError("doWork: error verifying input: %s", err)
 		}
 
-		input.setBusy(!version.Valid)
+		input.setBusy()
 
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {

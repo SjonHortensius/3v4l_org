@@ -8,7 +8,7 @@ class PhpShell_ResultSet extends Basic_EntitySet
 
 	public function includeOutput()
 	{
-		$this->addJoin(PhpShell_Output::class, "output.id = result.output");
+		$this->addJoin(PhpShell_Output::class, "output.id = output");
 		$this->_fields[] = 'output.hash as "output$hash", output.raw as "output$raw"';
 
 		$this->includesOutput = true;
@@ -17,7 +17,7 @@ class PhpShell_ResultSet extends Basic_EntitySet
 
 	public function includeVersion()
 	{
-		$this->addJoin(PhpShell_Version::class, "version.id = result.version");
+		$this->addJoin(PhpShell_Version::class, "version.id = version");
 		$this->_fields[] = 'version.name as "version$name", version.order as "version$order", version.released as "version$released"';
 
 		$this->includesVersion = true;
@@ -29,7 +29,7 @@ class PhpShell_ResultSet extends Basic_EntitySet
 		if ($fields != '*' || empty($this->_fields))
 			return parent::_query($fields, $groupBy);
 
-		$fields = 'result.input, result."exitCode", '. implode(', ', $this->_fields);
+		$fields = 'input, "exitCode", '. implode(', ', $this->_fields);
 
 		return parent::_query($fields, $groupBy);
 	}
