@@ -39,7 +39,7 @@ _initLib(void) {
 //		fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
 	}
 
-//fprintf(stderr, "\n%s has set a custom offset: %d, diff.tv_sec=%ld diff.tv_usec=%ld\n", __FUNCTION__, offset, diff.tv_sec, diff.tv_usec);
+//fprintf(stderr, "\n%s has set a custom offset: %d, diff.tv_sec=%ld diff.tv_usec=%06ld\n", __FUNCTION__, offset, diff.tv_sec, diff.tv_usec);
 
 	unsetenv("TIME");
 	unsetenv("LD_PRELOAD");
@@ -55,13 +55,13 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
+//fprintf(stderr, "\n%s correcting underflow for %06ld < %06ld\n", __FUNCTION__, tp->tv_usec, diff.tv_usec);
 		tp->tv_sec--;
 		tp->tv_usec = 1000*1000 + tp->tv_usec;
-//fprintf(stderr, "\n%s correcting overflow for %ld < %ld\n", __FUNCTION__, tp->tv_usec, diff.tv_usec);
 	}
 	tp->tv_usec -= diff.tv_usec;
 
-//fprintf(stderr, "\n%s using offset: %ld.%ld, returning %ld.%ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
+//fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld.%06ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
 
 	return 0;
 }
