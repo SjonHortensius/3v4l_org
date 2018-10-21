@@ -63,8 +63,7 @@ type ResourceLimit struct {
 }
 
 func exitError(format string, v ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", v...)
-	os.Exit(1)
+	panic(fmt.Sprintf(format, v...))
 }
 
 func (this *Input) penalize(r string, p int) {
@@ -231,11 +230,10 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		"PATH=/usr/bin:/bin",
 		"LANG=C",
 		"SHELL=/bin/sh",
-		"MAIN=/var/mail/nobody",
+		"MAIL=/var/mail/nobody",
 		"LOGNAME=nobody",
 		"USER=nobody",
-		"USERNAME=nobody",
-		"HOME=/",
+		"HOME=/tmp",
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
 
