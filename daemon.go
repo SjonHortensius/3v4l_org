@@ -29,14 +29,15 @@ type Version struct {
 }
 
 type Input struct {
-	id           int
-	short        string
-	uniqueOutput map[string]bool
-	penalty      int
-	created      time.Time
-	runArchived  bool
-	lastSubmit   time.Time
-	mutations    int
+	id            int
+	short         string
+	uniqueOutput  map[string]bool
+	penalty       int
+	penaltyDetail map[string]int
+	created       time.Time
+	runArchived   bool
+	lastSubmit    time.Time
+	mutations     int
 }
 
 type Output struct {
@@ -70,8 +71,8 @@ func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
 
-	if p < 1 {
-		return
+	if p > 1 {
+		this.penaltyDetail[r] = this.penaltyDetail[r] + p
 	}
 }
 
@@ -133,7 +134,7 @@ func (this *Input) setDone() {
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
-		fmt.Printf("[%s] state = %s penalty = %d\n", this.short, state, this.penalty)
+		fmt.Printf("[%s] state = %s penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
 }
 
@@ -357,7 +358,10 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 func refreshVersions() {
 	newVersions := []*Version{}
 
-	rs, err := db.Query(`SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper" FROM version ORDER BY "released" DESC, "order" DESC`)
+	rs, err := db.Query(`
+		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper"
+		FROM version
+		ORDER BY "released" DESC, "order" DESC`)
 
 	if err != nil {
 		exitError("Could not populate versions: %s", err)
@@ -374,6 +378,45 @@ func refreshVersions() {
 	}
 
 	versions = newVersions
+}
+
+func checkPendingInputs() {
+	rs, err := db.Query(`
+		SELECT id, short, created, "runArchived", state FROM input
+		WHERE
+			state IN('new', 'busy')
+			AND NOW() - created > '5 minutes'
+		ORDER BY created DESC`)
+
+	if err != nil {
+		exitError("checkPendingInputs - could not SELECT: %s", err)
+	}
+
+	l := &ResourceLimit{0, 2500, 32768}
+
+	var state string
+	for rs.Next() {
+		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+
+		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &state); err != nil {
+			exitError("checkPendingInputs: error fetching work: %s", err)
+		}
+
+		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
+		input.setBusy()
+
+		for _, v := range versions {
+			if input.runArchived || v.eol.After(input.created) {
+				input.execute(v, l)
+			}
+
+			if input.penalty > 512 {
+				break
+			}
+		}
+
+		input.setDone()
+	}
 }
 
 func canBatch(doSleep bool) (bool, error) {
@@ -449,7 +492,7 @@ func batchScheduleNewVersions(target *Version) {
 		found = 0
 		for rs.Next() {
 			found++
-			input := &Input{uniqueOutput: map[string]bool{}}
+			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created); err != nil {
 				exitError("doBatch: error fetching work: %s", err)
 			}
@@ -480,52 +523,40 @@ func batchRefreshRandomScripts() {
 		rs, err := db.Query(`
 			SELECT id, short, created, "runArchived"
 			FROM input
-			WHERE penalty < 50 AND created < (SELECT MAX(released) FROM version) AND NOW()-created>'1 year'
+			WHERE state = 'done' AND penalty < 50 AND NOW()-created>'1 year'
 			AND "operationCount">2
 			ORDER BY run DESC, RANDOM()
 			LIMIT 999`)
 		if err != nil {
-			exitError("doBatch: error in SELECT query: %s", err)
+			exitError("batchRefreshRandomScripts: error in SELECT query: %s", err)
 		}
+
+		//fixme
+		l := ResourceLimit{0, 2500, 32768}
 
 		for rs.Next() {
-			input := &Input{uniqueOutput: map[string]bool{}}
+			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
-				exitError("doBatch: error fetching work: %s", err)
+				exitError("batchRefreshRandomScripts: error fetching work: %s", err)
 			}
 
-			_batchResetHard(input)
-		}
-	}
-}
+			input.setBusy()
 
-func _batchResetHard(input *Input) {
-	//fixme
-	l := ResourceLimit{0, 2500, 32768}
+			for _, v := range versions {
+				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+					if err != nil {
+						exitError("Unable to check load: %s", err)
+					}
+				}
 
-	var resCount int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM result WHERE input = $1`, input.id).Scan(&resCount); err == nil {
-		stats.Lock(); stats.c["resultsDeleted"] += resCount; stats.Unlock()
-	}
-	if _, err := db.Exec(`DELETE FROM result WHERE input = $1`, input.id); err != nil {
-		exitError("doBatch: could not delete existing results: %s", err)
-	}
-
-	input.setBusy()
-
-	for _, v := range versions {
-		for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
-			if err != nil {
-				exitError("Unable to check load: %s", err)
+				if input.runArchived || v.eol.After(input.created) {
+					input.execute(v, &l)
+				}
 			}
-		}
 
-		if input.runArchived || v.eol.After(input.created) {
-			input.execute(v, &l)
+			input.setDone()
 		}
 	}
-
-	input.setDone()
 }
 
 func doWork() {
@@ -538,7 +569,7 @@ func doWork() {
 	var version sql.NullString
 
 	for rs.Next() {
-		input := &Input{uniqueOutput: map[string]bool{}}
+		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 		rMax := &ResourceLimit{}
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
@@ -565,31 +596,11 @@ func doWork() {
 	}
 }
 
-func background() {
-	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		for range ticker.C {
-			refreshVersions()
-		}
-	}()
-
-	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
-		for range ticker.C {
-			stats.Lock()
-			fmt.Printf("Stats %v\n", stats.c)
-			stats.c = make(map[string]int)
-			stats.Unlock()
-		}
-	}()
-}
-
 var (
 	db             *sql.DB
 	l              *pq.Listener
 	versions       []*Version
 	isBatch        bool
-	shutdownSignal chan os.Signal
 	inputs         struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -608,9 +619,6 @@ const (
 func init() {
 	var err error
 	isBatch = len(os.Args) > 1 && os.Args[1] == "--batch"
-
-	shutdownSignal = make(chan os.Signal, 1)
-	signal.Notify(shutdownSignal, os.Interrupt)
 
 	if isBatch {
 		db, err = sql.Open("postgres", DSN+" port=5434")
@@ -649,25 +657,9 @@ func init() {
 	}
 
 	refreshVersions()
-
-	if isBatch {
-		return
-	}
-
-	l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "While creating listener: %s\n", err)
-		}
-	})
-
-	if err := l.Listen("daemon"); err != nil {
-		exitError("Could not setup Listener %s", err)
-	}
 }
 
 func main() {
-	go background()
-
 	fmt.Printf("Daemon ready\n")
 
 	if isBatch {
@@ -677,7 +669,6 @@ func main() {
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
 			if v.isHelper {
-				fmt.Printf("batchScheduleNewVersions: skipping %s\n", v.name)
 				continue
 			}
 
@@ -698,17 +689,47 @@ func main() {
 		batchRefreshRandomScripts()
 
 		os.Exit(0)
+	} else {
+		l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+			if err != nil {
+				exitError("While creating listener: %s", err)
+			}
+		})
+
+		if err := l.Listen("daemon"); err != nil {
+			exitError("Could not setup Listener %s", err)
+		}
 	}
 
-	// Process pending work
-	doWork()
+	doRefreshVersions := time.NewTicker( 5 * time.Minute)
+	doPrintStats      := time.NewTicker( 1 * time.Hour)
+	doCheckPending    := time.NewTicker(45 * time.Minute)
+	doShutdown        := make(chan os.Signal, 1)
+	signal.Notify(doShutdown, os.Interrupt)
+
+	// Process pending work immediately
+	go checkPendingInputs()
 
 LOOP:
 	for {
 		select {
+		case <-doCheckPending.C:
+			go checkPendingInputs()
+
+		case <-doRefreshVersions.C:
+			go refreshVersions()
+
+		case <-doPrintStats.C:
+			stats.Lock()
+			fmt.Printf("Stats %v\n", stats.c)
+			stats.c = make(map[string]int)
+			stats.Unlock()
+
 		case <-l.Notify:
 			go doWork()
-		case <-shutdownSignal:
+
+		case <-doShutdown:
+			l.Close()
 			break LOOP
 		}
 	}
