@@ -394,12 +394,12 @@ func checkPendingInputs() {
 
 	l := &ResourceLimit{0, 2500, 32768}
 
-	var version sql.NullString
+	var version sql.NullInt64
 	var state string
 	for rs.Next() {
 		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 
-		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &state); err != nil {
+		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
 			exitError("checkPendingInputs: error fetching work: %s", err)
 		}
 
@@ -407,7 +407,7 @@ func checkPendingInputs() {
 		input.setBusy()
 
 		for _, v := range versions {
-			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
+			if (version.Valid && int(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, l)
 			}
 
