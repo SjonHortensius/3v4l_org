@@ -134,7 +134,7 @@ func (this *Input) setDone() {
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
-		fmt.Printf("[%s] state = %s penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
+		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
 }
 
@@ -598,15 +598,15 @@ func doWork() {
 }
 
 var (
-	db             *sql.DB
-	l              *pq.Listener
-	versions       []*Version
-	isBatch        bool
-	inputs         struct {
+	db       *sql.DB
+	l        *pq.Listener
+	versions []*Version
+	isBatch  bool
+	inputs   struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
-	stats struct {
+	stats    struct {
 		sync.RWMutex
 		c map[string]int
 	}

@@ -240,6 +240,7 @@ body.index:not(.js) textarea
 	border-width: 1px 0;
 	width: 100%;
 	tab-size: 4;
+	-moz-tab-size: 4;
 	display: block;
 	/* for users without js */
 	white-space: pre;

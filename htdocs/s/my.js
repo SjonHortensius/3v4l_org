@@ -80,10 +80,15 @@ var evalOrg = {};
 		var code = $('code');
 		var textarea = $('textarea[name=code]');
 
-		//FIXME
-		if (document.body.classList.contains('index') && textarea.value.length > code.textContent.length)
-			code.appendChild(document.createTextNode(textarea.value));
+		// when preview results in an error, _refreshOutput will reload /#preview and UA will store code in textarea
+/*		if (document.body.classList.contains('index') && textarea.value.length > code.textContent.length)
+		{
+			while (code.firstChild)
+				code.removeChild(code.firstChild);
 
+			code.appendChild(document.createTextNode(textarea.value));
+		}
+*/
 		textarea.value = code.textContent;
 
 		// If ace somehow doesn't load; make sure js doesn't crash
