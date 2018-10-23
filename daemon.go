@@ -382,7 +382,7 @@ func refreshVersions() {
 
 func checkPendingInputs() {
 	rs, err := db.Query(`
-		SELECT id, short, created, "runArchived", state FROM input
+		SELECT id, short, created, "runArchived", "runQuick", state FROM input
 		WHERE
 			state IN('new', 'busy')
 			AND NOW() - created > '5 minutes'
@@ -394,6 +394,7 @@ func checkPendingInputs() {
 
 	l := &ResourceLimit{0, 2500, 32768}
 
+	var version sql.NullString
 	var state string
 	for rs.Next() {
 		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
@@ -406,7 +407,7 @@ func checkPendingInputs() {
 		input.setBusy()
 
 		for _, v := range versions {
-			if input.runArchived || v.eol.After(input.created) {
+			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, l)
 			}
 
