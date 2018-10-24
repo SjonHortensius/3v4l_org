@@ -63,10 +63,6 @@ type ResourceLimit struct {
 	output  int
 }
 
-func exitError(format string, v ...interface{}) {
-	panic(fmt.Sprintf(format, v...))
-}
-
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
@@ -80,11 +76,11 @@ func (this *Input) setBusy() {
 	inputs.Lock(); inputs.srcUse[this.short]++
 	if 1 == inputs.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
-			exitError("setBusy: could not create file: %s", err)
+			panic("setBusy: could not create file: "+ err.Error())
 		} else {
 			var raw []byte
 			if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
-				exitError("setBusy: could not retrieve source: %s", err)
+				panic("setBusy: could not retrieve source: "+ err.Error())
 			} else {
 				f.Write(raw)
 			}
@@ -95,13 +91,13 @@ func (this *Input) setBusy() {
 	inputs.Unlock()
 
 	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
-		exitError("setBusy: could not get original mutation count: %s", err)
+		panic("setBusy: could not get original mutation count: "+ err.Error())
 	}
 
 	if r, err := db.Exec(`UPDATE input SET state = 'busy' WHERE id = $1`, this.id); err != nil {
-		exitError("Input: failed to update state: %s", err)
+		panic("Input: failed to update state: "+ err.Error())
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
-		exitError("Input: failed to update state; %d rows affected, %s", a, err)
+		panic(fmt.Sprintf("Input: failed to update state; %d rows affected, %s", a, err))
 	}
 }
 
@@ -113,13 +109,13 @@ func (this *Input) setDone() {
 
 	var mutations int
 	if err := db.QueryRow(`SELECT SUM(mutations) - $1 FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
-		exitError("setBusy: could not get new mutation count: %s", err)
+		panic("setBusy: could not get new mutation count: "+ err.Error())
 	}
 
 	if _, err := db.Exec(`UPDATE input
 		SET penalty = penalty + $2, state = $3, "lastResultChange" = (CASE WHEN $4>0 THEN TIMEZONE('UTC'::text, NOW()) ELSE "lastResultChange" END)
 		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state, mutations); err != nil {
-		exitError("Input: failed to update: %s", err)
+		panic("Input: failed to update: "+ err.Error())
 	}
 
 	inputs.Lock(); inputs.srcUse[this.short]--
@@ -151,12 +147,12 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
 		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, o.hash, o.raw); err != nil {
-			exitError("Output: failed to store: %s", err)
+			panic("Output: failed to store: "+ err.Error())
 		}
 
 		// LastInsertId doesn't work
 		if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-			exitError("Output: failed to retrieve after storing: %s", err)
+			panic("Output: failed to retrieve after storing: "+ err.Error())
 		}
 
 		stats.Lock(); stats.c["outputs"]++; stats.Unlock()
@@ -364,14 +360,14 @@ func refreshVersions() {
 		ORDER BY "released" DESC, "order" DESC`)
 
 	if err != nil {
-		exitError("Could not populate versions: %s", err)
+		panic("Could not populate versions: "+ err.Error())
 	}
 
 	for rs.Next() {
 		v := Version{}
 
 		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.isHelper); err != nil {
-			exitError("Error fetching version: %s", err)
+			panic("Error fetching version: "+ err.Error())
 		}
 
 		newVersions = append(newVersions, &v)
@@ -389,7 +385,7 @@ func checkPendingInputs() {
 		ORDER BY created DESC`)
 
 	if err != nil {
-		exitError("checkPendingInputs - could not SELECT: %s", err)
+		panic("checkPendingInputs - could not SELECT: "+ err.Error())
 	}
 
 	l := &ResourceLimit{0, 2500, 32768}
@@ -400,7 +396,7 @@ func checkPendingInputs() {
 		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
-			exitError("checkPendingInputs: error fetching work: %s", err)
+			panic("checkPendingInputs: error fetching work: "+ err.Error())
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
@@ -487,7 +483,7 @@ func batchScheduleNewVersions(target *Version) {
 				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1);`,
 			target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
-			exitError("doBatch: error in SELECT query: %s", err)
+			panic("doBatch: error in SELECT query: "+ err.Error())
 		}
 
 		found = 0
@@ -495,12 +491,12 @@ func batchScheduleNewVersions(target *Version) {
 			found++
 			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created); err != nil {
-				exitError("doBatch: error fetching work: %s", err)
+				panic("doBatch: error fetching work: "+ err.Error())
 			}
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
-					exitError("Unable to check load: %s", err)
+					panic("Unable to check load: "+ err.Error())
 				}
 			}
 
@@ -529,7 +525,7 @@ func batchRefreshRandomScripts() {
 			ORDER BY run DESC, RANDOM()
 			LIMIT 999`)
 		if err != nil {
-			exitError("batchRefreshRandomScripts: error in SELECT query: %s", err)
+			panic("batchRefreshRandomScripts: error in SELECT query: "+ err.Error())
 		}
 
 		//fixme
@@ -538,7 +534,7 @@ func batchRefreshRandomScripts() {
 		for rs.Next() {
 			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
-				exitError("batchRefreshRandomScripts: error fetching work: %s", err)
+				panic("batchRefreshRandomScripts: error fetching work: "+ err.Error())
 			}
 
 			input.setBusy()
@@ -546,7 +542,7 @@ func batchRefreshRandomScripts() {
 			for _, v := range versions {
 				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 					if err != nil {
-						exitError("Unable to check load: %s", err)
+						panic("Unable to check load: "+ err.Error())
 					}
 				}
 
@@ -564,7 +560,7 @@ func doWork() {
 	rs, err := db.Query(`DELETE FROM queue WHERE "maxPackets" = 0 RETURNING *`)
 
 	if err != nil {
-		exitError("doWork: error in DELETE query: %s", err)
+		panic("doWork: error in DELETE query: "+ err.Error())
 	}
 
 	var version sql.NullString
@@ -574,11 +570,11 @@ func doWork() {
 		rMax := &ResourceLimit{}
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
-			exitError("doWork: error fetching work: %s", err)
+			panic("doWork: error fetching work: "+ err.Error())
 		}
 
 		if err := db.QueryRow(`SELECT id, created, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.runArchived); err != nil {
-			exitError("doWork: error verifying input: %s", err)
+			panic("doWork: error verifying input: "+ err.Error())
 		}
 
 		input.setBusy()
@@ -629,11 +625,11 @@ func init() {
 	db.SetMaxOpenConns(16)
 
 	if err != nil {
-		exitError("Failed connect to db: %s", err)
+		panic("Failed connect to db: "+ err.Error())
 	}
 
 	if err := db.Ping(); err != nil {
-		exitError("Failed to ping db: %s", err)
+		panic("Failed to ping db: "+ err.Error())
 	}
 
 	stats.c = make(map[string]int)
@@ -653,7 +649,7 @@ func init() {
 
 	for key, value := range limits {
 		if err := syscall.Setrlimit(key, &syscall.Rlimit{Cur: uint64(value), Max: uint64(float64(value) * 1.25)}); err != nil {
-			exitError("Failed to set resourceLimit: %d to %d: %s", key, value, err)
+			panic(fmt.Sprintf("Failed to set resourceLimit: %d to %d: %s", key, value, err))
 		}
 	}
 
@@ -693,12 +689,12 @@ func main() {
 	} else {
 		l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 			if err != nil {
-				exitError("While creating listener: %s", err)
+				panic("While creating listener: "+ err.Error())
 			}
 		})
 
 		if err := l.Listen("daemon"); err != nil {
-			exitError("Could not setup Listener %s", err)
+			panic("Could not setup Listener "+ err.Error())
 		}
 	}
 
