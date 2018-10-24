@@ -8,6 +8,9 @@ abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 
 	public function generate()
 	{
+		if (!Basic::$cache instanceof PhpShell_ColdCacheStampede)
+			error_log("wtf, cache has no stampede protection");
+
 		$popularFunctions = Basic::$cache->get(__METHOD__, function(){
 			return array_slice(iterator_to_array(
 				PhpShell_FunctionCall::find("function NOT IN ('var_dump', 'print_r')")

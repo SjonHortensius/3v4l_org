@@ -109,7 +109,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				$input->save(['runArchived' => 1]);
 
 			// Allow upgrading quick>full | quick never has title so store that too
-			if (isset($input->runQuick) && !isset($version))
+			if (isset($input->runQuick))
 				$input->save(['runQuick' => null, 'title' => $title]);
 
 			// Prevent partially running a full script (because of duplicate result)

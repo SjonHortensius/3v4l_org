@@ -29,6 +29,7 @@ type Version struct {
 }
 
 type Input struct {
+	sync.Mutex
 	id            int
 	short         string
 	uniqueOutput  map[string]bool
@@ -63,15 +64,32 @@ type ResourceLimit struct {
 	output  int
 }
 
+// Limits # of parallel execs by using a channel with a limited buffer
+type SizedWaitGroup struct {
+	current chan bool
+	*sync.WaitGroup
+}
+
+func newSizedWaitGroup(limit int) SizedWaitGroup {
+	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
+}
+func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
+func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
+
+func newInput() Input {
+	return Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+}
+
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
 
 	if p > 1 {
-		this.penaltyDetail[r] = this.penaltyDetail[r] + p
+		this.Lock(); this.penaltyDetail[r] = this.penaltyDetail[r] + p; this.Unlock()
 	}
 }
 
+//FIXME maybe batches shouldn't set state=busy so checkPending won't attempt to run them
 func (this *Input) setBusy() {
 	inputs.Lock(); inputs.srcUse[this.short]++
 	if 1 == inputs.srcUse[this.short] {
@@ -159,7 +177,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	}
 
 	if false == i.uniqueOutput[o.hash] {
-		i.uniqueOutput[o.hash] = true
+		i.Lock(); i.uniqueOutput[o.hash] = true; i.Unlock()
 
 		if !v.isHelper {
 			i.penalize("Excessive total output", len(o.raw)/2048)
@@ -393,7 +411,7 @@ func checkPendingInputs() {
 	var version sql.NullInt64
 	var state string
 	for rs.Next() {
-		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+		input := newInput()
 
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
 			panic("checkPendingInputs: error fetching work: "+ err.Error())
@@ -452,35 +470,23 @@ func canBatch(doSleep bool) (bool, error) {
 	return true, nil
 }
 
-// Limits # of parallel execs by using a channel with a limited buffer
-type SizedWaitGroup struct {
-	current chan bool
-	*sync.WaitGroup
-}
-
-func newSizedWaitGroup(limit int) SizedWaitGroup {
-	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
-}
-func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
-func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
-
 func batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
-	//fixme
-	l := ResourceLimit{0, 2500, 32768}
-
-	wg := newSizedWaitGroup(3)
+	wg := newSizedWaitGroup(5)
 
 	found := 1
 	for found > 0 {
 		rs, err := db.Query(`
-			SELECT id, short, created
-			FROM input i
+			SELECT id, short
+			FROM input
+			LEFT JOIN result ON (version = $1 AND input=id)
 			WHERE
-				state = 'done' AND NOT "operationCount" IS NULL AND NOT "bughuntIgnore"
-				AND (i."runArchived" OR i.created < $2::date)
-				AND id NOT IN (SELECT DISTINCT input FROM result WHERE version = $1);`,
+				input IS NULL
+				AND state = 'done'
+				AND NOT "operationCount" IS NULL
+				AND NOT "bughuntIgnore"
+				AND "runQuick" IS NULL;`,
 			target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
 			panic("doBatch: error in SELECT query: "+ err.Error())
@@ -489,7 +495,7 @@ func batchScheduleNewVersions(target *Version) {
 		found = 0
 		for rs.Next() {
 			found++
-			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+			input := newInput()
 			if err := rs.Scan(&input.id, &input.short, &input.created); err != nil {
 				panic("doBatch: error fetching work: "+ err.Error())
 			}
@@ -500,40 +506,42 @@ func batchScheduleNewVersions(target *Version) {
 				}
 			}
 
-			wg.Add()
-
-			go func(i *Input) {
+			go func(i *Input, v *Version) {
+				wg.Add()
 				defer wg.Done()
 
 				i.setBusy()
-				i.execute(target, &l)
+				i.execute(v, &ResourceLimit{0, 2500, 32768})
 				i.setDone()
-			}(input)
-		}
+			}(&input, target)
 
-		wg.Wait()
+			wg.Wait()
+		}
 	}
 }
 
 func batchRefreshRandomScripts() {
+	wg := newSizedWaitGroup(5)
+
 	for {
 		rs, err := db.Query(`
-			SELECT id, short, created, "runArchived"
+			SELECT id, short, "runArchived"
 			FROM input
-			WHERE state = 'done' AND penalty < 50 AND NOW()-created>'1 year'
-			AND "operationCount">2
-			ORDER BY run DESC, RANDOM()
+			WHERE
+				state = 'done'
+				AND penalty < 50
+				AND NOW()-created>'1 year'
+				AND "runQuick" IS NULL
+				AND "operationCount">2
+			ORDER BY RANDOM()
 			LIMIT 999`)
 		if err != nil {
 			panic("batchRefreshRandomScripts: error in SELECT query: "+ err.Error())
 		}
 
-		//fixme
-		l := ResourceLimit{0, 2500, 32768}
-
 		for rs.Next() {
-			input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
-			if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived); err != nil {
+			input := newInput()
+			if err := rs.Scan(&input.id, &input.short, &input.runArchived); err != nil {
 				panic("batchRefreshRandomScripts: error fetching work: "+ err.Error())
 			}
 
@@ -546,9 +554,18 @@ func batchRefreshRandomScripts() {
 					}
 				}
 
-				if input.runArchived || v.eol.After(input.created) {
-					input.execute(v, &l)
+				if !input.runArchived && v.eol.Before(input.created) {
+					continue
 				}
+
+				go func(i *Input, v *Version) {
+					wg.Add()
+					defer wg.Done()
+
+					i.execute(v, &ResourceLimit{0, 2500, 32768})
+				}(&input, v)
+
+				wg.Wait()
 			}
 
 			input.setDone()
@@ -566,7 +583,7 @@ func doWork() {
 	var version sql.NullString
 
 	for rs.Next() {
-		input := &Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+		input := newInput()
 		rMax := &ResourceLimit{}
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
@@ -597,7 +614,7 @@ var (
 	db       *sql.DB
 	l        *pq.Listener
 	versions []*Version
-	isBatch  bool
+	batch    string
 	inputs   struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -615,9 +632,8 @@ const (
 
 func init() {
 	var err error
-	isBatch = len(os.Args) > 1 && os.Args[1] == "--batch"
-
-	if isBatch {
+	if len(os.Args) > 1 && os.Args[1][:7] == "--batch" {
+		batch = os.Args[1][8:]
 		db, err = sql.Open("postgres", DSN+" port=5434")
 	} else {
 		db, err = sql.Open("postgres", DSN)
@@ -657,11 +673,10 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("Daemon ready\n")
-
-	if isBatch {
+	if batch == "refreshRandomScripts" {
+		batchRefreshRandomScripts()
+	} else if batch == "scheduleNewVersions" {
 		batchNewComplete := 0
-//		batchSingleFix()
 
 		for _, v := range versions {
 			// ignore helpers, they don't store all results
@@ -682,10 +697,6 @@ func main() {
 				break
 			}
 		}
-
-		batchRefreshRandomScripts()
-
-		os.Exit(0)
 	} else {
 		l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 			if err != nil {
@@ -696,6 +707,13 @@ func main() {
 		if err := l.Listen("daemon"); err != nil {
 			panic("Could not setup Listener "+ err.Error())
 		}
+
+		fmt.Printf("daemon ready\n")
+	}
+
+	if batch != "" {
+		fmt.Fprintf(os.Stderr, "batch completed\n")
+		os.Exit(0)
 	}
 
 	doRefreshVersions := time.NewTicker( 5 * time.Minute)
