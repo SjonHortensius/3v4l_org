@@ -176,13 +176,15 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 		stats.Lock(); stats.c["outputs"]++; stats.Unlock()
 	}
 
+	i.Lock()
 	if false == i.uniqueOutput[o.hash] {
-		i.Lock(); i.uniqueOutput[o.hash] = true; i.Unlock()
+		i.uniqueOutput[o.hash] = true
 
 		if !v.isHelper {
 			i.penalize("Excessive total output", len(o.raw)/2048)
 		}
 	}
+	i.Unlock()
 
 	return o
 }
@@ -470,7 +472,32 @@ func canBatch(doSleep bool) (bool, error) {
 	return true, nil
 }
 
-func batchScheduleNewVersions(target *Version) {
+func batchScheduleNewVersions() {
+	batchNewComplete := 0
+
+	for _, v := range versions {
+		// ignore helpers, they don't store all results
+		if v.isHelper {
+			continue
+		}
+
+		fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
+		stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
+		_batchScheduleNewVersions(v)
+		stats.RLock(); post := stats.c["results"]; stats.RUnlock()
+
+		if post-pre < 99 {
+			batchNewComplete++
+		}
+
+		if batchNewComplete > 3 {
+			fmt.Printf("batchScheduleNewVersions: stopping; batchNewComplete > 3\n")
+			break
+		}
+	}
+}
+
+func _batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
 	wg := newSizedWaitGroup(5)
@@ -612,7 +639,6 @@ func doWork() {
 
 var (
 	db       *sql.DB
-	l        *pq.Listener
 	versions []*Version
 	batch    string
 	inputs   struct {
@@ -673,47 +699,18 @@ func init() {
 }
 
 func main() {
-	if batch == "refreshRandomScripts" {
-		batchRefreshRandomScripts()
-	} else if batch == "scheduleNewVersions" {
-		batchNewComplete := 0
-
-		for _, v := range versions {
-			// ignore helpers, they don't store all results
-			if v.isHelper {
-				continue
-			}
-
-			fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
-			stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
-			batchScheduleNewVersions(v)
-			stats.RLock(); post := stats.c["results"]; stats.RUnlock()
-
-			if post-pre < 99 {
-				batchNewComplete++
-			}
-			if batchNewComplete > 3 {
-				fmt.Printf("batchScheduleNewVersions: stopping; batchNewComplete > 3\n")
-				break
-			}
+	l := pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			panic("While creating listener: "+ err.Error())
 		}
-	} else {
-		l = pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
-			if err != nil {
-				panic("While creating listener: "+ err.Error())
-			}
-		})
+	})
 
+	if batch == "" {
 		if err := l.Listen("daemon"); err != nil {
 			panic("Could not setup Listener "+ err.Error())
 		}
 
 		fmt.Printf("daemon ready\n")
-	}
-
-	if batch != "" {
-		fmt.Fprintf(os.Stderr, "batch completed\n")
-		os.Exit(0)
 	}
 
 	doRefreshVersions := time.NewTicker( 5 * time.Minute)
@@ -722,8 +719,19 @@ func main() {
 	doShutdown        := make(chan os.Signal, 1)
 	signal.Notify(doShutdown, os.Interrupt)
 
-	// Process pending work immediately
-	go checkPendingInputs()
+	if batch == "refreshRandomScripts" {
+		doCheckPending.Stop()
+
+		go batchRefreshRandomScripts()
+	} else if batch == "scheduleNewVersions" {
+		doCheckPending.Stop()
+
+		go batchScheduleNewVersions()
+	} else {
+
+		// Process pending work immediately
+		go checkPendingInputs()
+	}
 
 LOOP:
 	for {
