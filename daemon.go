@@ -91,8 +91,8 @@ func (this *Input) penalize(r string, p int) {
 
 //FIXME maybe batches shouldn't set state=busy so checkPending won't attempt to run them
 func (this *Input) setBusy() {
-	inputs.Lock(); inputs.srcUse[this.short]++
-	if 1 == inputs.srcUse[this.short] {
+	inputSrc.Lock(); inputSrc.srcUse[this.short]++
+	if 1 == inputSrc.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
 			panic("setBusy: could not create file: "+ err.Error())
 		} else {
@@ -106,7 +106,7 @@ func (this *Input) setBusy() {
 			f.Close()
 		}
 	}
-	inputs.Unlock()
+	inputSrc.Unlock()
 
 	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
 		panic("setBusy: could not get original mutation count: "+ err.Error())
@@ -136,15 +136,15 @@ func (this *Input) setDone() {
 		panic("Input: failed to update: "+ err.Error())
 	}
 
-	inputs.Lock(); inputs.srcUse[this.short]--
-	if 0 == inputs.srcUse[this.short] {
+	inputSrc.Lock(); inputSrc.srcUse[this.short]--
+	if 0 == inputSrc.srcUse[this.short] {
 		if err := os.Remove("/in/" + this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 		}
 
-		delete(inputs.srcUse, this.short)
+		delete(inputSrc.srcUse, this.short)
 	}
-	inputs.Unlock()
+	inputSrc.Unlock()
 
 	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
 	if this.penalty > 128 {
@@ -180,11 +180,14 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	if false == i.uniqueOutput[o.hash] {
 		i.uniqueOutput[o.hash] = true
 
+		i.Unlock()
+
 		if !v.isHelper {
 			i.penalize("Excessive total output", len(o.raw)/2048)
 		}
+	} else {
+		i.Unlock()
 	}
-	i.Unlock()
 
 	return o
 }
@@ -504,7 +507,7 @@ func _batchScheduleNewVersions(target *Version) {
 
 	found := 1
 	for found > 0 {
-		rs, err := db.Query(`
+		rs, err := dbBatch.Query(`
 			SELECT id, short
 			FROM input
 			LEFT JOIN result ON (version = $1 AND input=id)
@@ -523,7 +526,7 @@ func _batchScheduleNewVersions(target *Version) {
 		for rs.Next() {
 			found++
 			input := newInput()
-			if err := rs.Scan(&input.id, &input.short, &input.created); err != nil {
+			if err := rs.Scan(&input.id, &input.short); err != nil {
 				panic("doBatch: error fetching work: "+ err.Error())
 			}
 
@@ -551,8 +554,8 @@ func batchRefreshRandomScripts() {
 	wg := newSizedWaitGroup(5)
 
 	for {
-		rs, err := db.Query(`
-			SELECT id, short, "runArchived"
+		rs, err := dbBatch.Query(`
+			SELECT id, short, "runArchived", created
 			FROM input
 			WHERE
 				state = 'done'
@@ -568,7 +571,7 @@ func batchRefreshRandomScripts() {
 
 		for rs.Next() {
 			input := newInput()
-			if err := rs.Scan(&input.id, &input.short, &input.runArchived); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
 				panic("batchRefreshRandomScripts: error fetching work: "+ err.Error())
 			}
 
@@ -598,6 +601,8 @@ func batchRefreshRandomScripts() {
 			input.setDone()
 		}
 	}
+
+	fmt.Printf("batchRefreshRandomScripts has completed\n")
 }
 
 func doWork() {
@@ -639,9 +644,10 @@ func doWork() {
 
 var (
 	db       *sql.DB
+	dbBatch  *sql.DB
 	versions []*Version
 	batch    string
-	inputs   struct {
+	inputSrc   struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
@@ -661,21 +667,27 @@ func init() {
 	if len(os.Args) > 1 && os.Args[1][:7] == "--batch" {
 		batch = os.Args[1][8:]
 		db, err = sql.Open("postgres", DSN+" port=5434")
+
+		if err != nil {
+			panic("init - failed to connect to db: "+ err.Error())
+		}
+
+		dbBatch, err = sql.Open("postgres", DSN)
 	} else {
 		db, err = sql.Open("postgres", DSN)
 	}
 	db.SetMaxOpenConns(16)
 
 	if err != nil {
-		panic("Failed connect to db: "+ err.Error())
+		panic("init - failed to connect to db: "+ err.Error())
 	}
 
 	if err := db.Ping(); err != nil {
-		panic("Failed to ping db: "+ err.Error())
+		panic("init - failed to ping db: "+ err.Error())
 	}
 
 	stats.c = make(map[string]int)
-	inputs.srcUse = make(map[string]int)
+	inputSrc.srcUse = make(map[string]int)
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:    2,
@@ -691,7 +703,7 @@ func init() {
 
 	for key, value := range limits {
 		if err := syscall.Setrlimit(key, &syscall.Rlimit{Cur: uint64(value), Max: uint64(float64(value) * 1.25)}); err != nil {
-			panic(fmt.Sprintf("Failed to set resourceLimit: %d to %d: %s", key, value, err))
+			panic(fmt.Sprintf("init - failed to set resourceLimit: %d to %d: %s", key, value, err))
 		}
 	}
 
