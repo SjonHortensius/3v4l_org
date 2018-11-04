@@ -136,6 +136,8 @@ func (this *Input) setDone() {
 		panic("Input: failed to update: "+ err.Error())
 	}
 
+	stats.Lock(); stats.c["mutations"] += mutations; stats.Unlock()
+
 	inputSrc.Lock(); inputSrc.srcUse[this.short]--
 	if 0 == inputSrc.srcUse[this.short] {
 		if err := os.Remove("/in/" + this.short); err != nil {
@@ -544,9 +546,9 @@ func _batchScheduleNewVersions(target *Version) {
 				i.execute(v, &ResourceLimit{0, 2500, 32768})
 				i.setDone()
 			}(&input, target)
-
-			wg.Wait()
 		}
+
+		wg.Wait()
 	}
 }
 
@@ -594,10 +596,9 @@ func batchRefreshRandomScripts() {
 
 					i.execute(v, &ResourceLimit{0, 2500, 32768})
 				}(&input, v)
-
-				wg.Wait()
 			}
 
+			wg.Wait()
 			input.setDone()
 		}
 	}
