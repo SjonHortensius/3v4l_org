@@ -90,15 +90,16 @@ func (this *Input) penalize(r string, p int) {
 }
 
 //FIXME maybe batches shouldn't set state=busy so checkPending won't attempt to run them
-func (this *Input) setBusy() {
-	inputSrc.Lock(); inputSrc.srcUse[this.short]++
+func (this *Input) prepare() {
+	inputSrc.Lock()
+	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
-			panic("setBusy: could not create file: "+ err.Error())
+			panic("prepare: could not create file: "+ err.Error())
 		} else {
 			var raw []byte
 			if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
-				panic("setBusy: could not retrieve source: "+ err.Error())
+				panic("prepare: could not retrieve source: "+ err.Error())
 			} else {
 				f.Write(raw)
 			}
@@ -109,7 +110,7 @@ func (this *Input) setBusy() {
 	inputSrc.Unlock()
 
 	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
-		panic("setBusy: could not get original mutation count: "+ err.Error())
+		panic("prepare: could not get original mutation count: "+ err.Error())
 	}
 
 	if r, err := db.Exec(`UPDATE input SET state = 'busy' WHERE id = $1`, this.id); err != nil {
@@ -117,9 +118,16 @@ func (this *Input) setBusy() {
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		panic(fmt.Sprintf("Input: failed to update state; %d rows affected, %s", a, err))
 	}
+
+	// Perform date fixation
+	if this.lastSubmit.IsZero() {
+		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit); err != nil {
+			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
+		}
+	}
 }
 
-func (this *Input) setDone() {
+func (this *Input) complete() {
 	state := "done"
 	if this.penalty > 256 {
 		state = "abusive"
@@ -127,7 +135,7 @@ func (this *Input) setDone() {
 
 	var mutations int
 	if err := db.QueryRow(`SELECT SUM(mutations) - $1 FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
-		panic("setBusy: could not get new mutation count: "+ err.Error())
+		panic("complete: could not get new mutation count: "+ err.Error())
 	}
 
 	if _, err := db.Exec(`UPDATE input
@@ -263,13 +271,6 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		"HOME=/tmp",
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
-
-	// Perform date fixation
-	if this.lastSubmit.IsZero() {
-		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit); err != nil {
-			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
-		}
-	}
 
 	if !this.lastSubmit.IsZero() {
 		cmd.Env = append(cmd.Env, []string{
@@ -425,7 +426,7 @@ func checkPendingInputs() {
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
-		input.setBusy()
+		input.prepare()
 
 		for _, v := range versions {
 			if (version.Valid && int(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
@@ -437,7 +438,7 @@ func checkPendingInputs() {
 			}
 		}
 
-		input.setDone()
+		input.complete()
 	}
 }
 
@@ -505,7 +506,7 @@ func batchScheduleNewVersions() {
 func _batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
-	wg := newSizedWaitGroup(5)
+	wg := newSizedWaitGroup(3)
 
 	found := 1
 	for found > 0 {
@@ -542,9 +543,9 @@ func _batchScheduleNewVersions(target *Version) {
 				wg.Add()
 				defer wg.Done()
 
-				i.setBusy()
+				i.prepare()
 				i.execute(v, &ResourceLimit{0, 2500, 32768})
-				i.setDone()
+				i.complete()
 			}(&input, target)
 		}
 
@@ -553,7 +554,7 @@ func _batchScheduleNewVersions(target *Version) {
 }
 
 func batchRefreshRandomScripts() {
-	wg := newSizedWaitGroup(5)
+	wg := newSizedWaitGroup(3)
 
 	for {
 		rs, err := dbBatch.Query(`
@@ -577,7 +578,7 @@ func batchRefreshRandomScripts() {
 				panic("batchRefreshRandomScripts: error fetching work: "+ err.Error())
 			}
 
-			input.setBusy()
+			input.prepare()
 
 			for _, v := range versions {
 				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
@@ -599,11 +600,9 @@ func batchRefreshRandomScripts() {
 			}
 
 			wg.Wait()
-			input.setDone()
+			input.complete()
 		}
 	}
-
-	fmt.Printf("batchRefreshRandomScripts has completed\n")
 }
 
 func doWork() {
@@ -627,7 +626,7 @@ func doWork() {
 			panic("doWork: error verifying input: "+ err.Error())
 		}
 
-		input.setBusy()
+		input.prepare()
 
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
@@ -639,7 +638,7 @@ func doWork() {
 			}
 		}
 
-		input.setDone()
+		input.complete()
 	}
 }
 
