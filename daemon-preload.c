@@ -11,6 +11,7 @@
 
 struct timeval diff;
 bool initDone = false;
+int timeOfDayCalls = 0;
 
 int (*org_gettimeofday)(struct timeval *tp, void *tzp);
 time_t (*org_time)(time_t *tloc);
@@ -53,6 +54,11 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 
 	org_gettimeofday(tp, tzp);
 
+	// the first call from php is used for REQUEST_TIME_FLOAT, and we want a fixed result
+	// this depends on diff.tv_usec not being initialized in _initLib
+	if (++timeOfDayCalls == 1)
+		diff.tv_usec = tp->tv_usec;
+
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
 //fprintf(stderr, "\n%s correcting underflow for %06ld < %06ld\n", __FUNCTION__, tp->tv_usec, diff.tv_usec);
@@ -60,6 +66,10 @@ int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
 		tp->tv_usec = 1000*1000 + tp->tv_usec;
 	}
 	tp->tv_usec -= diff.tv_usec;
+
+	// don't confuse people with REQUEST_TIME_FLOAT not being a float
+	if (timeOfDayCalls == 1)
+		tp->tv_usec += 100;
 
 //fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld.%06ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
 

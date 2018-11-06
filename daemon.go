@@ -516,6 +516,7 @@ func _batchScheduleNewVersions(target *Version) {
 			LEFT JOIN result ON (version = $1 AND input=id)
 			WHERE
 				input IS NULL
+				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
 				AND NOT "operationCount" IS NULL
 				AND NOT "bughuntIgnore"
