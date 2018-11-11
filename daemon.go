@@ -19,30 +19,30 @@ import (
 )
 
 type Version struct {
-	id       int
+	id       uint64
 	name     string
 	command  string
 	isHelper bool
 	released time.Time
-	order    int
+	order    uint8
 	eol      time.Time
 }
 
 type Input struct {
 	sync.Mutex
-	id            int
+	id            uint64
 	short         string
 	uniqueOutput  map[string]bool
-	penalty       int
-	penaltyDetail map[string]int
+	penalty       uint64
+	penaltyDetail map[string]uint64
 	created       time.Time
 	runArchived   bool
 	lastSubmit    time.Time
-	mutations     int
+	mutations     uint64
 }
 
 type Output struct {
-	id   int
+	id   uint64
 	raw  string
 	hash string
 }
@@ -51,17 +51,17 @@ type Result struct {
 	input      *Input
 	output     *Output
 	version    *Version
-	exitCode   int
+	exitCode   uint8
 	created    time.Time
 	userTime   float64
 	systemTime float64
-	maxMemory  int64
+	maxMemory  uint32
 }
 
 type ResourceLimit struct {
-	packets int
-	runtime int
-	output  int
+	packets uint64
+	runtime uint64
+	output  uint64
 }
 
 // Limits # of parallel execs by using a channel with a limited buffer
@@ -70,17 +70,17 @@ type SizedWaitGroup struct {
 	*sync.WaitGroup
 }
 
-func newSizedWaitGroup(limit int) SizedWaitGroup {
+func newSizedWaitGroup(limit uint64) SizedWaitGroup {
 	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
 }
 func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
 func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
 
 func newInput() Input {
-	return Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
+	return Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]uint64{}}
 }
 
-func (this *Input) penalize(r string, p int) {
+func (this *Input) penalize(r string, p uint64) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
 
@@ -133,7 +133,7 @@ func (this *Input) complete() {
 		state = "abusive"
 	}
 
-	var mutations int
+	var mutations uint64
 	if err := db.QueryRow(`SELECT SUM(mutations) - $1 FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
 		panic("complete: could not get new mutation count: "+ err.Error())
 	}
@@ -193,7 +193,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 		i.Unlock()
 
 		if !v.isHelper {
-			i.penalize("Excessive total output", len(o.raw)/2048)
+			i.penalize("Excessive total output", uint64(len(o.raw))/2048)
 		}
 	} else {
 		i.Unlock()
@@ -217,13 +217,13 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		input:      i,
 		output:     newOutput(raw, i, v),
 		version:    v,
-		exitCode:   exitCode,
+		exitCode:   uint8(exitCode),
 		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
 		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
-		maxMemory:  usage.Maxrss,
+		maxMemory:  uint32(usage.Maxrss),
 	}
 
-	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
+	i.penalize("Total runtime", uint64(usage.Utime.Sec)+uint64(usage.Stime.Sec))
 
 	switch v.name {
 		case "vld":				if exitCode == 0 {  r.store(); }
@@ -315,7 +315,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 
 			buffer = buffer[:n]
 
-			if len(output) < limit {
+			if uint64(len(output)) < limit {
 				output = append(output, buffer...)
 				continue
 			}
@@ -326,12 +326,12 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 		}
 
 		// Make sure all output is exactly the same length
-		if len(output) > limit {
+		if uint64(len(output)) > limit {
 			output = output[:limit]
 		}
 
 		if !v.isHelper {
-			this.penalize("Excessive output", len(output)/10240)
+			this.penalize("Excessive output", uint64(len(output))/10240)
 		}
 
 		procOut <- string(output)
@@ -429,7 +429,7 @@ func checkPendingInputs() {
 		input.prepare()
 
 		for _, v := range versions {
-			if (version.Valid && int(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
+			if (version.Valid && uint64(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, l)
 			}
 
@@ -504,7 +504,7 @@ func batchScheduleNewVersions() {
 }
 
 func _batchScheduleNewVersions(target *Version) {
-	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
+	stats.Lock(); stats.c["batchVersion"] = uint64(target.order); stats.Unlock()
 
 	wg := newSizedWaitGroup(3)
 
@@ -650,11 +650,11 @@ var (
 	batch    string
 	inputSrc   struct {
 		sync.Mutex
-		srcUse map[string]int
+		srcUse map[string]uint8
 	}
 	stats    struct {
 		sync.RWMutex
-		c map[string]int
+		c map[string]uint64
 	}
 )
 
@@ -687,8 +687,8 @@ func init() {
 		panic("init - failed to ping db: "+ err.Error())
 	}
 
-	stats.c = make(map[string]int)
-	inputSrc.srcUse = make(map[string]int)
+	stats.c = make(map[string]uint64)
+	inputSrc.srcUse = make(map[string]uint8)
 
 	var limits = map[int]int{
 //		syscall.RLIMIT_CPU:    2,
@@ -758,7 +758,7 @@ LOOP:
 		case <-doPrintStats.C:
 			stats.Lock()
 			fmt.Printf("Stats %v\n", stats.c)
-			stats.c = make(map[string]int)
+			stats.c = make(map[string]uint64)
 			stats.Unlock()
 
 		case <-l.Notify:

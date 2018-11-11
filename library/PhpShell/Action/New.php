@@ -105,12 +105,16 @@ class PhpShell_Action_New extends PhpShell_Action
 			if ($input->state == 'busy')
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
 
-			if (!$input->runArchived && Basic::$userinput['archived'])
-				$input->save(['runArchived' => 1]);
+			$input->runArchived = (bool)Basic::$userinput['archived'];
 
-			// Allow upgrading quick>full | quick never has title so store that too
-			if (isset($input->runQuick))
-				$input->save(['runQuick' => null, 'title' => $title]);
+			// Allow a title to be added when upgrading quick>full
+			if (isset($input->runQuick, $title))
+				$input->title = $title;
+
+			if ($input->runQuick != $version)
+				$input->runQuick = null;
+
+			$input->save();
 
 			// Prevent partially running a full script (because of duplicate result)
 			if (!isset($version) || 0 == count($input->getResult($version)))

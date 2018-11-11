@@ -683,6 +683,8 @@ var evalOrg = {};
 
 	this.handleSearch = function()
 	{
+		$('#query').focus();
+
 		$('#searchForm').addEventListener('submit', function(e){
 			e.preventDefault();
 
