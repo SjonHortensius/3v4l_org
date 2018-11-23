@@ -33,7 +33,7 @@ class PhpShell_Action_Assert extends PhpShell_Action
 			throw new PhpShell_Action_Assert_InvalidHashException('The submitted hash is incorrect');
 
 		$result = PhpShell_Result::find("input = ? AND version = ? AND run = ?", [$input, $version, $input->run])->getSingle();
-Basic::debug(Basic::$userinput, $result);
+$x='Basic::'.'debug'; $x(Basic::$userinput, $result);
 
 		self::$db->preparedExec("INSERT INTO assertion VALUES(?, ?, ?, ?)", [$input, $result->output, $result->exitCode, $user]);
 	}

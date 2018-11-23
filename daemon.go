@@ -726,7 +726,6 @@ func main() {
 		fmt.Printf("daemon ready\n")
 	}
 
-	doRefreshVersions := time.NewTicker( 5 * time.Minute)
 	doPrintStats      := time.NewTicker( 1 * time.Hour)
 	doCheckPending    := time.NewTicker(45 * time.Minute)
 	doShutdown        := make(chan os.Signal, 1)
@@ -752,17 +751,17 @@ LOOP:
 		case <-doCheckPending.C:
 			go checkPendingInputs()
 
-		case <-doRefreshVersions.C:
-			go refreshVersions()
-
 		case <-doPrintStats.C:
 			stats.Lock()
 			fmt.Printf("Stats %v\n", stats.c)
 			stats.c = make(map[string]int)
 			stats.Unlock()
 
-		case <-l.Notify:
-			go doWork()
+		case n := <-l.Notify:
+			switch n.Extra {
+				case "version": go refreshVersions()
+				case "queue":   go doWork()
+			}
 
 		case <-doShutdown:
 			l.Close()

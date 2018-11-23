@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.0
--- Dumped by pg_dump version 11.0
+-- Dumped from database version 11.1
+-- Dumped by pg_dump version 11.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -15,20 +15,6 @@ SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
-
---
--- Name: pg_repack; Type: EXTENSION; Schema: -; Owner:
---
-
-CREATE EXTENSION IF NOT EXISTS pg_repack WITH SCHEMA public;
-
-
---
--- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner:
---
-
-COMMENT ON EXTENSION pg_repack IS 'Reorganize tables in PostgreSQL databases with minimal locks';
-
 
 --
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner:
@@ -45,32 +31,14 @@ COMMENT ON EXTENSION pg_stat_statements IS 'track execution statistics of all SQ
 
 
 --
--- Name: input_runarchived_clean(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.input_runarchived_clean() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$BEGIN
-    IF OLD."runArchived" = true AND NEW."runArchived" = false THEN
-        DELETE FROM result WHERE input=NEW.id AND version IN (SELECT id from version WHERE eol < OLD.created);
-    END IF;
-
-    RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.input_runarchived_clean() OWNER TO postgres;
-
---
 -- Name: notify_daemon(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
 CREATE FUNCTION public.notify_daemon() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
-  PERFORM pg_notify('daemon', '');
-  RETURN NEW;
+PERFORM pg_notify('daemon', TG_ARGV[0]);
+RETURN NEW;
 END;
 $$;
 
@@ -419,7 +387,7 @@ ALTER TABLE public.result_php5x OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php70 PARTITION OF public.result
-FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370');
+FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396');
 
 
 ALTER TABLE public.result_php70 OWNER TO postgres;
@@ -429,7 +397,7 @@ ALTER TABLE public.result_php70 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php71 PARTITION OF public.result
-FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '346', '345', '349', '351', '355', '362', '369', '363', '374', '378', '391');
+FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '346', '345', '349', '351', '355', '362', '369', '363', '374', '378', '391', '398');
 
 
 ALTER TABLE public.result_php71 OWNER TO postgres;
@@ -439,7 +407,7 @@ ALTER TABLE public.result_php71 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php72 PARTITION OF public.result
-FOR VALUES IN ('342', '343', '347', '348', '350', '356', '353', '360', '364', '373', '377', '392');
+FOR VALUES IN ('342', '343', '347', '348', '350', '356', '353', '360', '364', '373', '377', '392', '395');
 
 
 ALTER TABLE public.result_php72 OWNER TO postgres;
@@ -449,7 +417,7 @@ ALTER TABLE public.result_php72 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php73pre PARTITION OF public.result
-FOR VALUES IN ('357', '365', '366', '367', '368', '375', '376', '379', '388', '393');
+FOR VALUES IN ('357', '365', '366', '367', '368', '375', '376', '379', '388', '393', '394', '397');
 
 
 ALTER TABLE public.result_php73pre OWNER TO postgres;
@@ -1066,7 +1034,7 @@ ALTER TABLE ONLY public.result_php72
 --
 
 ALTER TABLE ONLY public.submit
-    ADD CONSTRAINT submit_pkey PRIMARY KEY (input, ip);
+    ADD CONSTRAINT submit_pkey PRIMARY KEY (ip, input);
 
 
 --
@@ -1256,10 +1224,19 @@ CREATE INDEX "result_php72_exitCode_idx" ON public.result_php72 USING brin ("exi
 
 
 --
--- Name: submitPenalty; Type: INDEX; Schema: public; Owner: postgres
+-- Name: submitLast; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitPenalty" ON public.submit USING btree (ip, input);
+CREATE INDEX "submitLast" ON public.submit USING btree (input);
+
+ALTER TABLE public.submit CLUSTER ON "submitLast";
+
+
+--
+-- Name: submitPenaltyRange; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "submitPenaltyRange" ON public.submit USING brin (created);
 
 
 --
@@ -1431,17 +1408,17 @@ ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php72_inp
 
 
 --
--- Name: input input_runarchived_trigger; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER input_runarchived_trigger AFTER UPDATE OF "runArchived" ON public.input FOR EACH ROW EXECUTE PROCEDURE public.input_runarchived_clean();
-
-
---
 -- Name: queue queue_insert_notify; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER queue_insert_notify AFTER INSERT ON public.queue FOR EACH STATEMENT EXECUTE PROCEDURE public.notify_daemon();
+CREATE TRIGGER queue_insert_notify AFTER INSERT ON public.queue FOR EACH ROW EXECUTE PROCEDURE public.notify_daemon('queue');
+
+
+--
+-- Name: version version_update_notify; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER version_update_notify AFTER INSERT OR DELETE OR UPDATE ON public.version FOR EACH STATEMENT EXECUTE PROCEDURE public.notify_daemon('version');
 
 
 --
