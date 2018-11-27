@@ -540,13 +540,13 @@ func _batchScheduleNewVersions(target *Version) {
 				}
 			}
 
+			wg.Add()
 			go func(i *Input, v *Version) {
-				wg.Add()
-				defer wg.Done()
-
 				i.prepare()
 				i.execute(v, &ResourceLimit{0, 2500, 32768})
 				i.complete()
+
+				wg.Done()
 			}(&input, target)
 		}
 
@@ -592,12 +592,12 @@ func batchRefreshRandomScripts() {
 					continue
 				}
 
-				go func(i *Input, v *Version) {
-					wg.Add()
-					defer wg.Done()
+				wg.Add()
 
-					i.execute(v, &ResourceLimit{0, 2500, 32768})
-				}(&input, v)
+				go func(v Version) {
+					input.execute(&v, &ResourceLimit{0, 2500, 32768})
+					wg.Done()
+				}(*v)
 			}
 
 			wg.Wait()
