@@ -1,6 +1,6 @@
-            NodeList.prototype.forEach == NodeList.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
-HTMLCollection.prototype.forEach == HTMLCollection.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
-    DOMTokenList.prototype.forEach == DOMTokenList.prototype.forEach || function (cb){ Array.prototype.forEach.call(this, cb); };
+            NodeList.prototype.forEach == NodeList.prototype.forEach || Array.prototype.forEach;
+HTMLCollection.prototype.forEach == HTMLCollection.prototype.forEach || Array.prototype.forEach;
+    DOMTokenList.prototype.forEach == DOMTokenList.prototype.forEach || Array.prototype.forEach;
 
 HTMLSelectElement.prototype.getSelected = function(){
 	var s = [];
@@ -42,6 +42,9 @@ var evalOrg = {};
 			el.setAttribute('rel', 'noopener');
 		});
 
+		if ($('h2.exception'))
+			document.body.classList = 'error';
+
 		document.body.classList.forEach(function(c){
 			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
 				setTimeout(this[ 'handle'+c.ucFirst() ].bind(this), 0);
@@ -66,6 +69,10 @@ var evalOrg = {};
 
 	this.postError = function(msg, url, line)
 	{
+		// https://www.ravikiranj.net/posts/2014/code/how-fix-cryptic-script-error-javascript/
+		if (msg == 'Script error.')
+			return;
+
 		var xhr = new XMLHttpRequest();
 		xhr.open('post', '/javascript-error/'+ encodeURIComponent(msg));
 		xhr.setRequestHeader('Referer', url);
