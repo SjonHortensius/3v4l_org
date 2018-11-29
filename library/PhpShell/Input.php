@@ -161,14 +161,18 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
+	public function hasRfcOutput(): bool
+	{
+		# prevent pg from querying all result tables
+		return count($this->getRfcOutput()->getSubset("version < 32")) > 0;
+	}
+
 	public function getRfcOutput(): Basic_EntitySet
 	{
-		$results = $this->getRelated(PhpShell_Result::class)
+		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("version.name LIKE 'rfc%'")
-			->includeOutput()->includeVersion()
+			->includeVersion()
 			->setOrder(['version.released' => false]);
-
-		return $results;
 	}
 
 	public function getOutput(): array

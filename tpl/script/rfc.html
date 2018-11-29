@@ -1,7 +1,7 @@
 <p>Shows result from various feature-branches currently under review from the php developers. Contact me to have additional branches featured.</p>
 
 <dl>
-{foreach ($this->input->getRfcOutput() as $this->result)}
+{foreach ($this->input->getRfcOutput()->includeOutput() as $this->result)}
 	{$this->rfc = substr($this->result->version->name, 4);}
 	<dt id="{result->version->name}">
 		Output for <a href="https://wiki.php.net/rfc/{rfc}">{print ucfirst(str_replace(['-', '_'], ' ', $this->rfc));}</a>

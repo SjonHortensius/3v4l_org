@@ -90,14 +90,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ($this->input->state == 'new')
 			$this->input->trigger();
 
-		if (!isset($this->input->runQuick) && (!isset($this->input->operationCount) || Basic::$config->PRODUCTION_MODE && mt_rand(0,9)<1))
+		if (!isset($this->input->runQuick) && Basic::$config->PRODUCTION_MODE && mt_rand(0,9)<1)
 			$this->input->updateFunctionCalls();
 
 		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
-		$this->showTab['vld'] = (isset($this->input->operationCount) && $this->input->operationCount > 0);
-		$this->showTab['segfault'] = (count($this->input->getSegfault()) > 0);
-		$this->showTab['refs'] = (count($this->input->getRefs()) > 0);
-		$this->showTab['rfc'] = (count($this->input->getRfcOutput()) > 0);
+		$this->showTab['vld'] =		isset($this->input->operationCount) && $this->input->operationCount > 0;
+		$this->showTab['segfault'] =count($this->input->getSegfault()) > 0;
+		$this->showTab['refs'] =	isset($this->input->operationCount) && count($this->input->getRefs()) > 0;
+		$this->showTab['rfc'] =		$this->input->hasRfcOutput();
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);
