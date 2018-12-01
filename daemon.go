@@ -121,7 +121,7 @@ func (this *Input) prepare() {
 
 	// Perform date fixation
 	if this.lastSubmit.IsZero() {
-		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit); err != nil {
+		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
 			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
 		}
 	}
@@ -226,8 +226,8 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
 	switch v.name {
-		case "vld":				if exitCode == 0 {  r.store(); }
-		case "segfault":		if exitCode == 139{ r.store(); }
+		case "vld":				if exitCode == 0 {  r.store(); } else { r.delete(); }
+		case "segfault":		if exitCode == 139{ r.store(); } else { r.delete(); }
 
 		default:
 			r.store()
@@ -251,7 +251,13 @@ func (this *Result) store() {
 	)
 
 	if err != nil {
-		fmt.Printf("Result: failed to store result: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+		fmt.Printf("Result: failed to store: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+	}
+}
+
+func (this *Result) delete() {
+	if _, err := db.Exec(`DELETE FROM result WHERE input=$1 AND version=$2`, this.input.id, this.version.id); err != nil {
+		fmt.Printf("Result: failed to delete: input=%s,version=%s: %s\n", this.input.short, this.version.name, err)
 	}
 }
 
