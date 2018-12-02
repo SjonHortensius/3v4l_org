@@ -302,13 +302,6 @@ class PhpShell_Input extends PhpShell_Entity
 			->getSubset("version = ?", [$version]);
 	}
 
-	public function getSegfault(): Basic_EntitySet
-	{
-		$version = PhpShell_Version::byName('segfault');
-
-		return $this->getResult($version)->getSubset('"exitCode" = 139');
-	}
-
 	public function getVld(): Basic_EntitySet
 	{
 		return $this->getResult(PhpShell_Version::byName('vld'));

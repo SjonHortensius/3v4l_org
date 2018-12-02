@@ -1,8 +1,0 @@
-{$r = $this->input->getSegfault();}
-
-{$output = $r->getSingle()->output->getRaw($this->input, 'segfault');}
-{$banner = '*** Segmentation fault';}
-{$offset = strpos($output, $banner) + strlen($banner);}
-{$this->output = substr($output, $offset);}
-
-<pre>{output}</pre>

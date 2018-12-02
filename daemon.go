@@ -227,7 +227,6 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 
 	switch v.name {
 		case "vld":				if exitCode == 0 {  r.store(); } else { r.delete(); }
-		case "segfault":		if exitCode == 139{ r.store(); } else { r.delete(); }
 
 		default:
 			r.store()
