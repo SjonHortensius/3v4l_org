@@ -1,3 +1,6 @@
 [submodule "htdocs/ext/vanilla-js-tools"]
 	path = htdocs/ext/vanilla-js-tools
 	url = git@github.com:SjonHortensius/vanilla-js-tools
+[submodule "vendor/github.com/lib/pq"]
+	path = vendor/github.com/lib/pq
+	url = https://github.com/lib/pq
