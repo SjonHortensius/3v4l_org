@@ -5,7 +5,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	public $userinputConfig = [
 		'type' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
-			'values' => ['full'],
+			'values' => ['full', 'quick'],
 		],
 	];
 

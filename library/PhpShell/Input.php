@@ -249,6 +249,9 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function logHit(): void
 	{
+		if ($this->short == 'kuLmD')
+			return;
+
 		$hits = Basic::$cache->increment('Hits:'. $this->short .':'. (date('w')), 1, 1, 3*24*60*60) +
 				Basic::$cache->get('Hits:'. $this->short .':'.((date('w')+5)%6), function(){ return 0; });
 
