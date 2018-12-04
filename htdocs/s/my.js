@@ -798,6 +798,22 @@ var evalOrg = {};
 	this.handleLive = function()
 	{
 		loadScript('/live/term.js', _launchVm);
+
+		if (document.body.classList.contains('mobile'))
+		{
+			var b = document.createElement('button');
+			b.appendChild(document.createTextNode('show keyboard'));
+			b.addEventListener('click', function (){
+				var i = document.createElement('input');
+				$('#term_wrap').insertBefore(i, $('#term_wrap').firstChild);
+
+				i.style.display = 'inline';
+				i.focus(); // focus on it so keyboard pops up
+				i.style.display = 'none';
+			});
+
+			$('#term_wrap').insertBefore(b, $('#term_wrap').firstChild);
+		}
 	};
 
 	// this function is based on jslinux.js - Copyright (c) 2011-2017 Fabrice Bellard
