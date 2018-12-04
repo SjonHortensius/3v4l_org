@@ -78,5 +78,7 @@ RootID: $ROOT_ID
 EOT
 
 while read p; do
-	cp -vp $p files/00000000$(md5sum $p | cut -c1-8)
+	f=files/00000000$(md5sum $p | cut -c1-8)
+	cp -vp $p $f
+	cat $f|gzip -9>$f.gz
 done < <(find $ROOT/ -mindepth 1 -type f)
