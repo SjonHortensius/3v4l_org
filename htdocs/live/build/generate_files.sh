@@ -9,10 +9,12 @@ ROOT=$1/output/target
 ROOT_ID=1
 ROOT_TOC=files/$(printf '%016d' $ROOT_ID)
 
+chmod 1777 $ROOT/tmp
+rm -vf $ROOT/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
 
 rm -f ./files/*
 
-cp -v ${0%%/*}/php.ini $ROOT/etc/php.ini
+cp -v ${0%/*}/php.ini $ROOT/etc/php.ini
 
 # echo -e "bin/init lib/ld-2.28.so lib/libc-2.28.so usr/bin/php lib/libcrypt-2.28.so /lib/libdl-2.28.so lib/libstdc++.so.6.0.24 lib/libreadline.so.7.0\n\netc/hosts" >$ROOT/.preload
 
@@ -43,7 +45,7 @@ do
 	[[ $e == 0401777* ]] && e=${e/0401777/041777}
 
 	# instead of inodes - use content hash | BASHISMS FTW
-	[[ $e == 10* ]] && e=${e/$'\t'HASH*/$(md5sum ${e#*$'\t'} | cut -c1-8)}
+	[[ $e == 10* ]] && e=${e/$'\t'HASH*/ $(md5sum ${e##*$'\t'} | cut -c1-8)}
 
 	echo $e
 
@@ -53,7 +55,7 @@ do
 	 p=$d
 	pe=$e
 # we fakeroot by replacing '%U %G' with '0 0'
-done < <(find target/ -mindepth 1 -printf '%d\t' \
+done < <(find $ROOT/ -mindepth 1 -printf '%d\t' \
 		-type d -printf '04%#m 0 0 %C@ %f\n' -o \
 		-type f -printf '10%#m 0 0 %s %C@ %f\tHASH\t%p\n' -o \
 		-type l -printf '12%#m 0 0 %C@ %f %l\n' -o \
@@ -63,9 +65,9 @@ done < <(find target/ -mindepth 1 -printf '%d\t' \
 FILE_COUNT=$(grep -E ^1 $ROOT_TOC|wc -l)
 FILE_SIZE=$(du -sb $ROOT|cut -f1)
 
-cat >head <<<EOT
+cat >head <<EOT
 Version: 1
-Revision: 14
+Revision: 1
 NextFileID: 2ca8
 FSFileCount: $FILE_COUNT
 FSSize: $FILE_SIZE
@@ -76,5 +78,5 @@ RootID: $ROOT_ID
 EOT
 
 while read p; do
-	cp -vp $p files/$(md5sum $p | cut -c1-8)
-done < <(find target/ -mindepth 1 -type f)
+	cp -vp $p files/00000000$(md5sum $p | cut -c1-8)
+done < <(find $ROOT/ -mindepth 1 -type f)

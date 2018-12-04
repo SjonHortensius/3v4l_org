@@ -5,5 +5,5 @@ cache/*
 htdocs/s/c.*
 build/*/
 .idea/
-htdocs/live/target/*
 htdocs/live/files/*
+htdocs/live/head

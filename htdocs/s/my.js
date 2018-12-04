@@ -67,6 +67,21 @@ var evalOrg = {};
 		});
 	};
 
+	var loadScript = function(url, f)
+	{
+		var s = document.createElement('script');
+			s.setAttribute('src', url);
+
+		s.onload = function(){
+			if ('function' == typeof f)
+				f();
+
+			document.head.removeChild(this)
+		}.bind(s);
+
+		document.head.appendChild(s);
+	};
+
 	this.postError = function(msg, url, line)
 	{
 		// https://www.ravikiranj.net/posts/2014/code/how-fix-cryptic-script-error-javascript/
@@ -700,7 +715,7 @@ var evalOrg = {};
 		});
 
 		if ($('div#tagCloud'))
-			this.showTagcloud();
+			loadScript('/ext/d3.layout.cloud.js', this.showTagcloud);
 		else
 			this.localTime(function(el, d){
 				function pad(n){ return ('0'+n).slice(-2); }
@@ -778,6 +793,72 @@ var evalOrg = {};
 	this.handleVersions = function()
 	{
 		tableSorter.initialize();
+	};
+
+	this.handleLive = function()
+	{
+		loadScript('/live/term.js', _launchVm);
+	};
+
+	// this function is based on jslinux.js - Copyright (c) 2011-2017 Fabrice Bellard
+	var _launchVm = function()
+	{
+		/* Module is used by x86emu - update_downloading is a calback */
+		window.Module = {};
+		window.update_downloading = function(flag)
+		{
+			var tabClass = document.getElementById('tabs').classList;
+			var downloading_timer;
+
+			if (flag) {
+				if (tabClass.contains('busy')) {
+					clearTimeout(downloading_timer);
+				} else {
+					tabClass.add('busy');
+				}
+			} else {
+				downloading_timer = setTimeout(function(){ tabClass.remove('busy'); }, 500);
+			}
+		};
+
+		var url = $('#term_wrap').dataset.cfg;
+		var mem_size = 128; /* in mb */
+
+		/* start the terminal */
+		window.term = new Term(115, 30, function(str){
+			for (var i = 0; i < str.length; i++) {
+				console_write1(str.charCodeAt(i));
+			}
+		}, 10000);
+		term.open(document.getElementById('term_container'), document.getElementById('term_paste'));
+		term.write('connecting...\r');
+
+		Module.preRun = function()
+		{
+			/* C functions called from javascript */
+			window.console_write1 = Module.cwrap('console_queue_char', null, ['number']);
+			window.fs_import_file = Module.cwrap('fs_import_file', null, ['string', 'number', 'number']);
+			window.display_key_event = Module.cwrap('display_key_event', null, ['number', 'number']);
+			window.display_mouse_event = Module.cwrap('display_mouse_event', null, ['number', 'number', 'number']);
+			window.display_wheel_event = Module.cwrap('display_wheel_event', null, ['number']);
+			window.net_write_packet = Module.cwrap('net_write_packet', null, ['number', 'number']);
+			window.net_set_carrier = Module.cwrap('net_set_carrier', null, ['number']);
+
+			Module.ccall('vm_start', null, ['string', 'number', 'string', 'string', 'number', 'number', 'number', 'string'], [url, mem_size, '', '', 0, 0, 0, '']);
+		};
+
+		if (typeof WebAssembly !== 'object')
+		{
+			/* set the total memory */
+			var alloc_size = mem_size;
+			alloc_size += 16;
+			alloc_size += 32; /* extra space (XXX: reduce it ?) */
+			alloc_size = (alloc_size + 15) & -16; /* align to 16 MB */
+			Module.TOTAL_MEMORY = alloc_size << 20;
+
+			loadScript('/live/x86emu.js');
+		} else
+			loadScript('/live/x86emu-wasm.js');
 	};
 
 	this.handleSponsor = function()
