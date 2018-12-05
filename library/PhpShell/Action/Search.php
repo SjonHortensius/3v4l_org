@@ -41,20 +41,9 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 		$this->entries = PhpShell_Input::find()
 			->getSubset("input.state = 'done'")
 			->includePerformance()
-			->setOrder(['input.id' => false]);
-
-/*		if (preg_match('^[^a-z0-9_]+$', Basic::$userinput['query']))
-		{
-			$this->entries = $this->entries
-				->addJoin(PhpShell_Functioncalls::class, "functioncall.input = input.id")
-				->getSubset("function = ?", [Basic::$userinput['query']]);
-		}
-		else
-		{
-*/			$this->entries = $this->entries
-				->addJoin(PhpShell_InputSource::class, "input_src.input = input.id")
-				->getSubset("raw LIKE ?", ['%'. str_replace('\\', '\\\\', Basic::$userinput['query']). '%']);
-#		}
+			->setOrder(['input.id' => false])
+			->addJoin(PhpShell_FunctionCall::class, "\"functionCall\".input = input.id")
+			->getSubset("function LIKE ?", [Basic::$userinput['query']]);
 
 		parent::run();
 	}

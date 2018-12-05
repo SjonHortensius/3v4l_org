@@ -7,6 +7,8 @@ class PhpShell_Action_Live extends PhpShell_Action {
 		# https://bugs.chromium.org/p/chromium/issues/detail?id=686369
 		$this->cspDirectives['script-src'] []= "'unsafe-eval'";
 
+		$this->httpPreloads['/live/x86emu-wasm.js'] = 'worker';
+
 		parent::init();
 	}
 }

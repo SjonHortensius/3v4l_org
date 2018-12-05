@@ -122,7 +122,7 @@ func (this *Input) prepare() {
 	// Perform date fixation
 	if this.lastSubmit.IsZero() {
 		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
-			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
+//			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
 		}
 	}
 }

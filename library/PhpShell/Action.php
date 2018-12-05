@@ -28,10 +28,15 @@ class PhpShell_Action extends Basic_Action
 			"'unsafe-inline'", # for ace-editor & tagcloud
 		]
 	];
+	public $httpPreloads = [
+		'/ext/uvTab.png' => 'image',
+	];
 
 	public function init(): void
 	{
 		Basic::$cache = new PhpShell_ColdCacheStampede;
+
+		Basic::$database->exec("SET statement_timeout TO 2500;");
 
 		// For now; don't autoStart sessions
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
@@ -81,14 +86,13 @@ class PhpShell_Action extends Basic_Action
 		{
 			$preloads = Basic::$cache->get(__CLASS__.'::staticPreloads', function(){
 				return [
-					'/ext/uvTab.png' => 'image',
 					// match hashes put in tpls by update-online
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
 					// dynamically fetch correct version
-					explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1] => 'script',
+					explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1] => 'worker',
 				];
-			}, 3600);
+			}, 3600) + $this->httpPreloads;
 
 			foreach ($preloads as $link => $type)
 				header('Link: <'. $link .'>; rel=preload; as='. $type, false);
