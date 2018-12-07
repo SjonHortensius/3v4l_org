@@ -890,8 +890,8 @@ body.live kbd + p
 @media (max-width: 800px)
 {
 	/* keep menu on single line, remove bughunt & search; prevent LI from taking up space */
-	nav li:nth-of-type(2),
-	nav li:nth-of-type(3){	display: none; }
+	nav li:nth-of-type(3),
+	nav li:nth-of-type(4){	display: none; }
 }
 
 @media (max-width: 1000px)
