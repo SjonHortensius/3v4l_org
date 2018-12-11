@@ -100,7 +100,8 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);
 
-		$this->input->logHit();
+		if ('done' == $this->input->state)
+			$this->input->logHit();
 
 		parent::run();
 	}

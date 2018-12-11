@@ -30,14 +30,15 @@
 		<p>I have been adding features ever since I started. Here is a list with some major changes I made over the years:</p>
 
 		<ul>
-			<li><b>Oct 2018</b> - When resubmitting existing scripts, previous results will immediately be shown and updated in the background. I also moved all results to PostgreSQL partitioned tables</li>
-			<li><b>Aug 2018</b> - After moving the search from indexed operations (based on VLD) to SQL LIKE on raw script source, the entire dataset of indexed VLD opcodes was dropped</li>
-			<li><b>Apr 2018</b> - Instead of Archlinux, all binaries are now compiled on debian - because it's slower with updates meaning less dependency updates</li>
-			<li><b>May 2016</b> - Existing scripts now maintain they original date/time (eg. <i>date('Y');</i> always outputs <b>2014</b>). This results in better <a href="/bughunt">/bughunt</a> output</li>
-			<li><b>Mar 2016</b> - All binaries were recompiled so I could add the <i>intl</i>, <i>bcmath</i>, <i>gmp</i>, <i>iconv</i>, <i>mcrypt</i> and <i>opcache</i> extensions</li>
-			<li><b>Sep 2015</b> - Scripts no longer run in all versions by default, plus we also had a minor redesign for our first-ever logo</li>
-			<li><b>Apr 2015</b> - New layout, added top-menu which allowed me to introduce links to /last and /search</li>
-			<li><b>Nov 2014</b> - Unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE</li>
+			<li><b>Dec 2018</b> - introduced a live <abbr title="Read-Eval-Print Loop">repl</abbr> to quickly run oneliners</li>
+			<li><b>Oct 2018</b> - when resubmitting existing scripts, previous results will immediately be shown and updated in the background. I also moved all results to PostgreSQL partitioned tables</li>
+			<li><b>Aug 2018</b> - after moving the search from indexed operations (based on VLD) to SQL LIKE on raw script source, the entire dataset of indexed VLD opcodes was dropped</li>
+			<li><b>Apr 2018</b> - instead of Archlinux, all binaries are now compiled on debian - because it's slower with updates meaning less dependency updates</li>
+			<li><b>May 2016</b> - existing scripts now maintain they original date/time (eg. <i>date('Y');</i> always outputs <b>2014</b>). This results in better <a href="/bughunt">/bughunt</a> output</li>
+			<li><b>Mar 2016</b> - all binaries were recompiled so I could add the <i>intl</i>, <i>bcmath</i>, <i>gmp</i>, <i>iconv</i>, <i>mcrypt</i> and <i>opcache</i> extensions</li>
+			<li><b>Sep 2015</b> - scripts no longer run in all versions by default, plus we also had a minor redesign for our first-ever logo</li>
+			<li><b>Apr 2015</b> - new layout, added top-menu which allowed me to introduce links to /last and /search</li>
+			<li><b>Nov 2014</b> - unfortunately LRTEditor had a nasty bug I couldn't easily fix, so I switched to Cloud9's ACE</li>
 			<li><b>May 2014</b> - added HHVM. This was actually a huge change, the chroot went from ~ 250 MiB to ~ 1.5 GiB due to the number of dependencies. It fortunately turned out to be a popular feature</li>
 			<li><b>Aug 2013</b> - replaced CodeMirror with my own <a href="http://sjonhortensius.github.io/LRTEditor/">LRTEditor</a></li>
 			<li><b>Jul 2013</b> - moved backend from c+sqlite to go+postgresql</li>
@@ -56,6 +57,7 @@
 
 		<h2>Links</h2>
 		<ul>
+			<li>3v4l on <a href="https://github.com/search?q=%223v4l.org%22&type=Code">GitHub</a> &amp; <a href="https://bugs.php.net/search.php?search_for=3v4l.org&order_by=ts1&cmd=display">bugs.php.net</a></li>
 			<li>Donate <a href="bitcoin://1Hk7gntGcQQp6FUoqLdCqKDwoMmi62o7NQ?amount=0.1&amp;label=3v4l.org%20support">bitcoins</a> or use <a href="https://www.paypal.me/3v4l">Paypal</a> for financial support.</li>
 			<li><a href="https://twitter.com/3v4l_org">Twitter</a> for announcements.</li>
 			<li><a href="http://3v4l.uservoice.com/forums/219058-general">Uservoice</a> for bugs &amp; features.</li>
