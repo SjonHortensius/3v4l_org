@@ -33,7 +33,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init(): void
 	{
-		$versions = iterator_to_array(PhpShell_Version::find('("isHelper" = false OR name LIKE \'rfc-%\') AND eol>now() and now()-released < \'1 year\'', [])
+		$versions = iterator_to_array(PhpShell_Version::find("id IN (SELECT id FROM version WHERE name LIKE '7.2.%' OR name LIKE '7.3.%')", [])
 			->setOrder(['version.order' => false])
 			->getSimpleList('name', 'name'));
 

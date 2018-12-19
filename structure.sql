@@ -257,46 +257,78 @@ PARTITION BY LIST (version);
 ALTER TABLE public.result OWNER TO postgres;
 
 --
--- Name: version; Type: TABLE; Schema: public; Owner: postgres
+-- Name: result_php72; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.version (
-    name character varying(24) NOT NULL,
-    released date DEFAULT now(),
-    "order" integer,
-    command character varying(128) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
-    "isHelper" boolean DEFAULT false NOT NULL,
-    id smallint NOT NULL,
-    eol date
-);
+CREATE TABLE public.result_php72 PARTITION OF public.result
+FOR VALUES IN ('342', '343', '347', '348', '350', '356', '353', '360', '364', '373', '377', '392', '395', '402');
 
 
-ALTER TABLE public.version OWNER TO postgres;
+ALTER TABLE public.result_php72 OWNER TO postgres;
+
+--
+-- Name: result_php73; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php73 PARTITION OF public.result
+FOR VALUES IN ('403');
+
+
+ALTER TABLE public.result_php73 OWNER TO postgres;
+
+--
+-- Name: results_supported; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.results_supported AS
+ SELECT result_php72.input,
+    result_php72.version,
+    result_php72.output,
+    result_php72."exitCode",
+    result_php72."userTime",
+    result_php72."systemTime",
+    result_php72."maxMemory",
+    result_php72.runs,
+    result_php72.mutations
+   FROM public.result_php72
+UNION ALL
+ SELECT result_php73.input,
+    result_php73.version,
+    result_php73.output,
+    result_php73."exitCode",
+    result_php73."userTime",
+    result_php73."systemTime",
+    result_php73."maxMemory",
+    result_php73.runs,
+    result_php73.mutations
+   FROM public.result_php73;
+
+
+ALTER TABLE public.results_supported OWNER TO postgres;
 
 --
 -- Name: result_bughunt; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
 --
 
 CREATE MATERIALIZED VIEW public.result_bughunt AS
- SELECT r.input,
-    r.version,
-    r.output,
-    r."exitCode",
-    r."userTime",
-    r."systemTime",
-    r."maxMemory",
-    r.runs,
-    r.mutations
-   FROM ((public.result r
-     JOIN public.input i ON ((i.id = r.input)))
-     JOIN public.version v ON ((v.id = r.version)))
-  WHERE ((NOT i."bughuntIgnore") AND (r.version >= 32) AND (v.eol > now()) AND ((now() - (v.released)::timestamp with time zone) < '1 year'::interval) AND (i.id IN ( SELECT x.input
-           FROM ( SELECT result.input,
-                    count(DISTINCT result.output) AS count
-                   FROM public.result
-                  WHERE (result.version >= 32)
-                  GROUP BY result.input) x
-          WHERE (x.count > 1))))
+ SELECT results_supported.input,
+    results_supported.version,
+    results_supported.output,
+    results_supported."exitCode",
+    results_supported."userTime",
+    results_supported."systemTime",
+    results_supported."maxMemory",
+    results_supported.runs,
+    results_supported.mutations
+   FROM public.results_supported
+  WHERE (results_supported.input IN ( SELECT x.input
+           FROM ( SELECT r1.input,
+                    count(DISTINCT r1.output) AS count
+                   FROM (public.results_supported r1
+                     JOIN public.input i1 ON ((i1.id = r1.input)))
+                  WHERE (NOT i1."bughuntIgnore")
+                  GROUP BY r1.input) x
+          WHERE (x.count > 1)))
   WITH NO DATA;
 
 
@@ -387,7 +419,7 @@ ALTER TABLE public.result_php5x OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php70 PARTITION OF public.result
-FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396');
+FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396', '400');
 
 
 ALTER TABLE public.result_php70 OWNER TO postgres;
@@ -1115,7 +1147,7 @@ CREATE INDEX "inputAlias" ON public.input USING btree (alias);
 -- Name: input_bhignore; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX input_bhignore ON public.input USING btree ("bughuntIgnore");
+CREATE INDEX input_bhignore ON public.input USING btree (id) WHERE (NOT "bughuntIgnore");
 
 
 --
@@ -1236,21 +1268,16 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitPenaltyRange; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitPenaltyRange" ON public.submit USING brin (created);
+CREATE INDEX "submitLast" ON public.submit USING btree (input);
+
+ALTER TABLE public.submit CLUSTER ON "submitLast";
 
 
 --
--- Name: result_73pre_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner:
+-- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_73pre_exitCode_idx";
-
-
---
--- Name: result_73pre_input_version_key; Type: INDEX ATTACH; Schema: public; Owner:
---
-
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_73pre_input_version_key;
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2018-12-01 00:00:00'::timestamp without time zone);
 
 
 --
