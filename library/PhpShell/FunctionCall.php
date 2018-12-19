@@ -4,6 +4,7 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 {
 	protected static $_relations = [
 		'input' => PhpShell_Input::class,
+		'function' => PhpShell_Function::class,
 	];
 
 	// avoid lastInsertId call by overloading save
@@ -19,13 +20,10 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 
 		$data = [
 			'input' => $this->input->id,
-			'function' => $this->function,
+			'function' => $this->function->id,
 		];
 
-		$columns = implode(', ', array_map([Basic_Database::class, 'escapeColumn'], array_keys($data)));
-		$values = implode(', :', array_keys($data));
-
-		$query = Basic::$database->query("INSERT INTO ". Basic_Database::escapeTable(static::getTable()) ." (". $columns .") VALUES (:". $values .")", $data);
+		$query = Basic::$database->query("INSERT INTO \"functionCall\" (input, function) VALUES (:input, :function)", $data);
 
 		if (1 != $query->rowCount())
 			throw new Basic_Entity_StorageException('New `%s` could not be created', [get_class($this)]);
@@ -39,7 +37,7 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 		$this->removeCached();
 
 		$result = Basic::$database->query(
-			"DELETE FROM \"functionCall\" WHERE input = ? AND function = ?",
+			"DELETE FROM \"functionCall\" WHERE input = ? AND function = (SELECT id FROM function WHERE text = ?)",
 			[$this->input, $this->function]
 		);
 

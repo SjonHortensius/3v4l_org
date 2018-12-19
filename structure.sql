@@ -64,12 +64,38 @@ CREATE TABLE public.assertion (
 ALTER TABLE public.assertion OWNER TO postgres;
 
 --
+-- Name: function_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.function_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.function_id_seq OWNER TO postgres;
+
+--
+-- Name: function; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.function (
+    id integer DEFAULT nextval('public.function_id_seq'::regclass) NOT NULL,
+    text character varying(64) NOT NULL
+);
+
+
+ALTER TABLE public.function OWNER TO postgres;
+
+--
 -- Name: functionCall; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public."functionCall" (
     input integer NOT NULL,
-    function character varying(64) NOT NULL
+    function integer NOT NULL
 );
 
 
@@ -429,30 +455,10 @@ ALTER TABLE public.result_php70 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php71 PARTITION OF public.result
-FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '346', '345', '349', '351', '355', '362', '369', '363', '374', '378', '391', '398');
+FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '346', '345', '349', '351', '355', '362', '369', '363', '374', '378', '391', '398', '401');
 
 
 ALTER TABLE public.result_php71 OWNER TO postgres;
-
---
--- Name: result_php72; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_php72 PARTITION OF public.result
-FOR VALUES IN ('342', '343', '347', '348', '350', '356', '353', '360', '364', '373', '377', '392', '395');
-
-
-ALTER TABLE public.result_php72 OWNER TO postgres;
-
---
--- Name: result_php73pre; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_php73pre PARTITION OF public.result
-FOR VALUES IN ('357', '365', '366', '367', '368', '375', '376', '379', '388', '393', '394', '397');
-
-
-ALTER TABLE public.result_php73pre OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -585,6 +591,23 @@ ALTER TABLE public.user_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
+
+--
+-- Name: version; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.version (
+    name character varying(24) NOT NULL,
+    released date DEFAULT now(),
+    "order" integer,
+    command character varying(128) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
+    "isHelper" boolean DEFAULT false NOT NULL,
+    id smallint NOT NULL,
+    eol date
+);
+
+
+ALTER TABLE public.version OWNER TO postgres;
 
 --
 -- Name: version_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -853,24 +876,24 @@ ALTER TABLE ONLY public.result_php72 ALTER COLUMN mutations SET DEFAULT 0;
 
 
 --
--- Name: result_php73pre exitCode; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: result_php73 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result_php73pre ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php73pre runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73pre ALTER COLUMN runs SET DEFAULT 1;
+ALTER TABLE ONLY public.result_php73 ALTER COLUMN "exitCode" SET DEFAULT 0;
 
 
 --
--- Name: result_php73pre mutations; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: result_php73 runs; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result_php73pre ALTER COLUMN mutations SET DEFAULT 0;
+ALTER TABLE ONLY public.result_php73 ALTER COLUMN runs SET DEFAULT 1;
+
+
+--
+-- Name: result_php73 mutations; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php73 ALTER COLUMN mutations SET DEFAULT 0;
 
 
 --
@@ -893,6 +916,30 @@ ALTER TABLE ONLY public.version ALTER COLUMN id SET DEFAULT nextval('public.vers
 
 ALTER TABLE ONLY public.assertion
     ADD CONSTRAINT assertion_pkey PRIMARY KEY (input);
+
+
+--
+-- Name: functionCall functionCall_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."functionCall"
+    ADD CONSTRAINT "functionCall_pkey" PRIMARY KEY (input, function);
+
+
+--
+-- Name: function function_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.function
+    ADD CONSTRAINT function_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: function function_text; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.function
+    ADD CONSTRAINT function_text UNIQUE (text);
 
 
 --
@@ -963,14 +1010,6 @@ ALTER TABLE public."references" CLUSTER ON references_pkey;
 
 ALTER TABLE ONLY public.result
     ADD CONSTRAINT "resultInputVersion" UNIQUE (input, version);
-
-
---
--- Name: result_php73pre result_73pre_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73pre
-    ADD CONSTRAINT result_73pre_input_version_key UNIQUE (input, version);
 
 
 --
@@ -1059,6 +1098,14 @@ ALTER TABLE ONLY public.result_php71
 
 ALTER TABLE ONLY public.result_php72
     ADD CONSTRAINT result_php72_input_version_key UNIQUE (input, version);
+
+
+--
+-- Name: result_php73 result_php73_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php73
+    ADD CONSTRAINT result_php73_input_version_key UNIQUE (input, version);
 
 
 --
@@ -1172,13 +1219,6 @@ CREATE INDEX "resultExitCode" ON ONLY public.result USING brin ("exitCode");
 
 
 --
--- Name: result_73pre_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "result_73pre_exitCode_idx" ON public.result_php73pre USING brin ("exitCode");
-
-
---
 -- Name: result_helper_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1256,16 +1296,14 @@ CREATE INDEX "result_php72_exitCode_idx" ON public.result_php72 USING brin ("exi
 
 
 --
+-- Name: result_php73_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php73_exitCode_idx" ON public.result_php73 USING brin ("exitCode");
+
+
+--
 -- Name: submitLast; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "submitLast" ON public.submit USING btree (input);
-
-ALTER TABLE public.submit CLUSTER ON "submitLast";
-
-
---
--- Name: submitPenaltyRange; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "submitLast" ON public.submit USING btree (input);
@@ -1432,6 +1470,20 @@ ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php72_exitCo
 --
 
 ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php72_input_version_key;
+
+
+--
+-- Name: result_php73_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner:
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php73_exitCode_idx";
+
+
+--
+-- Name: result_php73_input_version_key; Type: INDEX ATTACH; Schema: public; Owner:
+--
+
+ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php73_input_version_key;
 
 
 --
@@ -1608,6 +1660,13 @@ GRANT SELECT,INSERT ON TABLE public.assertion TO website;
 
 
 --
+-- Name: TABLE function; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT ON TABLE public.function TO website;
+
+
+--
 -- Name: TABLE "functionCall"; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -1723,15 +1782,7 @@ GRANT ALL ON TABLE public."references" TO website;
 --
 
 GRANT SELECT ON TABLE public.result TO website;
-GRANT SELECT,INSERT,UPDATE ON TABLE public.result TO daemon;
-
-
---
--- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.version TO website;
-GRANT SELECT ON TABLE public.version TO daemon;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.result TO daemon;
 
 
 --
@@ -1782,6 +1833,14 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public."user" TO website;
 --
 
 GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
+
+
+--
+-- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public.version TO website;
+GRANT SELECT ON TABLE public.version TO daemon;
 
 
 --

@@ -27,7 +27,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 
 	public function includeFunctionCalls()
 	{
-		$this->_fields []= "(SELECT string_agg(function, ', ') FROM \"functionCall\" WHERE input = id LIMIT 10) \"functionCalls\"";
+		$this->_fields []= "(SELECT string_agg(text, ', ') FROM function WHERE id IN (SELECT function FROM \"functionCall\" WHERE input = input.id LIMIT 10)) \"functionCalls\"";
 
 		$this->includesFunctionCalls = true;
 		return $this;

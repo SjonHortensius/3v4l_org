@@ -108,7 +108,7 @@ class PhpShell_Input extends PhpShell_Entity
 			if ($match['op'] != 'INIT_FCALL' || !isset($match['operand']) || isset($calls[ $match['operand'] ]))
 				continue;
 
-			// Only store valid functionCalls, nothing from userspace
+			// Only store valid functionCalls, nothing from userspace FIXME - migrate to Function - update on UpdateReferences
 			if (PhpShell_Reference::find("function = ?", [$match['operand']])->count() < 1)
 				continue;
 
@@ -120,15 +120,26 @@ class PhpShell_Input extends PhpShell_Entity
 		// Delete or update db by going through all existing rows
 		foreach ($this->getRelated(PhpShell_FunctionCall::class) as $f)
 		{
-			if (!isset($calls[ $f->function ]))
+			if (!isset($calls[ $f->function->text ]))
 				$f->delete();
 
-			unset($calls[ $f->function ]);
+			unset($calls[ $f->function->text ]);
 		}
 
 		// Now create all missing entities
 		foreach ($calls as $function => $count)
-			PhpShell_FunctionCall::create(['input' => $this, 'function' => $function], false);
+		{
+			try
+			{
+				$f = PhpShell_Function::find("text = ?", [$function])->getSingle();
+			}
+			catch (Basic_EntitySet_NoSingleResultException $e)
+			{
+				$f = PhpShell_Function::create(['text' => $function]);
+			}
+
+			PhpShell_FunctionCall::create(['input' => $this, 'function' => $f], false);
+		}
 
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
 	}
@@ -291,7 +302,8 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getRefs(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_FunctionCall::class)
-			->addJoin(PhpShell_Reference::class, "r.function = \"functionCall\".function", "r");
+			->addJoin(PhpShell_Function::class, "f.id = \"functionCall\".function", "f")
+			->addJoin(PhpShell_Reference::class, "r.function = f.text", "r");
 	}
 
 	public function getLastModified(): string

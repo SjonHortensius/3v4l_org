@@ -38,12 +38,16 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 
 	public function run(): void
 	{
+		$q = Basic::$userinput['query'];
+		$q = (false === strpos($q, '%')) ? "%$q%" : $q;
+
 		$this->entries = PhpShell_Input::find()
 			->getSubset("input.state = 'done'")
 			->includePerformance()
 			->setOrder(['input.id' => false])
 			->addJoin(PhpShell_FunctionCall::class, "\"functionCall\".input = input.id")
-			->getSubset("function LIKE ?", [Basic::$userinput['query']]);
+			->addJoin(PhpShell_Function::class, "function.id = \"functionCall\".function")
+			->getSubset("function.text LIKE ?", [$q]);
 
 		parent::run();
 	}
