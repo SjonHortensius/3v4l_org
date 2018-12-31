@@ -682,7 +682,7 @@ func init() {
 	} else {
 		db, err = sql.Open("postgres", DSN)
 	}
-	db.SetMaxOpenConns(16)
+	db.SetMaxOpenConns(32)
 
 	if err != nil {
 		panic("init - failed to connect to db: "+ err.Error())

@@ -700,7 +700,7 @@ del
 	background-color: #ff4500;
 }
 
-header ul a[data-funded="under"]
+header ul a.highlight
 {
 	color: #f00;
 }
@@ -841,9 +841,14 @@ body.stats .bar text
 	color: black;
 }
 
-body.sponsor h2:first-of-type + ul li:not([data-expired="1"])
+body.sponsor h2:first-of-type + ul li.active
 {
 	background-color: #cbffba;
+}
+
+body.sponsor h2:nth-of-type(2) + ul li.expired
+{
+	opacity: 0.65;
 }
 
 body.sponsor ul

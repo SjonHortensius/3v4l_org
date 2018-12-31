@@ -13,5 +13,7 @@ abstract class PhpShell_Action_Cli extends PhpShell_Action
 			throw new Basic_CliAction_IncorrectUserException('Please run as http user');
 
 		parent::init();
+
+		Basic::$database->exec("RESET statement_timeout;");
 	}
 }

@@ -879,15 +879,13 @@ var evalOrg = {};
 
 	this.handleSponsor = function()
 	{
-/*
 		var offset = (new Date).setMonth((new Date).getMonth() - 12);
 
 		$$('ul li i').forEach(function (el){
 			var d = new Date(el.textContent).getTime();
-			if (d < offset)
-				el.parentNode.style.opacity = 1 - Number( (offset-d) / (400*365*24*3600)).toFixed(2);
+			el.parentNode.classList.add(d < offset ? 'expired' : 'active');
 		});
-*/	};
+	};
 
 	this.handleStats = function()
 	{
