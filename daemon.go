@@ -569,7 +569,6 @@ func batchRefreshRandomScripts() {
 			WHERE
 				state = 'done'
 				AND penalty < 50
-				AND NOW()-created>'1 year'
 				AND "runQuick" IS NULL
 				AND "operationCount">2
 			ORDER BY RANDOM()
@@ -586,14 +585,14 @@ func batchRefreshRandomScripts() {
 
 			input.prepare()
 
-			for _, v := range versions {
-				for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
-					if err != nil {
-						panic("Unable to check load: "+ err.Error())
-					}
+			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
+				if err != nil {
+					panic("Unable to check load: "+ err.Error())
 				}
+			}
 
-				if !input.runArchived && v.eol.Before(input.created) {
+			for _, v := range versions {
+				if (!input.runArchived && v.eol.Before(input.created)) || (len(v.name)>5 && v.name[0:4] == "hhvm") {
 					continue
 				}
 

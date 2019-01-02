@@ -12,7 +12,7 @@ class PhpShell_Action_Cli_ReferencesUpdateLxr extends PhpShell_Action_Cli
 		Basic::$database->query("DELETE FROM \"references\"");
 		$statement = Basic::$database->prepare("INSERT INTO \"references\" (function, link, name) VALUES (?, ?, ?)");
 
-		foreach (explode("\n", `grep -nrP '^(?:static )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
+		foreach (explode("\n", `grep -nrP '^(?:static|PHPAPI )?(PHP|ZEND)_FUNCTION\(' --include=*.c ext/ main/ Zend/`) as $line)
 		{
 			list($file, $line, $match, $trash) = explode(':', $line, 4);
 
