@@ -83,7 +83,9 @@ ALTER TABLE public.function_id_seq OWNER TO postgres;
 
 CREATE TABLE public.function (
     id integer DEFAULT nextval('public.function_id_seq'::regclass) NOT NULL,
-    text character varying(64) NOT NULL
+    text character varying(64) NOT NULL,
+    source character varying(64) NOT NULL,
+    popularity integer
 );
 
 
@@ -246,21 +248,6 @@ CREATE SEQUENCE public.references_id_seq
 
 
 ALTER TABLE public.references_id_seq OWNER TO postgres;
-
---
--- Name: references; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public."references" (
-    id integer DEFAULT nextval('public.references_id_seq'::regclass) NOT NULL,
-    function character varying(64) NOT NULL,
-    link character varying(128) NOT NULL,
-    name character varying(96) NOT NULL,
-    parent integer
-);
-
-
-ALTER TABLE public."references" OWNER TO postgres;
 
 --
 -- Name: result; Type: TABLE; Schema: public; Owner: postgres
@@ -925,6 +912,8 @@ ALTER TABLE ONLY public.assertion
 ALTER TABLE ONLY public."functionCall"
     ADD CONSTRAINT "functionCall_pkey" PRIMARY KEY (input, function);
 
+ALTER TABLE public."functionCall" CLUSTER ON "functionCall_pkey";
+
 
 --
 -- Name: function function_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -992,16 +981,6 @@ ALTER TABLE ONLY public.output
 
 ALTER TABLE ONLY public.output
     ADD CONSTRAINT output_pkey PRIMARY KEY (id);
-
-
---
--- Name: references references_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."references"
-    ADD CONSTRAINT references_pkey PRIMARY KEY (id);
-
-ALTER TABLE public."references" CLUSTER ON references_pkey;
 
 
 --
@@ -1177,10 +1156,10 @@ ALTER TABLE public.version CLUSTER ON version_pkey;
 
 
 --
--- Name: functionCall_input; Type: INDEX; Schema: public; Owner: postgres
+-- Name: functionCallSearch; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "functionCall_input" ON public."functionCall" USING btree (input);
+CREATE INDEX "functionCallSearch" ON public."functionCall" USING btree (function);
 
 
 --
@@ -1315,7 +1294,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2018-12-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2019-01-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1573,14 +1552,6 @@ ALTER TABLE ONLY public.queue
 
 
 --
--- Name: references references_parent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."references"
-    ADD CONSTRAINT references_parent_fkey FOREIGN KEY (parent) REFERENCES public."references"(id) ON UPDATE RESTRICT ON DELETE SET NULL;
-
-
---
 -- Name: result result_input_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1660,10 +1631,17 @@ GRANT SELECT,INSERT ON TABLE public.assertion TO website;
 
 
 --
+-- Name: SEQUENCE function_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,USAGE ON SEQUENCE public.function_id_seq TO website;
+
+
+--
 -- Name: TABLE function; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT,INSERT ON TABLE public.function TO website;
+GRANT SELECT,INSERT,UPDATE ON TABLE public.function TO website;
 
 
 --
@@ -1768,13 +1746,6 @@ GRANT SELECT,INSERT ON TABLE public.queue TO website;
 --
 
 GRANT SELECT,USAGE ON SEQUENCE public.references_id_seq TO website;
-
-
---
--- Name: TABLE "references"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public."references" TO website;
 
 
 --

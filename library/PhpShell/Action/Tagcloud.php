@@ -8,14 +8,8 @@ abstract class PhpShell_Action_Tagcloud extends PhpShell_Action
 
 	public function generate()
 	{
-		$popularFunctions = Basic::$cache->get(__METHOD__, function(){
-			return array_slice(iterator_to_array(
-				PhpShell_FunctionCall::find("function NOT IN (SELECT id FROM function WHERE text IN('var_dump', 'print_r'))")
-					->addJoin(PhpShell_Function::class, "id = function")
-					->getAggregate("COUNT(*), text", "text", ["COUNT(*)" => false])
-					->fetchArray("count", "text")
-			), 0, 150);
-		}, 86400);
+		$popularFunctions = PhpShell_Function::find("text != 'var_dump' AND text != 'print_r' AND popularity > 999")
+			->getSimpleList('popularity', 'text');
 
 		foreach ($popularFunctions as $text => $size)
 		{

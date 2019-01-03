@@ -94,7 +94,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
 		$this->showTab['vld'] =		isset($this->input->operationCount) && $this->input->operationCount > 0;
-		$this->showTab['refs'] =	isset($this->input->operationCount) && count($this->input->getRefs()) > 0;
+		$this->showTab['refs'] =	isset($this->input->operationCount) && count($this->input->getFunctionCalls()) > 0;
 		$this->showTab['rfc'] =		$this->input->hasRfcOutput();
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])

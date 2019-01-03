@@ -18,7 +18,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			Basic::$database->beginTransaction();
 
 			/** @var $input PhpShell_Input */
-			foreach (PhpShell_Input::find($filter, [], ['created' => false])->getPage(1+$i, 250) as $id => $input)
+			foreach (PhpShell_Input::find($filter, [], ['id' => true])->getPage(1+$i, 250) as $id => $input)
 			{
 				if ('hard' == Basic::$userinput['type'])
 				{

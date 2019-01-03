@@ -1,9 +1,12 @@
-{$refs = $this->input->getRefs();}
+{$calls = $this->input->getFunctionCalls();}
 
 <ul>
-	{foreach ($refs as $this->ref)}
-	<li>
-		<a href="{ref->link}" rel="external">{ref->name}</a>
-	</li>
+	{foreach ($calls as $this->call)}
+		<li>
+				{call->text}: <a href="http://php.net/manual/en/function.{print str_replace('_', '-', $this->call->text);}.php" rel="external">documentation</a>
+			{if (!empty($this->call->source))}
+				 ( <a href="https://lxr.room11.org/xref/php-src@master/{print str_replace(':', '#', $this->call->source);}.php" rel="external">source</a>)
+			{/}
+		</li>
 	{/}
 </ul>

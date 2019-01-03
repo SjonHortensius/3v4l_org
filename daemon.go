@@ -571,8 +571,7 @@ func batchRefreshRandomScripts() {
 				AND penalty < 50
 				AND "runQuick" IS NULL
 				AND "operationCount">2
-			ORDER BY RANDOM()
-			LIMIT 999`)
+			ORDER BY RANDOM()`)
 		if err != nil {
 			panic("batchRefreshRandomScripts: error in SELECT query: "+ err.Error())
 		}

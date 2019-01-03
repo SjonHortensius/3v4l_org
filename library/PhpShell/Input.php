@@ -108,8 +108,8 @@ class PhpShell_Input extends PhpShell_Entity
 			if ($match['op'] != 'INIT_FCALL' || !isset($match['operand']) || isset($calls[ $match['operand'] ]))
 				continue;
 
-			// Only store valid functionCalls, nothing from userspace FIXME - migrate to Function - update on UpdateReferences
-			if (PhpShell_Reference::find("function = ?", [$match['operand']])->count() < 1)
+			// Only store valid functionCalls, nothing from userspace
+			if (PhpShell_Function::find("text = ?", [$match['operand']])->count() < 1)
 				continue;
 
 			$calls[ $match['operand'] ] = true;
@@ -299,11 +299,10 @@ class PhpShell_Input extends PhpShell_Entity
 			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
 
-	public function getRefs(): Basic_EntitySet
+	public function getFunctionCalls(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_FunctionCall::class)
-			->addJoin(PhpShell_Function::class, "f.id = \"functionCall\".function", "f")
-			->addJoin(PhpShell_Reference::class, "r.function = f.text", "r");
+			->addJoin(PhpShell_Function::class, "f.id = \"functionCall\".function", "f");
 	}
 
 	public function getLastModified(): string

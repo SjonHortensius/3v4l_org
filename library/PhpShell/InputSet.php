@@ -38,7 +38,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 		if ($fields != '*' || empty($this->_fields))
 			return parent::_query($fields, $groupBy);
 
-		$fields = 'input.*, source AS "sourceId", '. implode(', ', $this->_fields);
+		$fields = 'input.*, input.source AS "sourceId", '. implode(', ', $this->_fields);
 
 		return parent::_query($fields, "input.id");
 	}
