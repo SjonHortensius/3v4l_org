@@ -1,6 +1,6 @@
 <?php
 
-class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
+class PhpShell_Action_Search extends PhpShell_Action
 {
 	public $title = 'Search through all scripts';
 	public $formSubmit = 'array_search();';
@@ -30,10 +30,6 @@ class PhpShell_Action_Search extends PhpShell_Action_Tagcloud
 			Basic::$userinput->query->setValue(rawurldecode($_REQUEST[1]));
 
 		parent::init();
-
-		// for tagcloud on form-page
-		if (!Basic::$userinput->query->isValid())
-			parent::generate();
 	}
 
 	public function run(): void

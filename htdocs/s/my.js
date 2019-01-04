@@ -714,9 +714,7 @@ var evalOrg = {};
 			window.location.href = url;
 		});
 
-		if ($('div#tagCloud'))
-			loadScript('/ext/d3.layout.cloud.js', this.showTagcloud);
-		else
+		if (!$('div#tagCloud'))
 			this.localTime(function(el, d){
 				function pad(n){ return ('0'+n).slice(-2); }
 				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
@@ -742,52 +740,6 @@ var evalOrg = {};
 				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 			});
 		}
-	};
-
-	this.showTagcloud = function()
-	{
-		var tc = $('div#tagCloud');
-		var fill = d3.scale.category20();
-		var fontSize = d3.scale.linear().range([10, 100]).domain([tc.dataset['min'], tc.dataset['max']]);
-
-		function draw(words) {
-			d3.select('div#tagCloud').append('svg')
-				.attr('width', 1022)
-				.attr('height', 600)
-				.append('g')
-				.attr('transform', 'translate(511,300)')
-				.selectAll('text')
-				.data(words)
-				.enter().append('text')
-				.style('font-size', function(d) { return d.size + 'px'; })
-				.style('fill', function(d, i) { return fill(i); })
-				.attr('text-anchor', 'middle')
-				.attr('transform', function(d) {
-					return 'translate(' + [d.x, d.y] + ')rotate(' + d.rotate + ')';
-				})
-				.text(function(d) { return d.text; });
-		}
-
-		d3.layout.cloud()
-			.size([1022, 600])
-			.padding(5)
-			.rotate(0)
-			.font('Impact')
-			.fontSize(function(d) { return fontSize(+d.size); })
-			.on('end', draw)
-			.words(JSON.parse(tc.dataset['words']))
-			.start();
-
-		var ns = 'http://www.w3.org/1999/xlink', svgNs = 'http://www.w3.org/2000/svg';
-		$('svg').setAttribute('xmlns:xlink', ns);
-
-		$$('g text').forEach(function (el){
-			var w = document.createElementNS(svgNs, 'a');
-			w.setAttributeNS(ns, 'xlink:href', '/search/'+ el.textContent);
-			w.setAttributeNS(ns, 'target', '_top');
-			w.appendChild(el.cloneNode(true));
-			el.parentNode.replaceChild(w, el);
-		});
 	};
 
 	this.handleVersions = function()

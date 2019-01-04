@@ -1,4 +1,4 @@
-{if (isset($this->min))}
+{if (!Basic::$userinput->query->isValid())}
 	<h2>Most popular functions, click a term to show related scripts:</h2>
 
 	{$this->show('tagcloud');}
