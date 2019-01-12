@@ -8,7 +8,6 @@
 		<th>~ systemTime</th>
 		<th>~ maxMemory</th>
 	{/}
-	<th># runs</th>
 	<th># operations</th>
 	{if ($this->entries->includesVariance)}
 		<th>% variance</th>
@@ -20,9 +19,15 @@
 </thead>
 
 <tbody>
+{!-- count is used by parent to determine if there might be a next page --}
 {$this->count=0;}
 {foreach ($this->entries->getPage(Basic::$userinput['page'], 25) as $this->row)}
 	{$this->count++;}
+	{if (isset($this->row->input))}
+		{$this->row->input->variance = $this->row->variance;}
+		{$this->row->input->functionCalls = $this->row->functionCalls;}
+		{$this->row = $this->row->input;}
+	{/}
 	<tr>
 		<td>
 			{if ($this->prevrow->sourceId === $this->row->id)}
@@ -46,7 +51,6 @@
 			<td>{print round($this->row->systemTime, 2);} s</td>
 			<td>{print round($this->row->maxMemory/1024);} MiB</td>
 		{/}
-		<td>{row->run}</td>
 		<td>{print $this->row->operationCount ?: '<i>?</i>';}</td>
 		{if ($this->entries->includesVariance)}
 			<td>{row->variance}</td>

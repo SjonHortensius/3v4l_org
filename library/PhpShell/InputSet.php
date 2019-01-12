@@ -9,7 +9,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 
 	public function includeVariance()
 	{
-		$this->addJoin(PhpShell_Result::class, "input = input.id AND version >= 32");
+		$this->addJoin(PhpShell_Result::class, "result.input = input.id AND version >= 32");
 		$this->_fields []= "(COUNT(DISTINCT output)-1) * 100 / COUNT(output) variance";
 
 		$this->includesVariance = true;
