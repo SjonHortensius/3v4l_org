@@ -182,15 +182,17 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("version.name LIKE 'rfc%'")
-			->includeVersion()
+			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->setOrder(['version.released' => false]);
 	}
 
 	public function getOutput(): array
 	{
 		$results = $this->getRelated(PhpShell_Result::class)
+			->addJoin(PhpShell_Input::class, "input.id = result.input")
+			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->getSubset("NOT version.\"isHelper\"")
-			->includeOutput()->includeVersion()
+			->addJoin(PhpShell_Output::class, "output.id = result.output")
 			->setOrder(['version.order' => true]);
 
 		$abbrMax = function($name)
@@ -302,7 +304,7 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getFunctionCalls(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_FunctionCall::class)
-			->addJoin(PhpShell_Function::class, "f.id = \"functionCall\".function", "f");
+			->addJoin(PhpShell_Function::class, "function.id = \"functionCall\".function");
 	}
 
 	public function getLastModified(): string

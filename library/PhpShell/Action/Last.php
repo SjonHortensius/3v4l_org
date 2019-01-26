@@ -32,8 +32,8 @@ class PhpShell_Action_Last extends PhpShell_Action
 			$this->entries = $this->entries->getSubset('"runQuick" ISNULL');
 
 		if (Basic::$userinput['mine'])
-			$this->entries = $this->entries->getSubset('submit.ip = ?', [$_SERVER['REMOTE_ADDR']])
-				->addJoin(PhpShell_Submit::class, "submit.input = input.id");
+			$this->entries = $this->entries->addJoin(PhpShell_Submit::class, "submit.input = input.id", 'INNER', false)
+				->getSubset('submit.ip = ?', [$_SERVER['REMOTE_ADDR']]);
 
 		parent::run();
 	}

@@ -37,11 +37,11 @@ class PhpShell_Action_Search extends PhpShell_Action
 		$q = Basic::$userinput['query'];
 		$q = (false === strpos($q, '%')) ? "%$q%" : $q;
 
-		$this->entries = PhpShell_Function::find("function.text LIKE ?", [$q])
-			->addJoin(PhpShell_FunctionCall::class, "\"functionCall\".function = function.id", null, 'INNER', false)
+		$this->entries = PhpShell_FunctionCall::find()
+			->addJoin(PhpShell_Function::class, "function.id = \"functionCall\".function", null, 'INNER', false)
+			->getSubset("function.text LIKE ?", [$q])
 			->addJoin(PhpShell_Input::class, "input.id = \"functionCall\".input")
 			->getSubset("input.state = 'done'")
-			->includeVariance()
 			->includeFunctionCalls()
 			->setOrder(['input.id' => false]);
 
