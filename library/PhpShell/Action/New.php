@@ -83,6 +83,13 @@ class PhpShell_Action_New extends PhpShell_Action
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
 
+		# don't store any more empty submits
+		if ($code === '<?php')
+		{
+			usleep(500 * 1000);
+			Basic::$controller->redirect('kuLmD');
+		}
+
 		if (isset(Basic::$userinput['version']))
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 

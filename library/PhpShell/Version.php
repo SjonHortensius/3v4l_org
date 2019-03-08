@@ -23,6 +23,6 @@ class PhpShell_Version extends PhpShell_Entity
 
 		Basic::$cache->delete('Version::list');
 
-		return self::__FUNCTION__($name, false);
+		return self::byName($name, false);
 	}
 }
