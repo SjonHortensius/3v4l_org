@@ -33,6 +33,8 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		{
 			foreach (json_decode(file_get_contents('http://php.net/releases/index.php?json&max=99&version='. $major)) as $name => $data)
 			{
+				unset($pendingInsert);
+
 				[$vMajor, $vMinor, $vRelease] = explode('.', $name);
 				$order = sprintf('%1d%1d%02d', $vMajor, $vMinor, $vRelease);
 
@@ -79,26 +81,46 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 						continue;
 					}
 
-					$partition_expression = Basic::$database->query("
-SELECT pg_get_expr(pt.relpartbound, pt.oid, true)
-FROM pg_class base_tb
-JOIN pg_inherits i ON i.inhparent = base_tb.oid
-JOIN pg_class pt ON pt.oid = i.inhrelid
-WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = 'result_php$vMajor$vMinor'
+					$pendingInsert = "INSERT INTO version VALUES('$name', '$released', $order, '$command', false, nextval('version_id_seq'), '$eol');";
+				}
+
+				$minorIds = [];
+				if (isset($pendingInsert))
+				{
+					echo "BEGIN;\n$pendingInsert\n";
+					array_push($minorIds, ++$nextVersionId);
+				}
+
+				// Verify existing partitions
+				if (0 == $vRelease || isset($pendingInsert))
+				{
+					$minorIds = array_merge($minorIds, $this->_getIdsForMinor($vMajor, $vMinor));
+					asort($minorIds);
+
+					$current = Basic::$database->query("
+						SELECT pg_get_expr(pt.relpartbound, pt.oid, true)
+						FROM pg_class base_tb
+						JOIN pg_inherits i ON i.inhparent = base_tb.oid
+						JOIN pg_class pt ON pt.oid = i.inhrelid
+						WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = 'result_php$vMajor$vMinor'
 					")->fetchColumn();
 
-					$nextVersionId++;
-					$partition_expression = str_replace(')', ", '$nextVersionId')", $partition_expression);
-
-					printf("
-BEGIN;
-ALTER TABLE RESULT DETACH PARTITION result_php$vMajor$vMinor;
-INSERT INTO version VALUES('$name', '$released', $order, '$command', false, nextval('version_id_seq'), '$eol');
-ALTER TABLE RESULT ATTACH PARTITION result_php$vMajor$vMinor $partition_expression;
-COMMIT;
-");
+					$expect = "FOR VALUES IN ('". implode("', '", $minorIds) ."')";
+					if ($current != false && $current != $expect)
+					{
+						printf("ALTER TABLE RESULT DETACH PARTITION result_php$vMajor$vMinor;/*$current*/\n");
+						printf("ALTER TABLE RESULT ATTACH PARTITION result_php$vMajor$vMinor   $expect;\n");
+					}
 				}
+
+				if (isset($pendingInsert))
+					echo "COMMIT;\n";
 			}
 		}
+	}
+
+	protected function _getIdsForMinor(int $major, int $minor): array
+	{
+		return explode(',', trim(Basic::$database->query("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn(), '{}'));
 	}
 }
