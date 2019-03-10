@@ -102,15 +102,6 @@ var evalOrg = {};
 		var code = $('code');
 		var textarea = $('textarea[name=code]');
 
-		// when preview results in an error, _refreshOutput will reload /#preview and UA will store code in textarea
-/*		if (document.body.classList.contains('index') && textarea.value.length > code.textContent.length)
-		{
-			while (code.firstChild)
-				code.removeChild(code.firstChild);
-
-			code.appendChild(document.createTextNode(textarea.value));
-		}
-*/
 		textarea.value = code.textContent;
 
 		// If ace somehow doesn't load; make sure js doesn't crash
@@ -135,6 +126,10 @@ var evalOrg = {};
 			enableLiveAutocompletion: false
 		});
 
+		$$('textarea.ace_text-input').forEach(function(el){
+			el.setAttribute('aria-label', textarea.getAttribute('aria-label'));
+		});
+
 		if ($('input[type=submit]'))
 			$('input[type=submit]').setAttribute('disabled', 'disabled');
 
@@ -153,7 +148,6 @@ var evalOrg = {};
 			$('#archived_1').addEventListener('change', function(){
 				$('input[type=submit]').removeAttribute('disabled');
 			});
-
 	};
 
 	this.handleScript = function()
@@ -853,3 +847,6 @@ if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|I
 	document.body.classList.add('mobile');
 
 window.addEventListener('load', function(){ evalOrg.initialize(); });
+
+if ('serviceWorker' in navigator)
+	navigator.serviceWorker.register('/s/pwa-worker.js');
