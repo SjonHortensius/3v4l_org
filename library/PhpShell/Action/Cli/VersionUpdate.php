@@ -41,7 +41,10 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				if ($vMajor == 4 && $vMinor < 3)
 					continue;
 
-				$released = date('Y-m-d', strtotime($data->date ?? $data->source[1]->date));
+				// Sometimes new archive-formats get introduced meaning source-date is too new
+				// Sometimes PHP sucks and version.date is updated when another version is released
+				// Some older releases have no source-dates
+				$released = date('Y-m-d', min(strtotime($data->date ?? $data->source[1]->date), strtotime($data->source[0]->date ?? $data->date)));
 				$eol = self::EOL[ 10 * $vMajor + $vMinor ];
 
 				$command = "/bin/php-$name -c /etc";
