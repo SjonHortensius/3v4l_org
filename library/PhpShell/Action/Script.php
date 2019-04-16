@@ -103,7 +103,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ('done' == $this->input->state)
 			$this->input->logHit();
 
-		parent::run();
+		$this->showTemplate(Basic::$userinput['action'], Basic_Template::UNBUFFERED);
 	}
 
 	public static function sortAnalyzeByLine(&$messages)
