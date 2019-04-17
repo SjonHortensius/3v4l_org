@@ -181,7 +181,7 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getRfcOutput(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_Result::class)
-			->getSubset("version.name LIKE 'rfc%'")
+			->getSubset("( version.name LIKE 'rfc%' OR version.name LIKE 'git-%')")
 			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->setOrder(['version.released' => false]);
 	}

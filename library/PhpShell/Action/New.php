@@ -46,7 +46,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		return Basic::$cache->get('quickVersionList:'.intval($forJson), function() use($forJson){
 			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%'", [], ['"isHelper"' => true, 'version.order' => false]);
+			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%' OR name LIKE 'git-%'", [], ['"isHelper"' => true, 'version.order' => false]);
 
 			$list = iterator_to_array($v->getSimpleList('name', 'name'));
 

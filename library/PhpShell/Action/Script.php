@@ -22,8 +22,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 				'perf' => 'Performance',
 				'vld' => 'VLD opcodes',
 				'refs' => 'References',
-//				'rel' => 'Related',
-				'rfc' => 'RFC branches',
+				'rfc' => 'RFCs / upcoming releases',
 			]
 		],
 	];

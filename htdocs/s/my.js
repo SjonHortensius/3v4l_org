@@ -347,13 +347,15 @@ var evalOrg = {};
 
 		Object.keys(versions).forEach(function(key) {
 			var group = document.createElement('optgroup'), options = [];
-			group.label = (key.substr(-1) === '.') ? key.substr(0, key.length-1) : key;
+			group.label = (key.substr(-1) === '.' || key.substr(-1) === '-') ? key.substr(0, key.length-1) : key;
 
 			if (typeof versions[key] === 'number')
 				for (var i = versions[key]; i >= 0; i--)
 					options.push(i);
-			else
+			else if (typeof versions[key] === 'object')
 				options = versions[key];
+			else
+				options = [versions[key]];
 
 			options.forEach(function (v){
 				var o = document.createElement('option');
