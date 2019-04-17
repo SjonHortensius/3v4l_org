@@ -22,7 +22,8 @@ if [[ $ISGIT ]]; then
 
 	echo -ne "Extracting...\r"
 	tar xaf $version.tar.gz -C ../root/ || rm -v php-$version.tar.gz
-	cd ../root/php-src-$version/
+
+	ROOT=php-src-$version
 else
 	[[ ! -f php-$version.tar.bz2 ]] && curl -OsS https://www.php.net/distributions/php-$version.tar.bz2
 	[[ $(du php-$version.tar.bz2|cut -f1) -lt 999 ]] && rm php-$version.tar.bz2
@@ -30,9 +31,11 @@ else
 
 	echo -ne "Extracting...\r"
 	tar xaf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2
-	cd ../root/php-$version/
+
+	ROOT=php-$version
 fi
 
+cd ../root/$ROOT/
 [[ $ISGIT ]] && ./buildconf
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-mbstring --with-zlib --disable-cgi"
@@ -66,6 +69,6 @@ mv -v sapi/cli/php ../../out/php-$version
 mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
 cd ../..
 # FIXME
-rm -R root/php-$version/
+rm -R root/$ROOT/
 
 echo -e "Done...       \r"
