@@ -588,27 +588,6 @@ div.column
 	float: left;
 }
 
-#uvTab
-{
-	border: 1px solid rgb(255, 255, 255);
-	border-right-width: 0;
-	border-radius: 4px 0 0 4px;
-	box-shadow: rgba(255, 255, 255, 0.247059) 1px 1px 1px inset, rgba(0, 0, 0, 0.498039) 0 1px 2px;
-	position: fixed;
-	right: 0;
-	top: 50%;
-	z-index: 9;
-	margin-top: -86px;
-	background: #cc6d00 url(/ext/uvBg.png) 50% 0 no-repeat;
-}
-
-#uvTab a
-{
-	display: block;
-	padding: 39px 5px 10px 5px;
-}
-
-
 small
 {
 	color: #999;
@@ -882,14 +861,12 @@ body.live kbd + p
 	ul#tabs li a{			padding: 5px; }
 	#options:not(:empty){	margin-top: 0; }
 	#previewForm{			display: none !important; }
-	#uvTab{					display: none; }
 	header span{			display: none; }
 	header ul{				padding-right: 5px; padding: 0.5em; }
 	header h1{				height: 30px; }
 	header{					margin-bottom: 0; }
 	body.index .column li{	margin-bottom: 1em; }
 	body{					margin-top: 0; padding-top: 2.5em; }
-	#uvTab{					display: none; }
 }
 
 @media (max-width: 800px)

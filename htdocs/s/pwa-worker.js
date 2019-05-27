@@ -4,7 +4,6 @@ var filesToCache = [
   '/',
   '/s/c.css',
   '/s/c.js',
-  '/ext/uvTab.png',
   '/ext/glyphicons-halflings.png',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ace.js',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ext-language_tools.js',

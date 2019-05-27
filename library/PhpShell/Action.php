@@ -28,9 +28,7 @@ class PhpShell_Action extends Basic_Action
 			"'unsafe-inline'", # for ace-editor & tagcloud
 		]
 	];
-	public $httpPreloads = [
-		'/ext/uvTab.png' => 'image',
-	];
+	public $httpPreloads = [];
 
 	public function init(): void
 	{
