@@ -194,12 +194,14 @@ class PhpShell_Input extends PhpShell_Entity
 		/* @var PhpShell_Result $result */
 		foreach ($results as $result)
 		{
-			$hash = $result->id .':'. $result->exitCode;
+			$html = $result->getHtml();
+
+			$hash = sha1($html);
 			$slot =& $outputs[ $hash ];
 
 			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
 
-			$result->version->name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
+			$name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
 			if (!isset($slot)) #FIXME; use PhpShell_Output as $slot for getSubmitHash ?
 				$slot = ['min' => $result->version->name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
@@ -211,16 +213,16 @@ class PhpShell_Input extends PhpShell_Entity
 				elseif (isset($slot['min']))
 					array_push($slot['versions'], $slot['min']);
 
-				$slot['min'] = $result->version->name;
+				$slot['min'] = $name;
 				unset($slot['max']);
 			}
 			elseif (!isset($slot['min']))
-				$slot['min'] = $result->version->name;
+				$slot['min'] = $name;
 			else
-				$slot['max'] = $result->version->name;
+				$slot['max'] = $name;
 
 			$slot['order'] = max($slot['order'], $result->version->order);
-			$slot['output'] = $result->getHtml();
+			$slot['output'] = $html;
 
 			$prevHash = $hash;
 			$prevHhvm = $isHhvm;
