@@ -134,7 +134,7 @@ func (this *Input) complete() {
 	}
 
 	var mutations int
-	if err := db.QueryRow(`SELECT SUM(mutations) - $1 FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
+	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations) - $1, 0) FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
 		panic("complete: could not get new mutation count: "+ err.Error())
 	}
 
