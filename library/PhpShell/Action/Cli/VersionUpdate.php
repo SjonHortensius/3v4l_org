@@ -44,6 +44,9 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				// Sometimes new archive-formats get introduced meaning source-date is too new
 				// Sometimes PHP sucks and version.date is updated when another version is released
 				// Some older releases have no source-dates
+				if (isset($data->date))
+					$data->date = str_replace(' Marc ', ' Mar ', $data->date);
+
 				$released = date('Y-m-d', min(strtotime($data->date ?? $data->source[1]->date), strtotime($data->source[0]->date ?? $data->date)));
 				$eol = self::EOL[ 10 * $vMajor + $vMinor ];
 
@@ -90,7 +93,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				$minorIds = [];
 				if (isset($pendingInsert))
 				{
-					echo "BEGIN;\n$pendingInsert\n";
+					echo "BEGIN;\nSELECT SETVAL('version_id_seq', (SELECT MAX(id) FROM version));\n$pendingInsert\n";
 					array_push($minorIds, ++$nextVersionId);
 				}
 
@@ -108,6 +111,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 						WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = 'result_php$vMajor$vMinor'
 					")->fetchColumn();
 
+					#FIXME when adding multiple minors don't include previously added version in $expect
 					$expect = "FOR VALUES IN ('". implode("', '", $minorIds) ."')";
 					if ($current != false && $current != $expect)
 					{

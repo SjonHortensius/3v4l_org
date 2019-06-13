@@ -1,4 +1,4 @@
 {$r = $this->input->getVld();}
-{$this->vld = $r->getSingle()->output->getRaw($this->input, 'vld');}
+{$this->vld = $r->output->getRaw($this->input, $r->version);}
 
-"vld": {vld}
+"output": {vld}

@@ -172,7 +172,6 @@ class PhpShell_Action_New extends PhpShell_Action
 
 		$this->input = $input;
 		$this->result = $this->input->getResult($version)->getSingle();
-		$this->output = htmlspecialchars($this->result->output->getRaw($input, $version), ENT_SUBSTITUTE);
 
 		$this->showTemplate('quick');
 	}

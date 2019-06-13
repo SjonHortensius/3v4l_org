@@ -16,7 +16,7 @@ version=$1
 
 echo -ne "Downloading...\r"
 
-if [[ $ISGIT ]]; then
+if [[ $ISGIT -gt 0 ]]; then
 	rm -fv $version.tar.bz2
 	curl -LO# https://github.com/php/php-src/archive/$version.tar.gz || { echo not a valid branch name: $version >&2; exit 1; }
 
@@ -36,7 +36,7 @@ else
 fi
 
 cd ../root/$ROOT/
-[[ $ISGIT ]] && ./buildconf
+[[ $ISGIT -gt 0 ]] && ./buildconf
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-mbstring --with-zlib --disable-cgi"
 confFlags="$confFlags --with-curl=/usr"
@@ -68,7 +68,6 @@ strip sapi/cli/php modules/*.so # && upx -qq ./sapi/cli/php
 mv -v sapi/cli/php ../../out/php-$version
 mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
 cd ../..
-# FIXME
 rm -R root/$ROOT/
 
 echo -e "Done...       \r"

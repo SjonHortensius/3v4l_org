@@ -11,7 +11,7 @@
 	{/}
 	</dt>
 	<dd>
-		{print htmlspecialchars($this->result->output->getRaw($this->input, $result->name));}
+		{print $this->result->getHtml();}
 	</dd>
 {/}
 </dl>

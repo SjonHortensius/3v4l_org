@@ -9,11 +9,6 @@ class PhpShell_Input extends PhpShell_Entity
 	];
 	protected static $_numerical = ['operationCount', 'penalty'];
 
-	protected static $_exitCodes = [
-		139 => 'Segmentation Fault',
-		137 => 'Process was killed',
-		255 => 'Generic Error',
-	];
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
 	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
@@ -90,14 +85,14 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		try
 		{
-			$vld = $this->getVld()->getSingle();
+			$vld = $this->getVld();
 		}
 		catch (Basic_EntitySet_NoSingleResultException $e)
 		{
 			return;
 		}
 
-		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, 'vld'), $operations, PREG_SET_ORDER);
+		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, $vld->version), $operations, PREG_SET_ORDER);
 		$vld->output->removeCached();
 
 		// Parse vld first, then update db accordingly
@@ -172,24 +167,19 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
-	public function hasRfcOutput(): bool
-	{
-		# prevent pg from querying all result tables
-		return count($this->getRfcOutput()->getSubset("version < 32")) > 0;
-	}
-
 	public function getRfcOutput(): Basic_EntitySet
 	{
 		return $this->getRelated(PhpShell_Result::class)
 			->getSubset("( version.name LIKE 'rfc%' OR version.name LIKE 'git-%')")
 			->addJoin(PhpShell_Version::class, "version.id = result.version")
+		# prevent pg from querying all result tables
+			->getSubset("version < 32")
 			->setOrder(['version.released' => false]);
 	}
 
 	public function getOutput(): array
 	{
 		$results = $this->getRelated(PhpShell_Result::class)
-			->addJoin(PhpShell_Input::class, "input.id = result.input")
 			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->getSubset("NOT version.\"isHelper\"")
 			->addJoin(PhpShell_Output::class, "output.id = result.output")
@@ -201,11 +191,10 @@ class PhpShell_Input extends PhpShell_Entity
 		};
 
 		$outputs = [];
+		/* @var PhpShell_Result $result */
 		foreach ($results as $result)
 		{
-			$output = $result->output->getRaw($result->input, $result->version->name);
-
-			$hash = sha1($output.':'.$result->exitCode);
+			$hash = $result->id .':'. $result->exitCode;
 			$slot =& $outputs[ $hash ];
 
 			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
@@ -231,13 +220,7 @@ class PhpShell_Input extends PhpShell_Entity
 				$slot['max'] = $result->version->name;
 
 			$slot['order'] = max($slot['order'], $result->version->order);
-			$slot['output'] = htmlspecialchars($output, ENT_SUBSTITUTE);
-
-			if ($result->exitCode > 0)
-			{
-				$title = isset(self::$_exitCodes[ $result->exitCode ]) ? ' title="'. self::$_exitCodes[ $result->exitCode ] .'"' : '';
-				$slot['output'] .= '<br/><i>Process exited with code <b'. $title .'>'. $result->exitCode .'</b>.</i>';
-			}
+			$slot['output'] = $result->getHtml();
 
 			$prevHash = $hash;
 			$prevHhvm = $isHhvm;
@@ -318,9 +301,9 @@ class PhpShell_Input extends PhpShell_Entity
 			->getSubset("version = ?", [$version]);
 	}
 
-	public function getVld(): Basic_EntitySet
+	public function getVld(): PhpShell_Result
 	{
-		return $this->getResult(PhpShell_Version::byName('vld'));
+		return $this->getResult(PhpShell_Version::byName('vld'))->getSingle();
 	}
 
 	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z'): string

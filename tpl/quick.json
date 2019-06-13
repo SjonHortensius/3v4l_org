@@ -1,4 +1,5 @@
 {Basic::$userinput->tab = ['default' => 'quick'];}
 {$this->showTab = ['output' => true];}
+{$this->scriptSkipCode = true;}
 
 {$this->show('script');}
