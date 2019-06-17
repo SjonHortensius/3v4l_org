@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.1
--- Dumped by pg_dump version 11.1
+-- Dumped from database version 11.3
+-- Dumped by pg_dump version 11.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -13,6 +13,7 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
@@ -274,7 +275,7 @@ ALTER TABLE public.result OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php72 PARTITION OF public.result
-FOR VALUES IN ('342', '343', '347', '348', '350', '356', '353', '360', '364', '373', '377', '392', '395', '402');
+FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420');
 
 
 ALTER TABLE public.result_php72 OWNER TO postgres;
@@ -284,7 +285,7 @@ ALTER TABLE public.result_php72 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php73 PARTITION OF public.result
-FOR VALUES IN ('403');
+FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419');
 
 
 ALTER TABLE public.result_php73 OWNER TO postgres;
@@ -352,7 +353,7 @@ ALTER TABLE public.result_bughunt OWNER TO postgres;
 --
 
 CREATE TABLE public.result_helper PARTITION OF public.result
-FOR VALUES IN ('1', '2', '8', '10', '11', '12', '4', '5');
+FOR VALUES IN ('1', '2', '5', '8', '10', '11', '12', '13', '14', '15');
 
 
 ALTER TABLE public.result_helper OWNER TO postgres;
@@ -412,7 +413,7 @@ ALTER TABLE public.result_php55 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php56 PARTITION OF public.result
-FOR VALUES IN ('191', '165', '166', '167', '171', '173', '387', '176', '180', '184', '188', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '381', '380', '382', '383', '384', '385', '386');
+FOR VALUES IN ('165', '166', '167', '171', '173', '176', '180', '184', '188', '191', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '380', '381', '382', '383', '384', '385', '386', '387', '410', '411');
 
 
 ALTER TABLE public.result_php56 OWNER TO postgres;
@@ -442,10 +443,20 @@ ALTER TABLE public.result_php70 OWNER TO postgres;
 --
 
 CREATE TABLE public.result_php71 PARTITION OF public.result
-FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '346', '345', '349', '351', '355', '362', '369', '363', '374', '378', '391', '398', '401');
+FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '345', '346', '349', '351', '355', '362', '363', '369', '374', '378', '391', '398', '401', '412', '413', '416', '421', '422');
 
 
 ALTER TABLE public.result_php71 OWNER TO postgres;
+
+--
+-- Name: result_php74; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php74 PARTITION OF public.result
+FOR VALUES IN ('423');
+
+
+ALTER TABLE public.result_php74 OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -884,6 +895,27 @@ ALTER TABLE ONLY public.result_php73 ALTER COLUMN mutations SET DEFAULT 0;
 
 
 --
+-- Name: result_php74 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php74 ALTER COLUMN "exitCode" SET DEFAULT 0;
+
+
+--
+-- Name: result_php74 runs; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php74 ALTER COLUMN runs SET DEFAULT 1;
+
+
+--
+-- Name: result_php74 mutations; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php74 ALTER COLUMN mutations SET DEFAULT 0;
+
+
+--
 -- Name: user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1088,6 +1120,14 @@ ALTER TABLE ONLY public.result_php73
 
 
 --
+-- Name: result_php74 result_php74_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php74
+    ADD CONSTRAINT result_php74_input_version_key UNIQUE (input, version);
+
+
+--
 -- Name: submit submit_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1191,6 +1231,13 @@ CREATE UNIQUE INDEX "resultBughunt" ON public.result_bughunt USING btree (input,
 
 
 --
+-- Name: resultBughuntVersion; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "resultBughuntVersion" ON public.result_bughunt USING btree (version);
+
+
+--
 -- Name: resultExitCode; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1282,6 +1329,13 @@ CREATE INDEX "result_php73_exitCode_idx" ON public.result_php73 USING brin ("exi
 
 
 --
+-- Name: result_php74_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php74_exitCode_idx" ON public.result_php74 USING brin ("exitCode");
+
+
+--
 -- Name: submitLast; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1294,7 +1348,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2019-01-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2019-05-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1463,6 +1517,20 @@ ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php73_exitCo
 --
 
 ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php73_input_version_key;
+
+
+--
+-- Name: result_php74_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner:
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php74_exitCode_idx";
+
+
+--
+-- Name: result_php74_input_version_key; Type: INDEX ATTACH; Schema: public; Owner:
+--
+
+ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php74_input_version_key;
 
 
 --
