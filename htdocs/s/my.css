@@ -867,6 +867,9 @@ body.live kbd + p
 	header{					margin-bottom: 0; }
 	body.index .column li{	margin-bottom: 1em; }
 	body{					margin-top: 0; padding-top: 2.5em; }
+	body.search #tagCloud{	display: none; }
+	form p{					margin-left: 0; }
+	input[type="submit"]{	margin-left: 0; }
 }
 
 @media (max-width: 800px)

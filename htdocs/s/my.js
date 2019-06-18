@@ -88,9 +88,12 @@ var evalOrg = {};
 		if (msg == 'Script error.')
 			return;
 
+		// Googlebot throws this when using NodeList.forEach
+		if (msg == 'Uncaught TypeError: undefined is not a function')
+			return;
+
 		var xhr = new XMLHttpRequest();
 		xhr.open('post', '/javascript-error/'+ encodeURIComponent(msg));
-		xhr.setRequestHeader('Referer', url);
 		xhr.send();
 	};
 
