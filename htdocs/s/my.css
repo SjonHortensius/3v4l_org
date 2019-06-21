@@ -420,7 +420,7 @@ dt:target + dd
 	box-shadow: 0 0 30px #ffe958;
 }
 
-dt:target:before
+dt:target:before, dt[id]:hover:before
 {
 	content: '\00BB\0020';
 }
