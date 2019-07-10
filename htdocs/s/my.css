@@ -256,7 +256,8 @@ ul#tabs + div
 }
 
 #tab a#expand,
-#tab a#diff
+#tab a#diff,
+#tab a#asHtml
 {
 	float: right;
 	cursor: pointer;

@@ -225,6 +225,7 @@ var evalOrg = {};
 
 		outputAddExpander();
 		outputAddDiff();
+		outputAsHtml();
 /*
 		$$('a[href^="/assert"][data-hash]').forEach(function (el){
 			el.addEventListener('click', function(e){
@@ -338,6 +339,36 @@ var evalOrg = {};
 
 		$('a#diff i').classList.toggle('active');
 		diffDone = !diffDone;
+	};
+
+	var outputAsHtml = function()
+	{
+		if ($('#asHtml'))
+			return;
+
+		var a = document.createElement('a');
+		a.setAttribute('id', 'asHtml');
+		a.setAttribute('title', 'interpret as HTML');
+		a.addEventListener('click', outputHtml);
+		var i = document.createElement('i');
+		i.classList.add('icon-eye-open', 'diff');
+		a.appendChild(i);
+		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+	};
+
+	var outputHtml = function() {
+		$('a#asHtml i').classList.toggle('active');
+		var toggleEnable = $('a#asHtml i').classList.contains('active');
+
+		$$('div#tab dd').forEach(function (dd){
+			if (!dd.hasAttribute('original'))
+				dd.setAttribute('original', dd.innerHTML);
+
+			if (toggleEnable)
+				dd.innerHTML = dd.innerText;
+			else
+				dd.innerHTML = dd.getAttribute('original');
+		});
 	};
 
 	this.enablePreview = function()
