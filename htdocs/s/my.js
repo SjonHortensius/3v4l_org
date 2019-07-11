@@ -147,10 +147,9 @@ var evalOrg = {};
 				$('input[type=submit]').removeAttribute('disabled');
 		});
 
-		if ($('#archived_1[data-ran-archived=""]'))
-			$('#archived_1').addEventListener('change', function(){
-				$('input[type=submit]').removeAttribute('disabled');
-			});
+		$('#archived_1').addEventListener('change', function(){
+			$('input[type=submit]').removeAttribute('disabled');
+		});
 	};
 
 	this.handleScript = function()
@@ -219,9 +218,6 @@ var evalOrg = {};
 		$$('dt').forEach(function(el){
 			el.addEventListener('click', function(){ window.location.hash = '#'+ el.id; });
 		});
-
-		if (window.location.hash == '#spoiler')
-			$('#tab').classList.add('spoiler');
 
 		outputAddExpander();
 		outputAddDiff();
