@@ -16,7 +16,7 @@ WHERE now() - created < '1 year'
 GROUP BY date_trunc('week', created)
 ORDER BY date_trunc('week', created) DESC;");
 
-		echo PhpShell_Submit::find("NOW()- submit.created < ?", ['1 day'])
+		echo PhpShell_Submit::find("NOW()- submit.created < ? AND penalty>0", ['1 day'])
 			->includePenalties()
 			->getAggregate("ip, MAX(submit.created) lastSeen, SUM(submit.count) submits, SUM(penalty) penalties, JSON_AGG(input.short) inputs", "submit.ip", ["SUM(penalty)" => false])
 			->show();
