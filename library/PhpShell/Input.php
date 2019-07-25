@@ -11,7 +11,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
-	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle'];
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle', 'password_hash'];
 
 	public function getCode(): string
 	{
