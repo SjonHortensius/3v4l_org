@@ -19,9 +19,9 @@ class PhpShell_Action extends Basic_Action
 			"blob:", # required by ace 1.2.8
 			'cdn.jsdelivr.net',
 		],
-		'connect-src' => [
-			"'self'", # for xhr
-		],
+		'connect-src' => ["'self'"], # for xhr
+		'base-uri' => ["'self'"],
+		'form-action' => ["'self'"],
 		'img-src' => ["'self'", 'data:',],
 		'style-src' => [
 			"'self'",
