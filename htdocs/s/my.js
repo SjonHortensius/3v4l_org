@@ -555,6 +555,7 @@ var evalOrg = {};
 			o = dl.getElementsByTagName('dt');
 
 		r.output.forEach(function (n, i) {
+			// this is missing <span title="released XXX">
 			var nvText = 'Output for ' + n.versions;
 
 			if (o[i] && o[i].textContent == nvText)

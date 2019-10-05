@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 11.3
--- Dumped by pg_dump version 11.3
+-- Dumped from database version 11.5
+-- Dumped by pg_dump version 11.5
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -274,8 +274,18 @@ ALTER TABLE public.result OWNER TO postgres;
 -- Name: result_php72; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php72 PARTITION OF public.result
-FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420');
+CREATE TABLE public.result_php72 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php72 FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420', '426', '430', '435', '440');
 
 
 ALTER TABLE public.result_php72 OWNER TO postgres;
@@ -284,8 +294,18 @@ ALTER TABLE public.result_php72 OWNER TO postgres;
 -- Name: result_php73; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php73 PARTITION OF public.result
-FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419');
+CREATE TABLE public.result_php73 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419', '425', '429', '434', '439');
 
 
 ALTER TABLE public.result_php73 OWNER TO postgres;
@@ -352,28 +372,38 @@ ALTER TABLE public.result_bughunt OWNER TO postgres;
 -- Name: result_helper; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_helper PARTITION OF public.result
-FOR VALUES IN ('1', '2', '5', '8', '10', '11', '12', '13', '14', '15');
+CREATE TABLE public.result_helper (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_helper FOR VALUES IN ('1', '2', '5', '8', '10', '11', '12', '13', '14', '15', '16');
 
 
 ALTER TABLE public.result_helper OWNER TO postgres;
 
 --
--- Name: result_hhvm; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_hhvm PARTITION OF public.result
-FOR VALUES IN ('288', '290', '291', '292', '298', '299', '318', '333', '331', '332', '319', '320', '321');
-
-
-ALTER TABLE public.result_hhvm OWNER TO postgres;
-
---
 -- Name: result_php4; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php4 PARTITION OF public.result
-FOR VALUES IN ('32', '33', '34', '35', '36', '37', '38', '39', '40', '43', '45', '47', '49', '51', '54', '58', '60', '64', '65', '66', '71', '73');
+CREATE TABLE public.result_php4 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php4 FOR VALUES IN ('32', '33', '34', '35', '36', '37', '38', '39', '40', '43', '45', '47', '49', '51', '54', '58', '60', '64', '65', '66', '71', '73');
 
 
 ALTER TABLE public.result_php4 OWNER TO postgres;
@@ -382,8 +412,18 @@ ALTER TABLE public.result_php4 OWNER TO postgres;
 -- Name: result_php53; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php53 PARTITION OF public.result
-FOR VALUES IN ('78', '80', '83', '85', '87', '90', '91', '92', '93', '94', '95', '98', '100', '101', '104', '106', '107', '110', '112', '113', '116', '118', '119', '121', '123', '126', '128', '131', '143', '162');
+CREATE TABLE public.result_php53 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php53 FOR VALUES IN ('78', '80', '83', '85', '87', '90', '91', '92', '93', '94', '95', '98', '100', '101', '104', '106', '107', '110', '112', '113', '116', '118', '119', '121', '123', '126', '128', '131', '143', '162');
 
 
 ALTER TABLE public.result_php53 OWNER TO postgres;
@@ -392,8 +432,18 @@ ALTER TABLE public.result_php53 OWNER TO postgres;
 -- Name: result_php54; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php54 PARTITION OF public.result
-FOR VALUES IN ('96', '97', '99', '102', '103', '105', '108', '109', '111', '114', '115', '117', '120', '122', '124', '125', '127', '130', '133', '135', '138', '140', '141', '145', '146', '149', '151', '153', '155', '157', '158', '161', '163', '168', '172', '175', '177', '181', '183', '186', '190', '194', '197', '205', '212', '372');
+CREATE TABLE public.result_php54 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php54 FOR VALUES IN ('96', '97', '99', '102', '103', '105', '108', '109', '111', '114', '115', '117', '120', '122', '124', '125', '127', '130', '133', '135', '138', '140', '141', '145', '146', '149', '151', '153', '155', '157', '158', '161', '163', '168', '172', '175', '177', '181', '183', '186', '190', '194', '197', '205', '212', '372');
 
 
 ALTER TABLE public.result_php54 OWNER TO postgres;
@@ -402,8 +452,18 @@ ALTER TABLE public.result_php54 OWNER TO postgres;
 -- Name: result_php55; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php55 PARTITION OF public.result
-FOR VALUES IN ('129', '132', '134', '136', '137', '139', '142', '144', '147', '148', '150', '152', '154', '156', '159', '160', '164', '169', '170', '174', '178', '179', '182', '187', '189', '192', '200', '204', '209', '214', '231', '234', '238', '241', '245', '248', '254', '258', '371');
+CREATE TABLE public.result_php55 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php55 FOR VALUES IN ('129', '132', '134', '136', '137', '139', '142', '144', '147', '148', '150', '152', '154', '156', '159', '160', '164', '169', '170', '174', '178', '179', '182', '187', '189', '192', '200', '204', '209', '214', '231', '234', '238', '241', '245', '248', '254', '258', '371');
 
 
 ALTER TABLE public.result_php55 OWNER TO postgres;
@@ -412,8 +472,18 @@ ALTER TABLE public.result_php55 OWNER TO postgres;
 -- Name: result_php56; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php56 PARTITION OF public.result
-FOR VALUES IN ('165', '166', '167', '171', '173', '176', '180', '184', '188', '191', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '380', '381', '382', '383', '384', '385', '386', '387', '410', '411');
+CREATE TABLE public.result_php56 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php56 FOR VALUES IN ('165', '166', '167', '171', '173', '176', '180', '184', '188', '191', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '380', '381', '382', '383', '384', '385', '386', '387', '410', '411');
 
 
 ALTER TABLE public.result_php56 OWNER TO postgres;
@@ -422,8 +492,18 @@ ALTER TABLE public.result_php56 OWNER TO postgres;
 -- Name: result_php5x; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php5x PARTITION OF public.result
-FOR VALUES IN ('41', '42', '44', '46', '48', '50', '52', '53', '55', '56', '57', '59', '61', '62', '63', '67', '68', '69', '70', '72', '74', '75', '76', '77', '79', '81', '82', '84', '86', '88', '89');
+CREATE TABLE public.result_php5x (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php5x FOR VALUES IN ('41', '42', '44', '46', '48', '50', '52', '53', '55', '56', '57', '59', '61', '62', '63', '67', '68', '69', '70', '72', '74', '75', '76', '77', '79', '81', '82', '84', '86', '88', '89');
 
 
 ALTER TABLE public.result_php5x OWNER TO postgres;
@@ -432,8 +512,18 @@ ALTER TABLE public.result_php5x OWNER TO postgres;
 -- Name: result_php70; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php70 PARTITION OF public.result
-FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396', '400');
+CREATE TABLE public.result_php70 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php70 FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396', '400');
 
 
 ALTER TABLE public.result_php70 OWNER TO postgres;
@@ -442,8 +532,18 @@ ALTER TABLE public.result_php70 OWNER TO postgres;
 -- Name: result_php71; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php71 PARTITION OF public.result
-FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '345', '346', '349', '351', '355', '362', '363', '369', '374', '378', '391', '398', '401', '412', '413', '416', '421', '422');
+CREATE TABLE public.result_php71 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php71 FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '345', '346', '349', '351', '355', '362', '363', '369', '374', '378', '391', '398', '401', '412', '413', '416', '421', '422', '431', '436');
 
 
 ALTER TABLE public.result_php71 OWNER TO postgres;
@@ -452,8 +552,18 @@ ALTER TABLE public.result_php71 OWNER TO postgres;
 -- Name: result_php74; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.result_php74 PARTITION OF public.result
-FOR VALUES IN ('423');
+CREATE TABLE public.result_php74 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('423', '424', '427', '428', '432', '433', '437', '438');
 
 
 ALTER TABLE public.result_php74 OWNER TO postgres;
@@ -643,279 +753,6 @@ ALTER TABLE ONLY public.output ALTER COLUMN id SET DEFAULT nextval('public.outpu
 
 
 --
--- Name: result_helper exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_helper ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_helper runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_helper ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_helper mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_helper ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_hhvm exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_hhvm ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_hhvm runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_hhvm ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_hhvm mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_hhvm ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php4 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php4 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php4 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php4 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php4 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php4 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php53 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php53 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php53 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php53 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php53 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php53 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php54 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php54 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php54 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php54 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php54 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php54 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php55 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php55 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php55 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php55 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php55 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php55 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php56 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php56 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php56 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php56 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php56 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php56 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php5x exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php5x ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php5x runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php5x ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php5x mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php5x ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php70 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php70 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php70 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php70 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php70 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php70 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php71 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php71 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php71 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php71 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php71 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php71 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php72 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php72 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php72 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php72 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php72 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php72 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php73 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php73 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php73 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
--- Name: result_php74 exitCode; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php74 ALTER COLUMN "exitCode" SET DEFAULT 0;
-
-
---
--- Name: result_php74 runs; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php74 ALTER COLUMN runs SET DEFAULT 1;
-
-
---
--- Name: result_php74 mutations; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php74 ALTER COLUMN mutations SET DEFAULT 0;
-
-
---
 -- Name: user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -1029,14 +866,6 @@ ALTER TABLE ONLY public.result
 
 ALTER TABLE ONLY public.result_helper
     ADD CONSTRAINT result_helper_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_hhvm result_hhvm_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_hhvm
-    ADD CONSTRAINT result_hhvm_input_version_key UNIQUE (input, version);
 
 
 --
@@ -1252,13 +1081,6 @@ CREATE INDEX "result_helper_exitCode_idx" ON public.result_helper USING brin ("e
 
 
 --
--- Name: result_hhvm_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "result_hhvm_exitCode_idx" ON public.result_hhvm USING brin ("exitCode");
-
-
---
 -- Name: result_php4_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1348,7 +1170,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2019-05-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2019-09-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1363,20 +1185,6 @@ ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_helper_exitC
 --
 
 ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_helper_input_version_key;
-
-
---
--- Name: result_hhvm_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner:
---
-
-ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_hhvm_exitCode_idx";
-
-
---
--- Name: result_hhvm_input_version_key; Type: INDEX ATTACH; Schema: public; Owner:
---
-
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_hhvm_input_version_key;
 
 
 --
@@ -1561,6 +1369,14 @@ ALTER TABLE ONLY public.assertion
 
 ALTER TABLE ONLY public.assertion
     ADD CONSTRAINT assertion_user_fkey FOREIGN KEY ("user") REFERENCES public."user"(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: functionCall functionCall_function_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."functionCall"
+    ADD CONSTRAINT "functionCall_function_fkey" FOREIGN KEY (function) REFERENCES public.function(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --

@@ -141,7 +141,7 @@ func (this *Input) complete() {
 	if _, err := db.Exec(`UPDATE input
 		SET penalty = LEAST(penalty + $2, 32767), state = $3, "lastResultChange" = (CASE WHEN $4>0 THEN TIMEZONE('UTC'::text, NOW()) ELSE "lastResultChange" END)
 		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state, mutations); err != nil {
-		panic("Input: failed to update: "+ err.Error())
+		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 
 	stats.Lock(); stats.c["mutations"] += mutations; stats.Unlock()

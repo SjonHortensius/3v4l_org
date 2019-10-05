@@ -187,7 +187,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 		$abbrMax = function($name)
 		{
-			return str_replace(['hhvm-', 'php7@'], '', $name);
+			return $name;
 		};
 
 		$outputs = [];
@@ -199,13 +199,11 @@ class PhpShell_Input extends PhpShell_Entity
 			$hash = sha1($html);
 			$slot =& $outputs[ $hash ];
 
-			$isHhvm = (false !== strpos($result->version->name, 'hhvm-'));
-
 			$name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
 			if (!isset($slot)) #FIXME; use PhpShell_Output as $slot for getSubmitHash ?
 				$slot = ['min' => $name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
-			elseif ($hash != $prevHash || ($isHhvm && !$prevHhvm) || (!$isHhvm && $prevHhvm))
+			elseif ($hash != $prevHash)
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -225,7 +223,6 @@ class PhpShell_Input extends PhpShell_Entity
 			$slot['output'] = $html;
 
 			$prevHash = $hash;
-			$prevHhvm = $isHhvm;
 		}
 
 		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });

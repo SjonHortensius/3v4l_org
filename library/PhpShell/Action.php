@@ -3,7 +3,7 @@
 class PhpShell_Action extends Basic_Action
 {
 	public $encoding = 'UTF-8';
-	public $title = 'Run code in 200+ PHP & HHVM versions';
+	public $title = 'Run code in 200+ PHP versions simultaneously';
 	public $user;
 	public $bodyClass;
 	public $adminMessage;
