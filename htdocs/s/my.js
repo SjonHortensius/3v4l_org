@@ -119,7 +119,10 @@ var evalOrg = {};
 		ace.config.set('workerPath', '/s/');
 		ace.require('ace/ext/language_tools');
 		this.editor = ace.edit(code);
-		this.editor.setTheme('ace/theme/chrome');
+		if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+			this.editor.setTheme('ace/theme/chaos');
+		else
+			this.editor.setTheme('ace/theme/chrome');
 		this.editor.setShowPrintMargin(false);
 		this.editor.setOption('maxLines', Infinity);
 		this.editor.session.setMode('ace/mode/php');

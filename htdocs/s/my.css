@@ -855,6 +855,20 @@ body.live kbd + p
 	margin-left: 5px;
 }
 
+@media (prefers-color-scheme: dark)
+{
+	header { background-color: #111; }
+	html { background-color: #1c1c1c; }
+	body { color: #ccc; }
+	tbody tr:not(.header):nth-child(2n+1) { background-color: #000; }
+	a { color: #0088cc; }
+	a:visited, a:hover { color: #bbb; }
+	form { background: #222; }
+	ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
+	dd { background: #222; }
+	input[type="text"], select { background: #222; }
+}
+
 /* mobile specific */
 @media (max-width: 600px)
 {
