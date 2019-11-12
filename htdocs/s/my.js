@@ -65,6 +65,8 @@ var evalOrg = {};
 		$$('.alert').forEach(function (el){
 			el.addEventListener('touchstart', function(){ el.remove(); });
 		});
+
+		this.createDarkmodeToggle();
 	};
 
 	var loadScript = function(url, f)
@@ -97,6 +99,66 @@ var evalOrg = {};
 		xhr.send();
 	};
 
+	this.applyDarkmode = function(e)
+	{
+		var defaul = false, enable = false;
+		if (localStorage.getItem("darkMode") == "enable")
+			defaul = true;
+		else if (localStorage.getItem("darkMode") == "disable")
+			defaul = false;
+		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+			defaul = true;
+
+		if ($('#toggleDarkmode input'))
+		{
+			enable = $('#toggleDarkmode input').checked;
+
+			// Only store pref for explicit user actions
+			if (typeof e != undefined)
+				localStorage.setItem('darkMode', enable ? 'enable' : 'disable');
+		}
+		else
+			enable = defaul
+
+		if (enable)
+		{
+			document.documentElement.classList.add('darkMode');
+
+			if (this.editor)
+				this.editor.setTheme('ace/theme/chaos');
+		}
+		else
+		{
+			document.documentElement.classList.remove('darkMode');
+
+			if (this.editor)
+				this.editor.setTheme('ace/theme/chrome');
+		}
+	};
+
+	this.createDarkmodeToggle = function()
+	{
+		var f = document.createElement('fieldset');
+		f.setAttribute('id', 'toggleDarkmode');
+		var i = document.createElement('input');
+		i.setAttribute('type', 'checkbox');
+		i.setAttribute('id', 'darkMode');
+
+		if (document.documentElement.classList.contains('darkMode'))
+			i.setAttribute('checked', 'checked');
+
+		i.addEventListener('change', this.applyDarkmode.bind(this));
+		var l = document.createElement('label');
+		l.setAttribute('for', 'darkMode');
+		l.appendChild(document.createTextNode('Enable dark-mode'));
+		f.appendChild(i);
+		f.appendChild(l);
+
+		document.body.appendChild(f);
+
+		this.applyDarkmode();
+	};
+
 	this.richEditor = function()
 	{
 		if (this.editor)
@@ -119,10 +181,12 @@ var evalOrg = {};
 		ace.config.set('workerPath', '/s/');
 		ace.require('ace/ext/language_tools');
 		this.editor = ace.edit(code);
-		if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+		if (document.documentElement.classList.contains('darkMode'))
 			this.editor.setTheme('ace/theme/chaos');
 		else
 			this.editor.setTheme('ace/theme/chrome');
+
 		this.editor.setShowPrintMargin(false);
 		this.editor.setOption('maxLines', Infinity);
 		this.editor.session.setMode('ace/mode/php');
@@ -873,16 +937,18 @@ var evalOrg = {};
 	{
 		this.localTime(false, 'tbody td:nth-child(2)');
 	};
+
+	// Possibility to apply css before onload gets fired (which is after parsing ace.js)
+	document.body.classList.add('js');
+
+	if ('ontouchstart' in window)
+		document.body.classList.add('touch');
+	if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
+		document.body.classList.add('mobile');
+	this.applyDarkmode();
+
+	window.addEventListener('load', function(){ evalOrg.initialize(); });
+
+	if ('serviceWorker' in navigator)
+		navigator.serviceWorker.register('/s/pwa-worker.js');
 }).apply(evalOrg);
-
-// Possibility to apply css before onload gets fired (which is after parsing ace.js)
-document.body.classList.add('js');
-if ('ontouchstart' in window)
-	document.body.classList.add('touch');
-if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
-	document.body.classList.add('mobile');
-
-window.addEventListener('load', function(){ evalOrg.initialize(); });
-
-if ('serviceWorker' in navigator)
-	navigator.serviceWorker.register('/s/pwa-worker.js');

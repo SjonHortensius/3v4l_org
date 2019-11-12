@@ -286,11 +286,24 @@ body.index:not(.js) textarea
 	background: #fff;
 }
 
-/* this is only to reduce the fouc before the editor initializes */
+/* these are to reduce the fouc before the editor initializes */
+html.darkMode code,
+html.darkMode body.mobile textarea,
+html.darkMode body.index:not(.js) textarea
+{
+	background: #222;
+	color: #fff;
+}
+
 body.js code:not(.ace_editor)
 {
 	border-left: 53px solid #f7f7f7;
 	width: calc(100% - 53px);
+}
+
+html.darkMode body.js code:not(.ace_editor)
+{
+	border-left-color: #141414;
 }
 
 /* selector is less specific than above */
@@ -855,19 +868,32 @@ body.live kbd + p
 	margin-left: 5px;
 }
 
-@media (prefers-color-scheme: dark)
+#toggleDarkmode
 {
-	header { background-color: #111; }
-	html { background-color: #1c1c1c; }
-	body { color: #ccc; }
-	tbody tr:not(.header):nth-child(2n+1) { background-color: #000; }
-	a { color: #0088cc; }
-	a:visited, a:hover { color: #bbb; }
-	form { background: #222; }
-	ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
-	dd { background: #222; }
-	input[type="text"], select { background: #222; }
+	position: fixed;
+	background-color: #eee;
+	bottom: 0px;
+	left: 0px;
+	margin: 5px;
 }
+
+html.darkMode #toggleDarkmode { background: #333; }
+
+#toggleDarkmode a
+{
+	cursor: pointer;
+}
+
+html.darkMode { background-color: #1c1c1c; }
+html.darkMode header { background-color: #111; }
+html.darkMode body { color: #ccc; }
+html.darkMode tbody tr:not(.header):nth-child(2n+1) { background-color: #000; }
+html.darkMode a { color: #0088cc; }
+html.darkMode a:visited, a:hover { color: #bbb; }
+html.darkMode form { background: #222; }
+html.darkMode ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
+html.darkMode dd { background: #222; }
+html.darkMode input[type="text"], select { background: #222; }
 
 /* mobile specific */
 @media (max-width: 600px)
@@ -882,6 +908,7 @@ body.live kbd + p
 	header{					margin-bottom: 0; }
 	body.index .column li{	margin-bottom: 1em; }
 	body{					margin-top: 0; padding-top: 2.5em; }
+	fieldset.log{			display: none; }
 	body.search #tagCloud{	display: none; }
 	form p{					margin-left: 0; }
 	input[type="submit"]{	margin-left: 0; }
