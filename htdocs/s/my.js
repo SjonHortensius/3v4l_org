@@ -740,7 +740,14 @@ var evalOrg = {};
 	{
 		this.localTime(function(el, d){
 			function pad(d){ return ('0'+d).slice(-2); }
-			el.innerHTML = pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+
+			var s;
+			if (window.location.search.indexOf('mine=1') > -1)
+				s = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' ';
+			else
+				s = '';
+
+			el.innerHTML = s + pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
 		});
 	};
 
