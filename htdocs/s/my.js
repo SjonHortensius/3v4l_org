@@ -242,7 +242,9 @@ var evalOrg = {};
 			if ($('form#previewForm'))
 				$('form#previewForm').remove();
 
-			this.editor.setReadOnly(true);
+			// 2/3d of all js errors from from here, where this.editor is undefined
+			if ('undefined' != typeof this.editor)
+				this.editor.setReadOnly(true);
 		}
 
 		this.enablePreview();
