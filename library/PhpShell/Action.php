@@ -32,8 +32,6 @@ class PhpShell_Action extends Basic_Action
 
 	public function init(): void
 	{
-		Basic::$cache = new PhpShell_ColdCacheStampede;
-
 		Basic::$database->exec("SET statement_timeout TO 2500;");
 
 		// For now; don't autoStart sessions
@@ -84,7 +82,7 @@ class PhpShell_Action extends Basic_Action
 
 		if (Basic::$config->PRODUCTION_MODE && 'text/html' == $this->contentType)
 		{
-			$preloads = Basic::$cache->get(__CLASS__.'::staticPreloads', function(){
+			$preloads = Basic::$cache->lockedGet(__CLASS__.'::staticPreloads', function(){
 				return [
 					// match hashes put in tpls by update-online
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',

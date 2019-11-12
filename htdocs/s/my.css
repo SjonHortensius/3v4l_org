@@ -797,6 +797,11 @@ body.about pre
 	padding: 0.5em;
 }
 
+html.darkMode body.about pre
+{
+	color: #000;
+}
+
 body.last td:last-child
 {
 	text-overflow: ellipsis;

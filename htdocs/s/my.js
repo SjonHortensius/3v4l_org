@@ -1,6 +1,6 @@
-            NodeList.prototype.forEach == NodeList.prototype.forEach || Array.prototype.forEach;
-HTMLCollection.prototype.forEach == HTMLCollection.prototype.forEach || Array.prototype.forEach;
-    DOMTokenList.prototype.forEach == DOMTokenList.prototype.forEach || Array.prototype.forEach;
+            NodeList.prototype.forEach = NodeList.prototype.forEach || Array.prototype.forEach;
+HTMLCollection.prototype.forEach = HTMLCollection.prototype.forEach || Array.prototype.forEach;
+    DOMTokenList.prototype.forEach = DOMTokenList.prototype.forEach || Array.prototype.forEach;
 
 HTMLSelectElement.prototype.getSelected = function(){
 	var s = [];
@@ -945,6 +945,7 @@ var evalOrg = {};
 		document.body.classList.add('touch');
 	if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
 		document.body.classList.add('mobile');
+
 	this.applyDarkmode();
 
 	window.addEventListener('load', function(){ evalOrg.initialize(); });

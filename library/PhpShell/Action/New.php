@@ -44,7 +44,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	// separate method for version.html
 	public static function getPreviewVersions(bool $forJson = false): array
 	{
-		return Basic::$cache->get('quickVersionList:'.intval($forJson), function() use($forJson){
+		return Basic::$cache->lockedGet('quickVersionList:'.intval($forJson), function() use($forJson){
 			# exclude all versions that aren't always stored by the daemon
 			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%' OR name LIKE 'git-%'", [], ['"isHelper"' => true, 'version.order' => false]);
 

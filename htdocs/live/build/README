@@ -1,4 +1,4 @@
-# USE THIS TO GENERATE A NEW ROOT FILESYSTEM
+# USE THIS TO GENERATE A NEW ROOT FILESYSTEM | buildroot includes a php version, .config enables compiling it
 
 cd /opt
 curl https://buildroot.org/downloads/buildroot-2018.11.tar.gz|tar xz --strip-components=1
