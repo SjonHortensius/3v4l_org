@@ -903,20 +903,21 @@ html.darkMode input[type="text"], select { background: #222; }
 /* mobile specific */
 @media (max-width: 600px)
 {
-	ul#tabs li.disabled{	display: none; }
-	ul#tabs li a{			padding: 5px; }
-	#options:not(:empty){	margin-top: 0; }
-	#previewForm{			display: none !important; }
-	header span{			display: none; }
-	header ul{				padding-right: 5px; padding: 0.5em; }
-	header h1{				height: 30px; }
-	header{					margin-bottom: 0; }
-	body.index .column li{	margin-bottom: 1em; }
-	body{					margin-top: 0; padding-top: 2.5em; }
-	fieldset.log{			display: none; }
-	body.search #tagCloud{	display: none; }
-	form p{					margin-left: 0; }
-	input[type="submit"]{	margin-left: 0; }
+	ul#tabs li.disabled{			display: none; }
+	ul#tabs li a{					padding: 5px; }
+	#options:not(:empty){			margin-top: 0; }
+	#previewForm{					display: none !important; }
+	header span{					display: none; }
+	header ul{						padding-right: 5px; padding: 0.5em; }
+	header h1{						height: 30px; }
+	header{							margin-bottom: 0; }
+	body.index .column li{			margin-bottom: 1em; }
+	body.last tr :nth-of-type(4){ 	display: none; }
+	body{							margin-top: 0; padding-top: 2.5em; }
+	fieldset.log{					display: none; }
+	body.search #tagCloud{			display: none; }
+	form p{							margin-left: 0; }
+	input[type="submit"]{			margin-left: 0; }
 }
 
 @media (max-width: 800px)
