@@ -33,7 +33,15 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 
 	public function init(): void
 	{
-		$versions = iterator_to_array(PhpShell_Version::find("id IN (SELECT id FROM version WHERE name LIKE '7.2.%' OR name LIKE '7.3.%')", [])
+		$def = Basic::$database->query("SELECT definition FROM pg_views WHERE viewname = 'results_supported'")->fetchColumn(0);
+		if (!preg_match_all('~FROM result_php([0-9.]+)~', $def, $matches))
+			throw new PhpShell_Action_Bughunt_SupportedVersionsCorruptException('Could not verify supported versions');
+
+		$like = 'false ';
+		foreach ($matches[1] as $major)
+			$like .= " OR name LIKE '". $major[0] .".". $major[1] .".%'";
+
+		$versions = iterator_to_array(PhpShell_Version::find("id IN (SELECT id FROM version WHERE ". $like .")", [])
 			->setOrder(['version.order' => false])
 			->getSimpleList('name', 'name'));
 
