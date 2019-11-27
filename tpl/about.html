@@ -22,7 +22,7 @@
 			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
 			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
 			<li>Functions called by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'functionCall';")->fetchColumn());}</b></li>
-			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%';")->fetchColumn());}</b></li>
+			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%' AND reltype>0;")->fetchColumn());}</b></li>
 			<li>Registered users:				 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
 		</ul>
 

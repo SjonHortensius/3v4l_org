@@ -560,7 +560,7 @@ func _batchScheduleNewVersions(target *Version) {
 }
 
 func batchRefreshRandomScripts() {
-	wg := newSizedWaitGroup(3)
+	wg := newSizedWaitGroup(9)
 
 	for {
 		rs, err := dbBatch.Query(`
