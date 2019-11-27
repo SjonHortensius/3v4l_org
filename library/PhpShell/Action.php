@@ -11,13 +11,14 @@ class PhpShell_Action extends Basic_Action
 		'script-src' => [
 			"'self'",
 			'cdn.jsdelivr.net',
+			'blob:', # required by ace on FF < 58
 		],
 		'manifest-src' => ["'self'"],
 		'frame-ancestors' => ["'none'"],
 		'worker-src' => [ # valid sources for web-workers
 			"'self'",
-			"blob:", # required by ace 1.2.8
 			'cdn.jsdelivr.net',
+			'blob:', # required by ace
 		],
 		'connect-src' => ["'self'"], # for xhr
 		'base-uri' => ["'self'"],
