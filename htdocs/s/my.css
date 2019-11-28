@@ -904,6 +904,7 @@ html.darkMode form { background: #222; }
 html.darkMode ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
 html.darkMode dd { background: #222; }
 html.darkMode input[type="text"], select { background: #222; color: #ccc; }
+html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert(1); }
 
 /* mobile specific */
 @media (max-width: 600px)
