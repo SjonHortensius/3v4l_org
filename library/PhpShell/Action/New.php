@@ -11,6 +11,7 @@ class PhpShell_Action_New extends PhpShell_Action
 //			'minLength' => 0,
 			'options' => [
 				'placeholder' => 'Untitled',
+				'aria-label' => 'Optional title',
 			],
 		],
 		'code' => [

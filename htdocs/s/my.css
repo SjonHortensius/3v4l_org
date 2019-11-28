@@ -222,7 +222,7 @@ ul#tabs li a
 {
 	border-radius: 4px 4px 0 0;
 	display: block;
-	color: #0088cc;
+	color: #09c;
 	text-decoration: none;
 	padding: 8px 12px;
 }
@@ -245,6 +245,11 @@ ul#tabs li.active a
 	border: 1px solid #ddd;
 	border-bottom-color: #fff;
 	cursor: default;
+}
+
+html.darkMode ul#tabs li.active a
+{
+	color: #ccc;
 }
 
 ul#tabs + div
@@ -341,6 +346,12 @@ body.touch dd
 	border-radius: 0 0 4px 4px;
 	border: 1px solid #ddd;
 }
+
+html.darkMode #options:not(:empty)
+{
+	border-color: #333;
+}
+
 
 #options input[type=checkbox] + label
 {
@@ -677,12 +688,6 @@ header a
 	color: #fff;
 }
 
-input + time
-{
-	color: #999;
-	font-size: 10px;
-}
-
 ins
 {
 	background-color: #adff2f;
@@ -893,12 +898,12 @@ html.darkMode { background-color: #1c1c1c; }
 html.darkMode header { background-color: #111; }
 html.darkMode body { color: #ccc; }
 html.darkMode tbody tr:not(.header):nth-child(2n+1) { background-color: #000; }
-html.darkMode a { color: #0088cc; }
+html.darkMode a { color: #09c; }
 html.darkMode a:visited, a:hover { color: #bbb; }
 html.darkMode form { background: #222; }
 html.darkMode ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
 html.darkMode dd { background: #222; }
-html.darkMode input[type="text"], select { background: #222; }
+html.darkMode input[type="text"], select { background: #222; color: #ccc; }
 
 /* mobile specific */
 @media (max-width: 600px)

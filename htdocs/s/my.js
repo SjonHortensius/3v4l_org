@@ -484,7 +484,6 @@ var evalOrg = {};
 			data.append('code', this.editor.getValue());
 		else
 			data.append('code', $('textarea[name=code]').value);
-		xhr.send(data);
 
 		// The response takes time; provide feedback about being in progress
 		if (!$('#tabs'))
@@ -506,6 +505,7 @@ var evalOrg = {};
 		}
 
 		$('#tabs').classList.add('busy');
+		xhr.send(data);
 
 		return false;
 	};
