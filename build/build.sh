@@ -49,6 +49,7 @@ vers=${version//./}; [[ ${#vers} -eq 3 ]] && vers=${vers:0:2}0${vers:2}; [[ $ver
 [[ $vers -gt 7200-1 ]] && confFlags="$confFlags --with-sodium=shared"
 [[ $vers -gt 7300-1 ]] && confFlags="$confFlags --without-curl"
 
+[[ $ISGIT -gt 0 ]] && version=git-$version # prefix binary and ext dir with git-
 EXTENSION_DIR=/usr/lib/php/$version/modules; export EXTENSION_DIR
 
 for ext in intl bcmath; do confFlags="$confFlags --enable-$ext=shared"; done

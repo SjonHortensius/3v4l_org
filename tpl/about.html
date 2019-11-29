@@ -49,6 +49,12 @@
 			<li><b>Apr 2012</b> - launch</li>
 		</ul>
 
+		<h2>Consistent dates and times</h2>
+		<p>To get consistent output I try to eliminate as much environmental changes as possible. The chroot is rarely changed, and some methods are overloaded to provide consistent results. For example, <i>php_uname</i> will always return the same output.</p>
+		<p>This is to keep the number of unique results down, and make <a href="/bughunt">the bughunt</a> a more useful tool. This fixation is also done on all date/time methods. A run will start at the same time for all versions, even though the actual walltime progresses.</p>
+		<p>For example - <a href="/MtDjZ">this simple <i>echo date();</i> script</a> was submitted in 2012. Since it was created, I have executed it on new versions as well - which all output 2012 even though most of the PHP versions weren't even released at at that time!</p>
+		<p>The date/time fixation uses the <b>last submit time</b> as reference. This means a quick-preview can sometimes show "outdated" timestamps as you are actually looking at output from a run with the previous submit-time.<p>
+
 		<h2>Pro-tricks</h2>
 		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:</p>
 		<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>

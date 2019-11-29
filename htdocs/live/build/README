@@ -1,4 +1,5 @@
 # USE THIS TO GENERATE A NEW ROOT FILESYSTEM | buildroot includes a php version, .config enables compiling it
+# to change PHP versions update packages/php/php.hash and php.mk
 
 cd /opt
 curl https://buildroot.org/downloads/buildroot-2018.11.tar.gz|tar xz --strip-components=1

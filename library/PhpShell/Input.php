@@ -144,6 +144,10 @@ class PhpShell_Input extends PhpShell_Entity
 		if (count(PhpShell_QueuedInput::find("input = ?", [$this->short])) > 0)
 			return;
 
+		//FIXME this is locked because it is linked in /about
+		if ('MtDjZ' == $this->short)
+			return;
+
 		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR'], 'isQuick' => isset($version)]);
 		Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
 
