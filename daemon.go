@@ -95,11 +95,11 @@ func (this *Input) prepare() {
 	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
 		if f, err := os.Create("/in/" + this.short); err != nil {
-			panic("prepare: could not create file: "+ err.Error())
+			panic("prepare: could not create file: " + err.Error())
 		} else {
 			var raw []byte
 			if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
-				panic("prepare: could not retrieve source: "+ err.Error())
+				panic("prepare: could not retrieve source: " + err.Error())
 			} else {
 				f.Write(raw)
 			}
@@ -110,11 +110,11 @@ func (this *Input) prepare() {
 	inputSrc.Unlock()
 
 	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
-		panic("prepare: could not get original mutation count: "+ err.Error())
+		panic("prepare: could not get original mutation count: " + err.Error())
 	}
 
 	if r, err := db.Exec(`UPDATE input SET state = 'busy' WHERE id = $1`, this.id); err != nil {
-		panic("Input: failed to update state: "+ err.Error())
+		panic("Input: failed to update state: " + err.Error())
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		panic(fmt.Sprintf("Input: failed to update state; %d rows affected, %s", a, err))
 	}
@@ -135,7 +135,7 @@ func (this *Input) complete() {
 
 	var mutations int
 	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations) - $1, 0) FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
-		panic("complete: could not get new mutation count: "+ err.Error())
+		panic("complete: could not get new mutation count: " + err.Error())
 	}
 
 	if _, err := db.Exec(`UPDATE input
@@ -175,12 +175,12 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
 		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, o.hash, o.raw); err != nil {
-			panic("Output: failed to store: "+ err.Error())
+			panic("Output: failed to store: " + err.Error())
 		}
 
 		// LastInsertId doesn't work
 		if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-			panic("Output: failed to retrieve after storing: "+ err.Error())
+			panic("Output: failed to retrieve after storing: " + err.Error())
 		}
 
 		stats.Lock(); stats.c["outputs"]++; stats.Unlock()
@@ -391,14 +391,14 @@ func refreshVersions() {
 		ORDER BY "released" DESC, "order" DESC`)
 
 	if err != nil {
-		panic("Could not populate versions: "+ err.Error())
+		panic("Could not populate versions: " + err.Error())
 	}
 
 	for rs.Next() {
 		v := Version{}
 
 		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.isHelper); err != nil {
-			panic("Error fetching version: "+ err.Error())
+			panic("Error fetching version: " + err.Error())
 		}
 
 		newVersions = append(newVersions, &v)
@@ -416,7 +416,7 @@ func checkPendingInputs() {
 		ORDER BY created DESC`)
 
 	if err != nil {
-		panic("checkPendingInputs - could not SELECT: "+ err.Error())
+		panic("checkPendingInputs - could not SELECT: " + err.Error())
 	}
 
 	l := &ResourceLimit{0, 2500, 32768}
@@ -427,7 +427,7 @@ func checkPendingInputs() {
 		input := newInput()
 
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
-			panic("checkPendingInputs: error fetching work: "+ err.Error())
+			panic("checkPendingInputs: error fetching work: " + err.Error())
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
@@ -511,7 +511,7 @@ func batchScheduleNewVersions() {
 func _batchScheduleNewVersions(target *Version) {
 	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
 
-	wg := newSizedWaitGroup(3)
+	wg := newSizedWaitGroup(9)
 
 	found := 1
 	for found > 0 {
@@ -528,7 +528,7 @@ func _batchScheduleNewVersions(target *Version) {
 				AND "runQuick" IS NULL;`,
 			target.id, target.eol.Format("2006-01-02"))
 		if err != nil {
-			panic("doBatch: error in SELECT query: "+ err.Error())
+			panic("doBatch: error in SELECT query: " + err.Error())
 		}
 
 		found = 0
@@ -536,12 +536,12 @@ func _batchScheduleNewVersions(target *Version) {
 			found++
 			input := newInput()
 			if err := rs.Scan(&input.id, &input.short); err != nil {
-				panic("doBatch: error fetching work: "+ err.Error())
+				panic("doBatch: error fetching work: " + err.Error())
 			}
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
-					panic("Unable to check load: "+ err.Error())
+					panic("Unable to check load: " + err.Error())
 				}
 			}
 
@@ -573,25 +573,25 @@ func batchRefreshRandomScripts() {
 				AND "operationCount">2
 			ORDER BY RANDOM()`)
 		if err != nil {
-			panic("batchRefreshRandomScripts: error in SELECT query: "+ err.Error())
+			panic("batchRefreshRandomScripts: error in SELECT query: " + err.Error())
 		}
 
 		for rs.Next() {
 			input := newInput()
 			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
-				panic("batchRefreshRandomScripts: error fetching work: "+ err.Error())
+				panic("batchRefreshRandomScripts: error fetching work: " + err.Error())
 			}
 
 			input.prepare()
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
-					panic("Unable to check load: "+ err.Error())
+					panic("Unable to check load: " + err.Error())
 				}
 			}
 
 			for _, v := range versions {
-				if (time.Now().After(v.eol) || v.eol.Before(input.created)) || (len(v.name)>5 && v.name[0:4] == "hhvm") {
+				if (time.Now().After(v.eol) || v.eol.Before(input.created)) || (len(v.name) > 5 && v.name[0:4] == "hhvm") {
 					continue
 				}
 
@@ -613,7 +613,7 @@ func doWork() {
 	rs, err := db.Query(`DELETE FROM queue WHERE "maxPackets" = 0 RETURNING *`)
 
 	if err != nil {
-		panic("doWork: error in DELETE query: "+ err.Error())
+		panic("doWork: error in DELETE query: " + err.Error())
 	}
 
 	var version sql.NullString
@@ -623,11 +623,11 @@ func doWork() {
 		rMax := &ResourceLimit{}
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
-			panic("doWork: error fetching work: "+ err.Error())
+			panic("doWork: error fetching work: " + err.Error())
 		}
 
 		if err := db.QueryRow(`SELECT id, created, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.runArchived); err != nil {
-			panic("doWork: error verifying input: "+ err.Error())
+			panic("doWork: error verifying input: " + err.Error())
 		}
 
 		input.prepare()
@@ -651,11 +651,11 @@ var (
 	dbBatch  *sql.DB
 	versions []*Version
 	batch    string
-	inputSrc   struct {
+	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
-	stats    struct {
+	stats struct {
 		sync.RWMutex
 		c map[string]int
 	}
@@ -673,7 +673,7 @@ func init() {
 		db, err = sql.Open("postgres", DSN+" port=5434")
 
 		if err != nil {
-			panic("init - failed to connect to db: "+ err.Error())
+			panic("init - failed to connect to db: " + err.Error())
 		}
 
 		dbBatch, err = sql.Open("postgres", DSN)
@@ -717,13 +717,13 @@ func init() {
 func main() {
 	l := pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			panic("While creating listener: "+ err.Error())
+			panic("While creating listener: " + err.Error())
 		}
 	})
 
 	if batch == "" {
 		if err := l.Listen("daemon"); err != nil {
-			panic("Could not setup Listener "+ err.Error())
+			panic("Could not setup Listener " + err.Error())
 		}
 
 		fmt.Printf("daemon ready\n")
