@@ -8,6 +8,9 @@
 #include <sys/utsname.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 struct timeval diff;
 bool initDone = false;
@@ -17,6 +20,7 @@ int (*org_gettimeofday)(struct timeval *tp, void *tzp);
 time_t (*org_time)(time_t *tloc);
 int (*org_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
+int (*org__xstat)(int __ver, const char *__filename, struct stat *__stat_buf);
 
 // This could be called _init and we wouldn't need if(0==diff) checks; but that segfaults on hhvm because of pthreads
 // also: don't add _init(){ _initLib }; that breaks functionality in hhvm
@@ -26,6 +30,7 @@ _initLib(void) {
 	org_time =          dlsym(RTLD_NEXT, "time");
 	org_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
 	org_localtime_r =   dlsym(RTLD_NEXT, "localtime_r");
+	org__xstat =		dlsym(RTLD_NEXT, "__xstat");
 
 	int offset = 0;
 	if (getenv("TIME") != NULL) {
@@ -148,6 +153,25 @@ int uname(struct utsname *buf) {
 	strcpy(buf->machine, "x86_64");
 
 	return 0;
+}
+
+// f/l/stat is provided by __xstat - see https://stackoverflow.com/q/5478780
+int statCtr = 0;
+int __xstat (int __ver, const char *__filename, struct stat *__stat_buf) {
+	if (!initDone)
+		_initLib();
+
+	int s = org__xstat(__ver, __filename, __stat_buf);
+
+	__stat_buf->st_dev = ++statCtr;
+	__stat_buf->st_ino = ++statCtr;
+	__stat_buf->st_atim.tv_sec = diff.tv_sec;
+	__stat_buf->st_mtim.tv_sec = diff.tv_sec;
+	__stat_buf->st_ctim.tv_sec = diff.tv_sec;
+
+//	fprintf(stderr, "\n%s for %s returning st_ino: %ld\n", __FUNCTION__, __filename, __stat_buf->st_ino);
+
+	return s;
 }
 
 bool forkPrintedMsg = false;

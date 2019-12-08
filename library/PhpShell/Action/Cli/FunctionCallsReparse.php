@@ -8,6 +8,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			'values' => ['full', 'quick', 'hard'],
 		],
 	];
+	public static $unknownFunctions = [];
 
 	public function run(): void
 	{
@@ -26,14 +27,24 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 					$input->waitUntilNoLonger('busy');
 				}
 
-				$input->updateFunctionCalls();
+				$input->updateFunctionCalls([self::class, 'missingFunctionDefinition']);
 				$input->removeCached();
 
 				$found++;
 			}
 
-			print '.'.(80==$i%81 ? sprintf(" %d processed | %d queries\n", $found, Basic_Log::$queryCount) : '');
+			print '.'.(80==$i%81 ? sprintf(" %d processed | %d queries | %d unknown funcs\n", $found, Basic_Log::$queryCount, count(self::$unknownFunctions)) : '');
 			Basic::$database->commit();
 		}
+
+		print_r(self::$unknownFunctions);
+	}
+
+	public static function missingFunctionDefinition(PhpShell_Input $input, string $name)
+	{
+		if (!isset(self::$unknownFunctions[$name]))
+			self::$unknownFunctions[$name] = 1;
+		else
+			self::$unknownFunctions[$name]++;
 	}
 }

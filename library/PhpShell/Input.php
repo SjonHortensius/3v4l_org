@@ -81,7 +81,7 @@ class PhpShell_Input extends PhpShell_Entity
 		return $input;
 	}
 
-	public function updateFunctionCalls(): void
+	public function updateFunctionCalls(callable $onMissingFunction = null): void
 	{
 		try
 		{
@@ -105,7 +105,12 @@ class PhpShell_Input extends PhpShell_Entity
 
 			// Only store valid functionCalls, nothing from userspace
 			if (PhpShell_Function::find("text = ?", [$match['operand']])->count() < 1)
+			{
+				if (is_callable($onMissingFunction))
+					$onMissingFunction($this, $match['operand']);
+
 				continue;
+			}
 
 			$calls[ $match['operand'] ] = true;
 
