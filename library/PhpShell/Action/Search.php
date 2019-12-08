@@ -34,12 +34,9 @@ class PhpShell_Action_Search extends PhpShell_Action
 
 	public function run(): void
 	{
-		$q = Basic::$userinput['query'];
-		$q = (false === strpos($q, '%')) ? "%$q%" : $q;
-
 		$this->entries = PhpShell_FunctionCall::find()
 			->addJoin(PhpShell_Function::class, "function.id = \"functionCall\".function", null, 'INNER', false)
-			->getSubset("function.text LIKE ?", [$q])
+			->getSubset("function.text LIKE ?", [Basic::$userinput['query']])
 			->addJoin(PhpShell_Input::class, "input.id = \"functionCall\".input")
 			->getSubset("input.state = 'done'")
 			->includeFunctionCalls()
