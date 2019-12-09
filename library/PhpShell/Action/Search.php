@@ -40,7 +40,7 @@ class PhpShell_Action_Search extends PhpShell_Action
 			->addJoin(PhpShell_Input::class, "input.id = \"functionCall\".input")
 			->getSubset("input.state = 'done'")
 			->includeFunctionCalls()
-			->setOrder(['input.id' => false]);
+			->setOrder(['input.id + 0' => false]);
 
 		parent::run();
 	}

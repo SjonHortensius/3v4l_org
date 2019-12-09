@@ -14,6 +14,8 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	{
 		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" ISNULL" : "true";
 
+		print '* starting with '. PhpShell_FunctionCall::find()->count() .' functionCalls'."\n";
+
 		for ($found = $i = 0; ($i==0 || $found >= $i*250); $i++)
 		{
 			Basic::$database->beginTransaction();
@@ -37,6 +39,9 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			Basic::$database->commit();
 		}
 
+		print '* completed with '. PhpShell_FunctionCall::find()->count() .' functionCalls'."\n";
+
+		arsort(self::$unknownFunctions);
 		print_r(self::$unknownFunctions);
 	}
 
