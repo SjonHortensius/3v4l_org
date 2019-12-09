@@ -901,7 +901,8 @@ html.darkMode tbody tr:not(.header):nth-child(2n+1) { background-color: #000; }
 html.darkMode a { color: #09c; }
 html.darkMode a:visited, a:hover { color: #bbb; }
 html.darkMode form { background: #222; }
-html.darkMode ul#tabs li.active a { border-bottom: #222; background: #1c1c1c; }
+/* special: to get a nice loading.gif - we invert, but that means all colors here are inverted as well */
+html.darkMode ul#tabs li.active a { filter: invert(100%); background-color: #e3e3e3; color: #323232; border-color: #212121; border-bottom: #ddd; }
 html.darkMode dd { background: #222; }
 html.darkMode input[type="text"], select { background: #222; color: #ccc; }
 html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert(1); }
