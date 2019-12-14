@@ -591,7 +591,7 @@ func batchRefreshRandomScripts() {
 			}
 
 			for _, v := range versions {
-				if (time.Now().After(v.eol) || v.eol.Before(input.created)) || (len(v.name) > 5 && v.name[0:4] == "hhvm") {
+				if v.eol.Before(input.created) {
 					continue
 				}
 
