@@ -30,10 +30,14 @@ class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 		'count' => 'sizeof',
 		'array_key_exists' => 'key_exists',
 	];
-	// grep FileFunc ext/standard/filestat.c
-	private static $fileFunctions = ['fileperms', 'fileinode', 'filesize', 'fileowner', 'filegroup',
+	private static $dynamicFunctions = [
+		// grep FileFunc ext/standard/filestat.c
+		'ext/standard/filestat.c:PHPAPI void php_stat' => ['fileperms', 'fileinode', 'filesize', 'fileowner', 'filegroup',
 			'fileatime', 'filemtime', 'filectime', 'filetype', 'is_writable', 'is_readable', 'is_executable',
-			'is_file', 'is_dir', 'is_link', 'file_exists', 'lstat', 'stat'];
+			'is_file', 'is_dir', 'is_link', 'file_exists', 'lstat', 'stat'],
+		// grep PHP_ZLIB_ENCODE_FUNC ext/zlib/zlib.c
+		'ext/zlib/zlib.c:static zend_string *php_zlib_encode' => ['zlib_encode', 'gzdeflate', 'gzencode', 'gzcompress'],
+	];
 
 	public function run(): void
 	{
@@ -46,10 +50,14 @@ class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 		Basic::$database->beginTransaction();
 		$statement = Basic::$database->prepare("INSERT INTO function (text, source) VALUES (?, ?) ON CONFLICT (text) DO UPDATE SET source=excluded.source");
 
-		$line = `grep -nrP 'PHPAPI void php_stat' ext/standard/filestat.c`;
-		list($lineNo, $trash) = explode(':', $line, 2);
-		foreach (self::$fileFunctions as $fileFunc)
-			$result['updated'] += intval($statement->execute([$fileFunc, 'ext/standard/filestat.c:'.$lineNo]));
+		foreach (self::$dynamicFunctions as $location => $functions)
+		{
+			[$path, $preg] = explode(':', $location, 2);
+			$lineNo = key(preg_grep('~^'. preg_quote($preg, '~').'~', file($path)));
+
+			foreach ($functions as $function)
+				$result['updated'] += intval($statement->execute([$function, $path .':'. $lineNo]));
+		}
 
 		$preg = escapeshellarg(self::FUNC_PREG);
 		foreach (explode("\n", `grep -nrP $preg --include=*.c ext/ main/ Zend/`) as $line)
