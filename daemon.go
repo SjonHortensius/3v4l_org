@@ -582,6 +582,11 @@ func batchRefreshRandomScripts() {
 				panic("batchRefreshRandomScripts: error fetching work: " + err.Error())
 			}
 
+			// don't incorporate in query above - it will be too slow leading to: canceling statement due to conflict with recovery
+			if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, input.id).Scan(&input.lastSubmit); err != nil {
+				input.lastSubmit = input.created
+			}
+
 			input.prepare()
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
@@ -591,7 +596,7 @@ func batchRefreshRandomScripts() {
 			}
 
 			for _, v := range versions {
-				if v.eol.Before(input.created) {
+				if v.eol.Before(input.lastSubmit) {
 					continue
 				}
 

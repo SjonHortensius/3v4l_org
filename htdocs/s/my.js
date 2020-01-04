@@ -227,8 +227,8 @@ var evalOrg = {};
 		if ($('#tabs.busy'))
 			refreshTimer = setInterval(this.refresh, 1000);
 
-		this.localTime(function(el, d){
-			el.innerHTML = ' @ '+ d.toString().split(' ').slice(0,5).join(' ');
+		this.localTime(function(el, d, t){
+			el.innerHTML = ' @ '+ d +' '+ t;
 		}, 'input + time');
 	};
 
@@ -721,9 +721,11 @@ var evalOrg = {};
 		cb = cb || function(){};
 
 		$$(sel).forEach(function (el){
-			var d = new Date(el.getAttribute('datetime'));
+			var d = new Date(el.hasAttribute('datetime') ? el.getAttribute('datetime') : el.innerText);
 			el.setAttribute('title', d.toString());
-			cb(el, d);
+
+			function pad(n){ return ('0'+n).slice(-2); };
+			cb(el, d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()), pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds()));
 		});
 	};
 
@@ -740,16 +742,11 @@ var evalOrg = {};
 
 	this.handleLast = function()
 	{
-		this.localTime(function(el, d){
-			function pad(d){ return ('0'+d).slice(-2); }
-
-			var s;
-			if (window.location.search.indexOf('mine=1') > -1)
-				s = d.getFullYear() +'-'+ pad(d.getMonth()) +'-'+ pad(d.getDay()) +' ';
+		this.localTime(function(el, d, t){
+			if (window.location.search.indexOf('mine=1') != -1)
+				el.innerHTML = d +' '+ t;
 			else
-				s = '';
-
-			el.innerHTML = s + pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+				el.innerHTML = t;
 		});
 	};
 
@@ -818,9 +815,8 @@ var evalOrg = {};
 		});
 
 		if (!$('div#tagCloud'))
-			this.localTime(function(el, d){
-				function pad(n){ return ('0'+n).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+			this.localTime(function(el, d, t){
+				el.innerHTML = d +' '+ t;
 			});
 	};
 
@@ -838,9 +834,8 @@ var evalOrg = {};
 		}
 		else
 		{
-			this.localTime(function(el, d){
-				function pad(d){ return ('0'+d).slice(-2); }
-				el.innerHTML = d.getFullYear() +'-'+ pad(1+d.getMonth()) +'-'+ pad(d.getDate()) +' '+ pad(d.getHours()) +':'+ pad(d.getMinutes()) +':'+ pad(d.getSeconds());
+			this.localTime(function(el, d, t){
+				el.innerHTML = d +' '+ t;
 			});
 		}
 	};
@@ -944,7 +939,7 @@ var evalOrg = {};
 
 	this.handleStats = function()
 	{
-		this.localTime(false, 'tbody td:nth-child(2)');
+		this.localTime(function(el, d, t){ el.innerHTML = t;}, 'tbody td:nth-child(2)');
 	};
 
 	// Possibility to apply css before onload gets fired (which is after parsing ace.js)

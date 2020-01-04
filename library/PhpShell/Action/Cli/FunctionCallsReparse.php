@@ -14,7 +14,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	{
 		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" ISNULL" : "true";
 
-		printf(" ** starting with %.3f K functionCalls **\n", PhpShell_FunctionCall::find()->count()/1000);
+		printf(" ** starting with %.3f K functionCalls (mode %s) **\n", PhpShell_FunctionCall::find()->count()/1000, Basic::$userinput['type']);
 
 		for ($found = $i = 0; ($i==0 || $found >= $i*250); $i++)
 		{

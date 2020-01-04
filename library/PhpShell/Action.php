@@ -3,7 +3,7 @@
 class PhpShell_Action extends Basic_Action
 {
 	public $encoding = 'UTF-8';
-	public $title = 'Run code in 200+ PHP versions simultaneously';
+	public $title = 'Test code in 250+ PHP versions';
 	public $user;
 	public $bodyClass;
 	public $adminMessage;
@@ -30,10 +30,18 @@ class PhpShell_Action extends Basic_Action
 		]
 	];
 	public $httpPreloads = [];
+	public $aceScripts = [
+		// curl URL | openssl dgst -sha384 -binary | openssl base64 -A
+		'ace'               => 'rUYyP7fFwtUNNUI58AukTAA09xPFvyGdaZjThfjMoOvJqOrKQP19dw4U9zs2Fvjv',
+		'ext-language_tools'=> 'tc93qxndTmhzoGrBxjaa9P+O2Qwv8pIxq+GhjDoKfj3SENyU7Zm4DMQwk05pG3UJ',
+		'mode-php'          => 'vPD3DrKLLxVVNiyVg9HHAfpWS+V8EZjwlvTQha6eKEuo+mULV3HG47C1fvibRP2v',
+		'theme-chrome'      => 'TMSA2R4Dwlyv981WAb6YKZhpVnbp2hb6SRZzwPFsWAG6Ejp8P1vsnMVRsf0/q6u2',
+		'theme-chaos'       => '0lG3fDjcbmfHTMnTJ+H9YzwwT3OTTmb/tTTQnd+yJk4O0c19Z1q+Zb/66LG1aFzm',
+	];
 
 	public function init(): void
 	{
-		Basic::$database->exec("SET statement_timeout TO 2500;");
+		Basic::$database->exec("SET statement_timeout TO 5000;");
 
 		// For now; don't autoStart sessions
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
@@ -84,13 +92,19 @@ class PhpShell_Action extends Basic_Action
 		if (Basic::$config->PRODUCTION_MODE && 'text/html' == $this->contentType)
 		{
 			$preloads = Basic::$cache->lockedGet(__CLASS__.'::staticPreloads', function(){
+				// dynamically fetch correct version
+				$aceBase = str_replace('worker-php.js', '', explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1]);
+
+				$p = [];
+				foreach ($this->aceScripts as $name => $hash)
+					$p[$aceBase . $name .'.js'] = 'script';
+
 				return [
 					// match hashes put in tpls by update-online
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
 					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
-					// dynamically fetch correct version
-					explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1] => 'worker',
-				];
+					$aceBase .'worker-php.js' => 'worker',
+				] + $p;
 			}, 3600) + $this->httpPreloads;
 
 			foreach ($preloads as $link => $type)
