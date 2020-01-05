@@ -7,7 +7,7 @@ cp build/buildroot-2018-11.config /opt/.config
 make
 
 # add our init
-/opt/output/host/bin/i586-3v4l.org-linux-gnu-gcc ./init.c -o /opt/output/target/sbin/init
-/opt/output/host/bin/i586-3v4l.org-linux-gnu-strip /opt/output/target/sbin/init
+./output/host/bin/i586-3v4l.org-linux-gnu-gcc ./init.c -o ./output/target/sbin/init
+./output/host/bin/i586-3v4l.org-linux-gnu-strip ./output/target/sbin/init
 
 ./build/generate_files.sh /opt/

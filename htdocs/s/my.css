@@ -10,10 +10,6 @@ body
 }
 
 /* for the terminal */
-#term_wrap {
-    margin: 20px;
-}
-
 .term {
     font-family: monospace,courier,fixed,swiss,sans-serif;
     font-size: 14px;

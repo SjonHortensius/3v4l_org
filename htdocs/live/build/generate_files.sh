@@ -6,7 +6,7 @@ set -e
 
 ROOT=$1/output/target
 # increase this for new releases
-ROOT_ID=2
+ROOT_ID=74
 ROOT_TOC=files/$(printf '%016d' $ROOT_ID)
 
 chmod 1777 $ROOT/tmp

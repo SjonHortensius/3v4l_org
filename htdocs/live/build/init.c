@@ -14,7 +14,7 @@ int main(void)
 		0
 	};
 
-	if (setgid(65534) || setuid(65534))
+	if (setgid(1000) || setuid(1000))
 	{
 		perror("Error setting userid");
 		return -1;
