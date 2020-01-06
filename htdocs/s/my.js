@@ -32,6 +32,7 @@ var evalOrg = {};
 		refreshCount = 0,
 		perfAggregates = undefined;
 	this.editor = undefined;
+	this.livePush = undefined;
 
 	this.initialize = function()
 	{
@@ -66,7 +67,7 @@ var evalOrg = {};
 			el.addEventListener('touchstart', function(){ el.remove(); });
 		});
 
-		this.createDarkmodeToggle();
+		this.createOptionsToggle();
 	};
 
 	var loadScript = function(url, f)
@@ -109,9 +110,9 @@ var evalOrg = {};
 		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
 			defaul = true;
 
-		if ($('#toggleDarkmode input'))
+		if ($('#toggleOptions input#darkMode'))
 		{
-			enable = $('#toggleDarkmode input').checked;
+			enable = $('#darkMode').checked;
 
 			// Only store pref for explicit user actions
 			if (typeof e != undefined)
@@ -136,25 +137,30 @@ var evalOrg = {};
 		}
 	};
 
-	this.createDarkmodeToggle = function()
+	this.createOptionsToggle = function()
 	{
-		var f = document.createElement('fieldset');
-		f.setAttribute('id', 'toggleDarkmode');
-		var i = document.createElement('input');
-		i.setAttribute('type', 'checkbox');
-		i.setAttribute('id', 'darkMode');
+		document.body.appendChild(object2Dom({
+			fieldset: {
+				id: 'toggleOptions',
+				children: [
+					{input: {id: 'darkMode', type: 'checkbox'}},
+					{label: {'for': 'darkMode', _text: 'Enable dark-mode'}},
+					{hr:{}},
+					{input: {id: 'livePreview', type: 'checkbox'}},
+					{label: {'for': 'livePreview', _text: 'Enable live-preview', title: 'BETA feature'}},
+				]
+			}
+		}));
 
 		if (document.documentElement.classList.contains('darkMode'))
-			i.setAttribute('checked', 'checked');
+			$('#darkMode').setAttribute('checked', 'checked');
+		$('#darkMode').addEventListener('change', this.applyDarkmode.bind(this));
 
-		i.addEventListener('change', this.applyDarkmode.bind(this));
-		var l = document.createElement('label');
-		l.setAttribute('for', 'darkMode');
-		l.appendChild(document.createTextNode('Enable dark-mode'));
-		f.appendChild(i);
-		f.appendChild(l);
-
-		document.body.appendChild(f);
+		if (localStorage.getItem("livePreview") == "enable")
+			$('#livePreview').setAttribute('checked', 'checked');
+		$('#livePreview').addEventListener('change', function(){
+			localStorage.setItem('livePreview', $('#livePreview').checked ? 'enable' : 'disable');
+		});
 
 		this.applyDarkmode();
 	};
@@ -212,11 +218,93 @@ var evalOrg = {};
 
 			if ($('input[type=submit][disabled]') && !$('#tabs.abusive'))
 				$('input[type=submit]').removeAttribute('disabled');
-		});
+
+			if ($('#live_preview'))
+			{
+				if ('number' == typeof this.livePush)
+					clearInterval(this.livePush);
+
+				return this.livePush = setTimeout(this.livePreviewPush.bind(this), 500);
+			}
+
+			if ($('#livePreview').checked)
+				this.livePreviewCreate();
+		}.bind(this));
 
 		$('#archived_1').addEventListener('change', function(){
 			$('input[type=submit]').removeAttribute('disabled');
 		});
+	};
+
+	this.livePreviewCreate = function()
+	{
+		history.pushState({}, 'preview', '/#live');
+
+		outputClearTabs();
+
+		$('#tabs').classList.add('busy');
+		$('#tabs').appendChild(object2Dom({
+			li: {
+				'class': 'active',
+				a: {href: '/#live', _text: 'Live-preview'}
+			}
+		}));
+
+		$('#tab').appendChild(object2Dom({
+			dl:{
+				dt: {_text: "Output for php 7.4.0"},
+				dd: {
+					div: {
+						id: 'live_preview',
+						'data-cfg': $('base').getAttribute('href')+'live/x86.cfg',
+		}	}	}	}));
+
+		_launchVm('init=/sbin/preview');
+
+		var check = setInterval(function(){
+			if ('undefined' == typeof _malloc)
+				return;
+
+			clearInterval(check);
+			setTimeout(this.livePreviewPush.bind(this), 150);
+		}.bind(this), 250);
+	};
+
+	this.livePreviewPush = function(){
+		if (this.editor)
+			var content = this.editor.getValue();
+		else
+			var content = $('textarea[name=code]').value;
+
+		var buf = new TextEncoder("utf-8").encode(content);
+		var buf_len = buf.length;
+		var buf_addr = _malloc(buf_len);
+		HEAPU8.set(buf, buf_addr);
+
+		$('#tabs').classList.add('busy');
+
+		window.fs_import_file('preview', buf_addr, buf_len);
+	};
+
+	var outputClearTabs = function()
+	{
+		if (!$('#tabs'))
+		{
+			$$('#newForm ~ div').forEach(function(div){
+				div.parentNode.removeChild(div);
+			});
+
+			$('#newForm').parentNode.insertBefore(object2Dom({div: {id: 'tab'}}), $('#previewForm').nextSibling);
+			$('#newForm').parentNode.insertBefore(object2Dom({ul: {id: 'tabs'}}), $('#tab'));
+		}
+		else
+		{
+			while ($('#tabs').firstChild)
+				$('#tabs').removeChild($('#tabs').firstChild);
+
+			while ($('#tab').firstChild)
+				$('#tab').removeChild($('#tab').firstChild);
+		}
 	};
 
 	this.handleScript = function()
@@ -314,14 +402,17 @@ var evalOrg = {};
 		if (!hasOverflow)
 			return;
 
-		var a = document.createElement('a');
-		a.setAttribute('id', 'expand');
-		a.setAttribute('title', 'expand output');
-		a.addEventListener('click', outputExpand);
-		var i = document.createElement('i');
-		i.classList.add('icon-resize-full', 'expand');
-		a.appendChild(i);
-		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+		$('div#tab').insertBefore(object2Dom({
+			a: {
+				id: 'expand',
+				title: 'expand output',
+				i: {
+					'class': 'icon-resize-full expand'
+				}
+			}
+		}), $('div#tab').firstChild);
+
+		$('#expand').addEventListener('click', outputExpand);
 	};
 
 	var outputExpand = function()
@@ -336,14 +427,14 @@ var evalOrg = {};
 		if ($('#diff') || $$('#tab dd').length < 2)
 			return;
 
-		var a = document.createElement('a');
-		a.setAttribute('id', 'diff');
-		a.setAttribute('title', 'diff output');
-		a.addEventListener('click', outputDiff);
-		var i = document.createElement('i');
-		i.classList.add('icon-tasks', 'diff');
-		a.appendChild(i);
-		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+		$('div#tab').insertBefore(object2Dom({
+			a: {
+				id: 'diff', title: 'diff output',
+				i: {'class': 'icon-tasks'}
+			}
+		}), $('div#tab').firstChild);
+
+		$('#diff').addEventListener('click', outputDiff);
 	};
 
 	var diffDone = false;
@@ -411,14 +502,14 @@ var evalOrg = {};
 		if ($('#asHtml'))
 			return;
 
-		var a = document.createElement('a');
-		a.setAttribute('id', 'asHtml');
-		a.setAttribute('title', 'interpret as HTML');
-		a.addEventListener('click', outputHtml);
-		var i = document.createElement('i');
-		i.classList.add('icon-eye-open', 'diff');
-		a.appendChild(i);
-		$('div#tab').insertBefore(a, $('div#tab').firstChild);
+		$('div#tab').insertBefore(object2Dom({
+			a: {
+				id: 'asHtml', title: 'interpret as HTML',
+				i: {'class': 'icon-eye-open'}
+			}
+		}), $('div#tab').firstChild);
+
+		$('#asHtml').addEventListener('click', outputHtml);
 	};
 
 	var outputHtml = function() {
@@ -485,26 +576,19 @@ var evalOrg = {};
 		else
 			data.append('code', $('textarea[name=code]').value);
 
+		outputClearTabs();
+
 		// The response takes time; provide feedback about being in progress
-		if (!$('#tabs'))
-		{
-			$$('#newForm ~ div').forEach(function(div){
-				div.parentNode.removeChild(div);
-			});
+		$('#tabs').appendChild(object2Dom({
+			li: {
+				'class': 'active',
+				a: {href: '/#preview', _text: 'Preview'}
+			}
+		}));
 
-			var ul = document.createElement('ul'); ul.setAttribute('id', 'tabs');
-			var li = document.createElement('li'); li.classList.add('active');
-			ul.appendChild(li);
-			var a = document.createElement('a'); a.setAttribute('href', '/#preview'); a.appendChild(document.createTextNode('Preview'));
-			li.appendChild(a);
-			var tab = document.createElement('div'); tab.setAttribute('id', 'tab');
-			tab.appendChild(document.createElement('dl'));
-
-			$('#newForm').parentNode.insertBefore(tab, $('#previewForm').nextSibling);
-			$('#newForm').parentNode.insertBefore(ul, tab);
-		}
-
+		$('#tab').appendChild(document.createElement('dl'));
 		$('#tabs').classList.add('busy');
+
 		xhr.send(data);
 
 		return false;
@@ -513,11 +597,13 @@ var evalOrg = {};
 	this.previewStateLoad = function(e)
 	{
 		// Not every hash change means there is a valid state to pop
-		if (!e.state || !e.state.code)
+		if (!e.state)
 			return;
 
-		this.editor.setValue(e.state.code);
-		$('#version').value = e.state.version;
+		if (e.state.code)
+			this.editor.setValue(e.state.code, 1);
+		if (e.state.version)
+			$('#version').value = e.state.version;
 
 		// get results by resubmit / replaceState storing output ?
 	};
@@ -845,31 +931,10 @@ var evalOrg = {};
 		tableSorter.initialize();
 	};
 
-	this.handleLive = function()
-	{
-		loadScript('/live/term.js', _launchVm);
-
-		if (document.body.classList.contains('mobile'))
-		{
-			var b = document.createElement('button');
-			b.appendChild(document.createTextNode('show keyboard'));
-			b.addEventListener('click', function (){
-				var i = document.createElement('input');
-				$('#term_wrap').insertBefore(i, $('#term_wrap').firstChild);
-
-				i.style.display = 'inline';
-				i.focus(); // focus on it so keyboard pops up
-				i.style.display = 'none';
-			});
-
-			$('#term_wrap').insertBefore(b, $('#term_wrap').firstChild);
-		}
-	};
-
 	// this function is based on jslinux.js - Copyright (c) 2011-2017 Fabrice Bellard
-	var _launchVm = function()
+	var _launchVm = function(cmdline)
 	{
-		/* Module is used by x86emu - update_downloading is a calback */
+		/* Module is used by x86emu - update_downloading is a callback */
 		window.Module = {};
 		window.update_downloading = function(flag)
 		{
@@ -887,17 +952,40 @@ var evalOrg = {};
 			}
 		};
 
-		var url = $('#term_wrap').dataset.cfg;
+		var url = $('#live_preview').dataset.cfg;
 		var mem_size = 128; /* in mb */
 
-		/* start the terminal */
-		window.term = new Term(115, 30, function(str){
-			for (var i = 0; i < str.length; i++) {
-				console_write1(str.charCodeAt(i));
-			}
-		}, 10000);
-		term.open(document.getElementById('term_container'), document.getElementById('term_paste'));
-		term.write('connecting...\r');
+		window.liveTiming = new Date().getTime();
+		window.term = new function(w, h){
+			this.cleared = true;
+
+			this.getSize = function(){
+				return [80, 999];
+			};
+			this.write = function(s){
+//console.log("myTerm.write", this.cleared, escape(s));
+				if (window.liveTiming)
+				{
+					var xhr = new XMLHttpRequest();
+					xhr.open('post', '/live-timing/'+ encodeURIComponent(new Date().getTime() - window.liveTiming));
+					xhr.send();
+					delete window.liveTiming;
+				}
+
+				if (s == String.fromCharCode(27) + String.fromCharCode(91) + 'H' + String.fromCharCode(27) + String.fromCharCode(91) + 'J')
+				{
+					while ($('#live_preview').firstChild)
+						$('#live_preview').removeChild($('#live_preview').firstChild);
+
+					this.cleared = true;
+					return;
+				} else if (this.cleared && s == '\r\n') //FIXME find out who prints this
+					return this.cleared = false;
+
+				$('#live_preview').appendChild(document.createTextNode(s));
+				$('#tabs').classList.remove('busy');
+			};
+		};
 
 		Module.preRun = function()
 		{
@@ -910,7 +998,7 @@ var evalOrg = {};
 			window.net_write_packet = Module.cwrap('net_write_packet', null, ['number', 'number']);
 			window.net_set_carrier = Module.cwrap('net_set_carrier', null, ['number']);
 
-			Module.ccall('vm_start', null, ['string', 'number', 'string', 'string', 'number', 'number', 'number', 'string'], [url, mem_size, '', '', 0, 0, 0, '']);
+			Module.ccall('vm_start', null, ['string', 'number', 'string', 'string', 'number', 'number', 'number', 'string'], [url, mem_size, cmdline||'', '', 0, 0, 0, '']);
 		};
 
 		if (typeof WebAssembly !== 'object')
@@ -940,6 +1028,34 @@ var evalOrg = {};
 	this.handleStats = function()
 	{
 		this.localTime(function(el, d, t){ el.innerHTML = t;}, 'tbody td:nth-child(2)');
+	};
+
+	var object2Dom = function(node, wrapper)
+	{
+		// if we get a single top-node; use that as wrapper
+		if (typeof wrapper == 'undefined' && 1 == Object.keys(node).length)
+		{
+			wrapper = Object.keys(node)[0];
+			node = node[wrapper];
+		}
+
+		var o = document.createElement(wrapper || 'span');
+
+		for (var k in node)
+		{
+			// to support multiple children with the same tagname, support children:[ {a:{href:'x'}}, {a:{href:'y'}} ]
+			if (k == 'children' && Array.isArray(node[k]))
+				for (var kk in node[k])
+					o.appendChild(object2Dom(node[k][kk]));
+			else if ("object" == typeof node[k])
+				o.appendChild(object2Dom(node[k], k));
+			else if ("_text" == k)
+				o.appendChild(document.createTextNode(node[k]));
+			else
+				o.setAttribute(k, node[k]);
+		}
+
+		return o;
 	};
 
 	// Possibility to apply css before onload gets fired (which is after parsing ace.js)

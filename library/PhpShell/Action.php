@@ -43,6 +43,10 @@ class PhpShell_Action extends Basic_Action
 	{
 		Basic::$database->exec("SET statement_timeout TO 5000;");
 
+		// https://bugs.chromium.org/p/chromium/issues/detail?id=686369
+		if (false !== strpos($_SERVER['HTTP_USER_AGENT'], 'Chrome/') || false !== strpos($_SERVER['HTTP_USER_AGENT'], 'ChriOS/'))
+			$this->cspDirectives['script-src'] []= "'unsafe-eval'";
+
 		// For now; don't autoStart sessions
 		if (isset($_COOKIE[ Basic::$config->Session->name ]))
 		{

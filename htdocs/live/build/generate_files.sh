@@ -11,10 +11,11 @@ ROOT_TOC=files/$(printf '%016d' $ROOT_ID)
 
 chmod 1777 $ROOT/tmp
 rm -vf $ROOT/THIS_IS_NOT_YOUR_ROOT_FILESYSTEM
+rmdir -v $ROOT/{media,proc,mnt,opt,run,sys} || :
+ln -s init $ROOT/sbin/preview
+cp -v ${0%/*}/php.ini $ROOT/etc/php.ini
 
 rm -f ./files/*
-
-cp -v ${0%/*}/php.ini $ROOT/etc/php.ini
 
 # echo -e "bin/init lib/ld-2.28.so lib/libc-2.28.so usr/bin/php lib/libcrypt-2.28.so /lib/libdl-2.28.so lib/libstdc++.so.6.0.24 lib/libreadline.so.7.0\n\netc/hosts" >$ROOT/.preload
 
@@ -26,8 +27,8 @@ do
 	if [[ $d -gt $p ]]; then
 		n=$(($p + 1))
 
-		[[ $d -ne $n ]] && echo error: $e - $d is greater than 1 + $p >>.2
-		[[ $pe != 04* ]] && echo error: $pe - depth increases without a directory >>.2
+		[[ $d -ne $n ]] && echo error: $e - $d is greater than 1 + $p >&2
+		[[ $pe != 04* ]] && echo error: $pe - depth increases without a directory >&2
 	else
 		[[ $pe == 04* ]] && echo .
 
