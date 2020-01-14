@@ -261,12 +261,16 @@ var evalOrg = {};
 
 		_launchVm('init=/sbin/preview');
 
+		// every 250ms, check if _malloc is defined (vm running) so we can push
 		var check = setInterval(function(){
 			if ('undefined' == typeof _malloc)
 				return;
 
+			if ('number' == typeof this.livePush)
+				clearInterval(this.livePush);
+
 			clearInterval(check);
-			setTimeout(this.livePreviewPush.bind(this), 150);
+			this.livePush = setTimeout(this.livePreviewPush.bind(this), 250);
 		}.bind(this), 250);
 	};
 
