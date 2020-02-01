@@ -2,11 +2,17 @@
 	<link rel="alternate" type="application/json+oembed" href="{baseHref}embed/{input->short}">
 {/}
 
+{!--meta property="og:image" content="" /--}
+{!--meta property="og:site_name" content="3v4l" /--}
+<meta property="og:type" content="article">
+<meta property="og:url" content="{baseHref}{input->short}">
+<meta property="og:description" content="{title} created on 3v4l.org: online PHP shell with 250+ PHP versions">
+
 <div itemscope itemtype="http://schema.org/Article">
 	{if (isset($this->input->title))}
-		<meta itemprop="name" content="{input->title}" />
+		<meta property="og:title" itemprop="name" content="{input->title}" />
 	{:}
-		<meta itemprop="name" content="{input->short}" />
+		<meta property="og:title" itemprop="name" content="{input->short}" />
 	{/}
 
 	{$formAction = new PhpShell_Action_New;}

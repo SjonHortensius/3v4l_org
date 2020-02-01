@@ -830,6 +830,8 @@ body.sponsor ul
 	margin: 5px;
 }
 
+body.mobile #toggleOptions { position: inherit; }
+
 html.darkMode #toggleOptions { background: #333; }
 
 #toggleOptions label
@@ -875,6 +877,7 @@ html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert
 	/* keep menu on single line, remove bughunt & search; prevent LI from taking up space */
 	nav li:nth-of-type(3),
 	nav li:nth-of-type(4){	display: none; }
+	#toggleOptions{			position: inherit; }
 }
 
 @media (max-width: 1000px)

@@ -2,8 +2,8 @@
 # to change PHP versions update packages/php/php.hash and php.mk
 
 cd /opt
-curl https://buildroot.org/downloads/buildroot-2018.11.tar.gz|tar xz --strip-components=1
-cp build/buildroot-2018-11.config /opt/.config
+curl https://buildroot.org/downloads/buildroot-2019.11.tar.gz|tar xz --strip-components=1
+cp build/buildroot:config /opt/.config
 make
 
 # add our init

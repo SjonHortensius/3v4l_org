@@ -1,7 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/wait.h>
-#include <string.h>
 
 char *cmd[] = { "/usr/bin/php", "/tmp/preview", 0 };
 char *envp[] =
