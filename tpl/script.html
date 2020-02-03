@@ -6,13 +6,13 @@
 {!--meta property="og:site_name" content="3v4l" /--}
 <meta property="og:type" content="article">
 <meta property="og:url" content="{baseHref}{input->short}">
-<meta property="og:description" content="{title} created on 3v4l.org: online PHP shell with 250+ PHP versions">
+<meta property="og:description" content="View the output of this script on 3v4l.org: the online PHP shell with 250+ PHP versions">
 
 <div itemscope itemtype="http://schema.org/Article">
 	{if (isset($this->input->title))}
-		<meta property="og:title" itemprop="name" content="{input->title}" />
+		<meta property="og:title" itemprop="name" content="{input->title} - created on 3v4l.org" />
 	{:}
-		<meta property="og:title" itemprop="name" content="{input->short}" />
+		<meta property="og:title" itemprop="name" content="{input->short} - created on 3v4l.org" />
 	{/}
 
 	{$formAction = new PhpShell_Action_New;}
