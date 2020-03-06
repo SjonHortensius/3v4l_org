@@ -1074,6 +1074,8 @@ var evalOrg = {};
 
 	window.addEventListener('load', function(){ evalOrg.initialize(); });
 
+/*	disabled until fully functionaly, currently causes chrome to fetch too many resources, see https://www.webpagetest.org
 	if ('serviceWorker' in navigator)
 		navigator.serviceWorker.register('/s/pwa-worker.js');
+*/
 }).apply(evalOrg);

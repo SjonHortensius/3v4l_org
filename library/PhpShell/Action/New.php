@@ -28,7 +28,6 @@ class PhpShell_Action_New extends PhpShell_Action
 		'archived' => [
 			'valueType' => 'integer',
 			'inputType' => 'checkbox',
-			'default' => 0,
 			'values' => [
 				1 => 'eol versions'
 			],
