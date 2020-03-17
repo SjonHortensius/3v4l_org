@@ -32,7 +32,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 		foreach ([4, 5, 7] as $major)
 		{
-			foreach (json_decode(file_get_contents('http://php.net/releases/index.php?json&max=99&version='. $major)) as $name => $data)
+			foreach ($this->_getReleases($major) as $name => $released)
 			{
 				unset($pendingInsert);
 
@@ -42,13 +42,6 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				if ($vMajor == 4 && $vMinor < 3)
 					continue;
 
-				// Sometimes new archive-formats get introduced meaning source-date is too new
-				// Sometimes PHP sucks and version.date is updated when another version is released
-				// Some older releases have no source-dates
-				if (isset($data->date))
-					$data->date = str_replace(' Marc ', ' Mar ', $data->date);
-
-				$released = date('Y-m-d', min(strtotime($data->date ?? $data->source[1]->date), strtotime($data->source[0]->date ?? $data->date)));
 				$eol = self::EOL[ 10 * $vMajor + $vMinor ];
 
 				$command = "/bin/php-$name -c /etc";
@@ -124,6 +117,27 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				if (isset($pendingInsert))
 					echo "COMMIT;\n";
 			}
+		}
+	}
+
+	// return releases but prefix non-existing ones if they are uploaded already
+	protected function _getReleases(int $major): Generator
+	{
+		$json = json_decode(file_get_contents('http://php.net/releases/index.php?json&max=999&version='. $major));
+
+		foreach ($json as $name => $data)
+		{
+			[$vMajor, $vMinor, $vRelease] = explode('.', $name);
+			$newer = implode('.', [$vMajor, $vMinor, $vRelease+1]);
+			if (!isset($json->$newer) && file_exists(APPLICATION_PATH .'/bin/php-'. $newer) && !in_array($newer, ['5.2.7']))
+				yield $newer => date('Y-m-d', strtotime('tomorrow'));
+
+			// Sometimes new archive-formats get introduced meaning source-date is too new
+			// Sometimes PHP sucks and version.date is updated when another version is released
+			// Some older releases have no source-dates
+			$released = date('Y-m-d', min(strtotime($data->date ?? $data->source[1]->date), strtotime($data->source[0]->date ?? $data->date)));
+
+			yield $name => $released;
 		}
 	}
 

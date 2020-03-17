@@ -659,6 +659,11 @@ var evalOrg = {};
 
 	var _refreshOutput = function()
 	{
+		$('#tabs').classList.remove('busy');
+
+		if (this.status != 200)
+			return alert("unexpected responseCode "+ this.status +": "+ this.statusText);
+
 		try
 		{
 			var r = JSON.parse(this.responseText);
