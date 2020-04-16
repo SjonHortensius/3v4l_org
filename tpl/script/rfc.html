@@ -7,7 +7,7 @@
 		{$this->rfc = substr($this->result->version->name, 4);}
 		Output for <a href="https://wiki.php.net/rfc/{rfc}">{print ucfirst(str_replace(['-', '_'], ' ', $this->rfc));}</a>
 	{:}
-		Output for branch {print substr($this->result->version->name, 4);}
+		Output for <span title="build {result->version->released}">branch {print substr($this->result->version->name, 4);}</span>
 	{/}
 	</dt>
 	<dd>

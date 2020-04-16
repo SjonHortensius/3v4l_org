@@ -3,9 +3,9 @@
 <ul>
 	{foreach ($calls as $this->call)}
 		<li>
-				{call->function->text}: <a href="http://php.net/manual/en/function.{print str_replace('_', '-', $this->call->function->text);}.php" rel="external">documentation</a>
+			{call->function->text}: <a href="http://php.net/manual/en/function.{print str_replace('_', '-', $this->call->function->text);}.php" rel="external">documentation</a>
 			{if (!empty($this->call->function->source))}
-				 ( <a href="https://php-lxr.adamharvey.name/source/xref/master/{print str_replace(':', '#', $this->call->function->source);}" rel="external">source</a>)
+				 ( <a href="https://heap.space/xref/php-src/{print str_replace(':', '#', $this->call->function->source);}" rel="external">source</a>)
 			{/}
 		</li>
 	{/}
