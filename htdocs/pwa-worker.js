@@ -1,16 +1,13 @@
-var dataCacheName = '3v4l.org-v1';
-var cacheName = '3v4l.org-final-1';
-var filesToCache = [
-/*
- * these should reflect the current hashed paths to prevent additional reqs
-   '/',
+const dataCacheName = '3v4l.org-v1-ace147';
+const cacheName = '3v4l.org-final-1-ace147';
+const filesToCache = [
+  '/',
   '/s/c.css',
   '/s/c.js',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ace.js',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ext-language_tools.js',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/mode-php.js',
   'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/theme-chrome.js',
-*/
   '/ext/glyphicons-halflings.png',
 ];
 
