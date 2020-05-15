@@ -64,18 +64,6 @@ type ResourceLimit struct {
 	output  int
 }
 
-// Limits # of parallel execs by using a channel with a limited buffer
-type SizedWaitGroup struct {
-	current chan bool
-	*sync.WaitGroup
-}
-
-func newSizedWaitGroup(limit int) SizedWaitGroup {
-	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
-}
-func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
-func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
-
 func newInput() Input {
 	return Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
 }
@@ -448,75 +436,45 @@ func checkPendingInputs() {
 }
 
 func canBatch(doSleep bool) (bool, error) {
-	file, err := os.Open("/proc/loadavg")
-	if err != nil {
-		return false, err
-	}
-	defer file.Close()
+	scale := 65536.0 // magic
 
-	data := make([]byte, 64)
-	if c, err := file.Read(data); err != nil || c < 8 {
+	var i syscall.Sysinfo_t
+	if err := syscall.Sysinfo(&i); err != nil {
 		return false, err
 	}
 
-	loadAvg := strings.Split(string(data), " ")
+	l1 := float64(i.Loads[0]) / scale
+	l5 := float64(i.Loads[1]) / scale
 
-	if l, err := strconv.ParseFloat(loadAvg[0], 32); doSleep && err == nil {
-		time.Sleep(time.Duration(int(l*10)/runtime.NumCPU()) * time.Millisecond)
+	if doSleep {
+		time.Sleep(time.Duration(int(10*l1/scale)/runtime.NumCPU()) * time.Millisecond)
 	}
 
-	if l, err := strconv.ParseFloat(loadAvg[0], 32); err != nil {
-		return false, err
-	} else if int(l) > runtime.NumCPU() {
-		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), sleeping...\n", l, runtime.NumCPU())
-		time.Sleep(time.Duration(3*l) * time.Second)
-	}
-
-	if l, err := strconv.ParseFloat(loadAvg[1], 32); err != nil {
-		return false, err
-	} else if int(l) > runtime.NumCPU() {
-		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l, runtime.NumCPU())
-		time.Sleep(time.Duration(30*l) * time.Second)
+	if int(l5) > runtime.NumCPU() {
+		fmt.Printf("Load5 [%.1f] seems high (for %d cpus), skipping batch\n", l5, runtime.NumCPU())
+		time.Sleep(time.Duration(30*l5) * time.Second)
 		return false, nil
+	}
+
+	if int(l1) > runtime.NumCPU() {
+		fmt.Printf("Load1 [%.1f] seems high (for %d cpus), sleeping...\n", l1, runtime.NumCPU())
+		time.Sleep(time.Duration(3*l1) * time.Second)
 	}
 
 	return true, nil
 }
 
 func batchScheduleNewVersions() {
-	batchNewComplete := 0
-
 	for _, v := range versions {
 		// ignore helpers, they don't store all results
 		if v.isHelper {
 			continue
 		}
 
-		fmt.Printf("batchScheduleNewVersions: searching for %s\n", v.name)
-		stats.RLock(); pre := stats.c["results"]; stats.RUnlock()
-		_batchScheduleNewVersions(v)
-		stats.RLock(); post := stats.c["results"]; stats.RUnlock()
+		fmt.Printf("batchScheduleNewVersions: %s - searching for missing scripts\n", v.name)
 
-		if post-pre < 99 {
-			batchNewComplete++
-		}
-
-		if batchNewComplete > 3 {
-			fmt.Printf("batchScheduleNewVersions: stopping; batchNewComplete > 3\n")
-			break
-		}
-	}
-}
-
-func _batchScheduleNewVersions(target *Version) {
-	stats.Lock(); stats.c["batchVersion"] = target.order; stats.Unlock()
-
-	wg := newSizedWaitGroup(9)
-
-	found := 1
-	for found > 0 {
-		rs, err := dbBatch.Query(`
-			SELECT id, short
+		rs, err := db.Query(`
+			SELECT id, short, "runArchived", created
 			FROM input
 			LEFT JOIN result ON (version = $1 AND input=id)
 			WHERE
@@ -526,91 +484,33 @@ func _batchScheduleNewVersions(target *Version) {
 				AND NOT "operationCount" IS NULL
 				AND NOT "bughuntIgnore"
 				AND "runQuick" IS NULL;`,
-			target.id, target.eol.Format("2006-01-02"))
+			v.id, v.eol.Format("2006-01-02"))
 		if err != nil {
-			panic("doBatch: error in SELECT query: " + err.Error())
+			panic("batchScheduleNewVersions: error in SELECT query: " + err.Error())
 		}
 
-		found = 0
+		fmt.Printf("batchScheduleNewVersions: %s - executing missing scripts\n", v.name)
+
+		found := 0
 		for rs.Next() {
 			found++
 			input := newInput()
-			if err := rs.Scan(&input.id, &input.short); err != nil {
-				panic("doBatch: error fetching work: " + err.Error())
+			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
+				panic("batchScheduleNewVersions: error fetching work: " + err.Error())
 			}
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
-					panic("Unable to check load: " + err.Error())
-				}
+					panic("batchScheduleNewVersions: unable to check load: " + err.Error())
 			}
-
-			wg.Add()
-			go func(i *Input, v *Version) {
-				i.prepare()
-				i.execute(v, &ResourceLimit{0, 2500, 32768})
-				i.complete()
-
-				wg.Done()
-			}(&input, target)
-		}
-
-		wg.Wait()
-	}
-}
-
-func batchRefreshRandomScripts() {
-	wg := newSizedWaitGroup(9)
-
-	for {
-		rs, err := dbBatch.Query(`
-			SELECT id, short, "runArchived", created
-			FROM input
-			WHERE
-				state = 'done'
-				AND penalty < 50
-				AND "runQuick" IS NULL
-				AND "operationCount">2
-			ORDER BY RANDOM()`)
-		if err != nil {
-			panic("batchRefreshRandomScripts: error in SELECT query: " + err.Error())
-		}
-
-		for rs.Next() {
-			input := newInput()
-			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
-				panic("batchRefreshRandomScripts: error fetching work: " + err.Error())
-			}
-
-			// don't incorporate in query above - it will be too slow leading to: canceling statement due to conflict with recovery
-			if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, input.id).Scan(&input.lastSubmit); err != nil {
-				input.lastSubmit = input.created
 			}
 
 			input.prepare()
-
-			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
-				if err != nil {
-					panic("Unable to check load: " + err.Error())
-				}
-			}
-
-			for _, v := range versions {
-				if v.eol.Before(input.lastSubmit) {
-					continue
-				}
-
-				wg.Add()
-
-				go func(v Version) {
-					input.execute(&v, &ResourceLimit{0, 2500, 32768})
-					wg.Done()
-				}(*v)
-			}
-
-			wg.Wait()
+			input.execute(v, &ResourceLimit{0, 2500, 32768})
 			input.complete()
 		}
+
+		fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
 	}
 }
 
@@ -653,9 +553,7 @@ func doWork() {
 
 var (
 	db       *sql.DB
-	dbBatch  *sql.DB
 	versions []*Version
-	batch    string
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -673,41 +571,32 @@ const (
 
 func init() {
 	var err error
-	if len(os.Args) > 1 && os.Args[1][:7] == "--batch" {
-		batch = os.Args[1][8:]
-		db, err = sql.Open("postgres", DSN+" port=5434")
-
-		if err != nil {
-			panic("init - failed to connect to db: " + err.Error())
-		}
-
-		dbBatch, err = sql.Open("postgres", DSN)
-	} else {
-		db, err = sql.Open("postgres", DSN)
-	}
+	db, err = sql.Open("postgres", DSN)
 	db.SetMaxOpenConns(32)
 
 	if err != nil {
-		panic("init - failed to connect to db: "+ err.Error())
+		panic("init - failed to connect to db: " + err.Error())
 	}
 
 	if err := db.Ping(); err != nil {
-		panic("init - failed to ping db: "+ err.Error())
+		panic("init - failed to ping db: " + err.Error())
 	}
 
 	stats.c = make(map[string]int)
 	inputSrc.srcUse = make(map[string]int)
 
+	//FIXME these limits should apply to scripts, not us
 	var limits = map[int]int{
-//		syscall.RLIMIT_CPU:    2,
 		syscall.RLIMIT_DATA:   256 * 1024 * 1024,
-//		syscall.RLIMIT_FSIZE:  64 * 1024,
 		syscall.RLIMIT_FSIZE:  16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:   0,
 		syscall.RLIMIT_NOFILE: 2048,
-		//FIXME https://github.com/facebook/hhvm/issues/7381
-//		syscall.RLIMIT_AS:     512 * 1024 * 1024, // also, causes lots of scripts to 137 ?
 		RLIMIT_NPROC:          64,
+/*
+		syscall.RLIMIT_FSIZE:  64 * 1024,
+		syscall.RLIMIT_CPU:    2,
+		syscall.RLIMIT_AS:     512 * 1024 * 1024,
+*/
 	}
 
 	for key, value := range limits {
@@ -726,32 +615,22 @@ func main() {
 		}
 	})
 
-	if batch == "" {
-		if err := l.Listen("daemon"); err != nil {
-			panic("Could not setup Listener " + err.Error())
-		}
-
-		fmt.Printf("daemon ready\n")
+	if err := l.Listen("daemon"); err != nil {
+		panic("Could not setup Listener " + err.Error())
 	}
+
+	fmt.Printf("daemon ready\n")
 
 	doPrintStats      := time.NewTicker( 1 * time.Hour)
 	doCheckPending    := time.NewTicker(45 * time.Minute)
 	doShutdown        := make(chan os.Signal, 1)
 	signal.Notify(doShutdown, os.Interrupt)
 
-	if batch == "refreshRandomScripts" {
-		doCheckPending.Stop()
+	// do some bg work when we're idle
+	go batchScheduleNewVersions()
 
-		go batchRefreshRandomScripts()
-	} else if batch == "scheduleNewVersions" {
-		doCheckPending.Stop()
-
-		go batchScheduleNewVersions()
-	} else {
-
-		// Process pending work immediately
-		go checkPendingInputs()
-	}
+	// Process pending work immediately
+	go checkPendingInputs()
 
 LOOP:
 	for {
