@@ -171,6 +171,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		usleep(150 * 1000);
 
 		$this->input = $input;
+		$this->version = $version;
 		$this->result = $this->input->getResult($version)->getSingle();
 
 		$this->showTemplate('quick');
