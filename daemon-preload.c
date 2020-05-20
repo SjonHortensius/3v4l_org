@@ -11,11 +11,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <unistd.h>
 
 struct timeval diff;
-bool initDone = false;
-int timeOfDayCalls = 0;
 int offset = 0;
 
 int (*org_gettimeofday)(struct timeval *tp, void *tzp);
@@ -25,68 +22,54 @@ struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
 int (*org__xstat)(int __ver, const char *__filename, struct stat *__stat_buf);
 
 
-// This could be called _init and we wouldn't need if(0==diff) checks; but that segfaults on hhvm because of pthreads
-// also: don't add _init(){ _initLib }; that breaks functionality in hhvm
-void
-_initLib(void) {
-	org_gettimeofday =  dlsym(RTLD_NEXT, "gettimeofday");
-	org_time =          dlsym(RTLD_NEXT, "time");
-	org_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
-	org_localtime_r =   dlsym(RTLD_NEXT, "localtime_r");
+void _init(void) {
+	org_gettimeofday =	dlsym(RTLD_NEXT, "gettimeofday");
+	org_time =			dlsym(RTLD_NEXT, "time");
+	org_clock_gettime =	dlsym(RTLD_NEXT, "clock_gettime");
+	org_localtime_r =	dlsym(RTLD_NEXT, "localtime_r");
 	org__xstat =		dlsym(RTLD_NEXT, "__xstat");
 
-	if (getenv("TIME") != NULL) {
+	if (getenv("TIME") != NULL)
 		offset = atoi(getenv("TIME"));
+
+	if (0 == offset) {
+		fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
+		exit(1);
 	}
 
+	// don't change usec, this makes us start at offset.0
 	org_gettimeofday(&diff, NULL);
-	if (offset != 0) {
-		diff.tv_sec -= offset;
-	} else {
-		diff.tv_sec = 0;
-//		fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
-	}
-
-//fprintf(stderr, "\n%s has set a custom offset: %d, diff.tv_sec=%ld diff.tv_usec=%06ld\n", __FUNCTION__, offset, diff.tv_sec, diff.tv_usec);
+	diff.tv_sec -= offset;
 
 	unsetenv("TIME");
 	unsetenv("LD_PRELOAD");
-
-	initDone = true;
 }
 
-int gettimeofday(struct timeval *restrict tp, struct timezone *restrict tzp) {
-	if (!initDone)
-		_initLib();
+int gettimeofday(struct timeval *__restrict tp, void *__restrict tzp) {
+	static bool setsServerRequestTime = true;
 
-	org_gettimeofday(tp, tzp);
+	if (setsServerRequestTime) {
+		tp->tv_sec = offset;
+		tp->tv_usec = 100;
+		setsServerRequestTime = false;
 
-	// the first call from php is used for REQUEST_TIME_FLOAT, and we want a fixed result
-	// this depends on diff.tv_usec not being initialized in _initLib
-	if (++timeOfDayCalls == 1)
-		diff.tv_usec = tp->tv_usec;
+		return 0;
+	}
+	else
+		org_gettimeofday(tp, tzp);
 
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_usec < diff.tv_usec) {
-//fprintf(stderr, "\n%s correcting underflow for %06ld < %06ld\n", __FUNCTION__, tp->tv_usec, diff.tv_usec);
 		tp->tv_sec--;
-		tp->tv_usec = 1000*1000 + tp->tv_usec;
+		tp->tv_usec += 1000*1000;
 	}
 	tp->tv_usec -= diff.tv_usec;
-
-	// don't confuse people with REQUEST_TIME_FLOAT not being a float
-	if (timeOfDayCalls == 1)
-		tp->tv_usec += 100;
-
 //fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld.%06ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_usec);
 
 	return 0;
 }
 
 time_t time(time_t *t) {
-	if (!initDone)
-		_initLib();
-
 	time_t r = org_time(t);
 
 	r -= diff.tv_sec;
@@ -98,9 +81,6 @@ time_t time(time_t *t) {
 }
 
 int clock_gettime(clockid_t clk_id, struct timespec *tp) {
-	if (!initDone)
-		_initLib();
-
 	int r = org_clock_gettime(clk_id, tp);
 
 	if (0 != r || (CLOCK_REALTIME != clk_id && CLOCK_REALTIME_COARSE != clk_id))
@@ -109,7 +89,7 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 	tp->tv_sec -= diff.tv_sec;
 	if (tp->tv_nsec < (1000*diff.tv_usec)) {
 		tp->tv_sec--;
-		tp->tv_nsec = 1000*1000*1000 + tp->tv_nsec;
+		tp->tv_nsec += 1000*1000*1000;
 	}
 	tp->tv_nsec -= 1000*diff.tv_usec;
 
@@ -128,15 +108,12 @@ struct tm *localtime_r(time_t *timep, struct tm *result) {
 }
 
 int ftime(struct timeb *tp) {
-	if (!initDone)
-		_initLib();
-
 	ftime(tp);
 
 	tp->time -= diff.tv_sec;
 	if (tp->millitm < diff.tv_usec) {
 		tp->millitm--;
-		tp->millitm = 1000*1000 + tp->millitm;
+		tp->millitm += 1000*1000;
 	}
 	tp->millitm -= diff.tv_usec;
 
@@ -145,9 +122,6 @@ int ftime(struct timeb *tp) {
 
 // misc other overloads
 int uname(struct utsname *buf) {
-	if (!initDone)
-		_initLib();
-
 	strcpy(buf->sysname, "Linux");
 	strcpy(buf->nodename,"php_shell");
 	strcpy(buf->release, "4.8.6-1-ARCH");
@@ -160,9 +134,6 @@ int uname(struct utsname *buf) {
 // f/l/stat is provided by __xstat - see https://stackoverflow.com/q/5478780
 int statCtr = 0;
 int __xstat (int __ver, const char *__filename, struct stat *__stat_buf) {
-	if (!initDone)
-		_initLib();
-
 	int s = org__xstat(__ver, __filename, __stat_buf);
 
 	__stat_buf->st_dev = ++statCtr;
