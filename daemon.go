@@ -49,8 +49,8 @@ type Output struct {
 
 type Result struct {
 	input      *Input
-	output     *Output
-	version    *Version
+	output     Output
+	version    Version
 	exitCode   int
 	created    time.Time
 	userTime   float64
@@ -64,10 +64,6 @@ type ResourceLimit struct {
 	output  int
 }
 
-func newInput() Input {
-	return Input{uniqueOutput: map[string]bool{}, penaltyDetail: map[string]int{}}
-}
-
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
@@ -77,8 +73,10 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-//FIXME maybe batches shouldn't set state=busy so checkPending won't attempt to run them
-func (this *Input) prepare() {
+func (this *Input) prepare(fg bool) {
+	this.uniqueOutput = make(map[string]bool)
+	this.penaltyDetail = make(map[string]int)
+
 	inputSrc.Lock()
 	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
@@ -101,17 +99,20 @@ func (this *Input) prepare() {
 		panic("prepare: could not get original mutation count: " + err.Error())
 	}
 
+	if this.lastSubmit.IsZero() {
+		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
+			db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit)
+		}
+	}
+
+	if !fg {
+		return
+	}
+
 	if r, err := db.Exec(`UPDATE input SET state = 'busy' WHERE id = $1`, this.id); err != nil {
 		panic("Input: failed to update state: " + err.Error())
 	} else if a, err := r.RowsAffected(); a != 1 || err != nil {
 		panic(fmt.Sprintf("Input: failed to update state; %d rows affected, %s", a, err))
-	}
-
-	// Perform date fixation
-	if this.lastSubmit.IsZero() {
-		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
-//			fmt.Printf("Warning; failed to find any submit of %s, not fixating\n", this.short)
-		}
 	}
 }
 
@@ -128,7 +129,7 @@ func (this *Input) complete() {
 
 	if _, err := db.Exec(`UPDATE input
 		SET penalty = LEAST(penalty + $2, 32767), state = $3, "lastResultChange" = (CASE WHEN $4>0 THEN TIMEZONE('UTC'::text, NOW()) ELSE "lastResultChange" END)
-		WHERE short = $1 AND state = 'busy'`, this.short, this.penalty, state, mutations); err != nil {
+		WHERE short = $1 AND state IN('busy', 'done')`, this.short, this.penalty, state, mutations); err != nil {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 
@@ -150,7 +151,7 @@ func (this *Input) complete() {
 	}
 }
 
-func newOutput(raw string, i *Input, v *Version) *Output {
+func newOutput(raw string, i *Input, v Version) Output {
 	raw = strings.Replace(raw, "\x06", "\\\x06", -1)
 	raw = strings.Replace(raw, "\x07", "\\\x07", -1)
 	raw = strings.Replace(raw, v.name, "\x06", -1)
@@ -159,7 +160,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	h := sha1.New()
 	io.WriteString(h, raw)
 
-	o := &Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
+	o := Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
 
 	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
 		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, o.hash, o.raw); err != nil {
@@ -190,7 +191,7 @@ func newOutput(raw string, i *Input, v *Version) *Output {
 	return o
 }
 
-func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
+func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
 	waitStatus := s.Sys().(syscall.WaitStatus)
 	usage := s.SysUsage().(*syscall.Rusage)
 
@@ -201,7 +202,7 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 		exitCode = 128 + int(waitStatus.Signal())
 	}
 
-	r := &Result{
+	r := Result{
 		input:      i,
 		output:     newOutput(raw, i, v),
 		version:    v,
@@ -214,8 +215,8 @@ func newResult(i *Input, v *Version, raw string, s *os.ProcessState) *Result {
 	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
 	switch v.name {
-		case "vld":				if exitCode == 0 {  r.store(); } else { r.delete(); }
-
+		case "vld":
+			if exitCode == 0 {  r.store() } else { r.delete() }
 		default:
 			r.store()
 	}
@@ -248,7 +249,7 @@ func (this *Result) delete() {
 	}
 }
 
-func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
+func (this *Input) execute(v Version, l ResourceLimit) Result {
 	cmdArgs := strings.Split(v.command, " ")
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
@@ -289,7 +290,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "While starting: %s\n", err)
-		return &Result{}
+		return Result{}
 	}
 
 	go func(c *exec.Cmd, r io.Reader) {
@@ -371,7 +372,7 @@ func (this *Input) execute(v *Version, l *ResourceLimit) *Result {
 }
 
 func refreshVersions() {
-	newVersions := []*Version{}
+	var newVersions []Version
 
 	rs, err := db.Query(`
 		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper"
@@ -389,7 +390,7 @@ func refreshVersions() {
 			panic("Error fetching version: " + err.Error())
 		}
 
-		newVersions = append(newVersions, &v)
+		newVersions = append(newVersions, v)
 	}
 
 	versions = newVersions
@@ -407,19 +408,18 @@ func checkPendingInputs() {
 		panic("checkPendingInputs - could not SELECT: " + err.Error())
 	}
 
-	l := &ResourceLimit{0, 2500, 32768}
+	l := ResourceLimit{0, 2500, 32768}
 
 	var version sql.NullInt64
 	var state string
 	for rs.Next() {
-		input := newInput()
-
+		var input Input
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
 			panic("checkPendingInputs: error fetching work: " + err.Error())
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
-		input.prepare()
+		input.prepare(true)
 
 		for _, v := range versions {
 			if (version.Valid && int(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
@@ -494,7 +494,8 @@ func batchScheduleNewVersions() {
 		found := 0
 		for rs.Next() {
 			found++
-			input := newInput()
+
+			var input Input
 			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
 				panic("batchScheduleNewVersions: error fetching work: " + err.Error())
 			}
@@ -505,9 +506,13 @@ func batchScheduleNewVersions() {
 			}
 			}
 
-			input.prepare()
-			input.execute(v, &ResourceLimit{0, 2500, 32768})
+			input.prepare(false)
+			input.execute(v, ResourceLimit{0, 2500, 32768})
 			input.complete()
+
+			if found % 1e5 == 0 {
+				fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
+			}
 		}
 
 		fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
@@ -521,11 +526,10 @@ func doWork() {
 		panic("doWork: error in DELETE query: " + err.Error())
 	}
 
-	var version sql.NullString
-
 	for rs.Next() {
-		input := newInput()
-		rMax := &ResourceLimit{}
+		var version sql.NullString
+		var input Input
+		var rMax ResourceLimit
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
 			panic("doWork: error fetching work: " + err.Error())
@@ -535,15 +539,21 @@ func doWork() {
 			panic("doWork: error verifying input: " + err.Error())
 		}
 
-		input.prepare()
+		input.prepare(true)
 
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, rMax)
+			}
 
-				if input.penalty > 512 {
-					break
-				}
+			if input.penalty > 512 {
+				break
+			}
+		}
+
+		if !input.runArchived {
+			if _, err := db.Exec(`DELETE FROM result WHERE input = $1 AND version IN (SELECT id FROM version WHERE eol < $2)`, input.id, input.created); err != nil {
+				fmt.Printf("doWork: failed to clean: input=%d,eol=%s: %s\n", input.id, input.created, err)
 			}
 		}
 
@@ -553,7 +563,7 @@ func doWork() {
 
 var (
 	db       *sql.DB
-	versions []*Version
+	versions []Version
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
