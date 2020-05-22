@@ -64,6 +64,19 @@ type ResourceLimit struct {
 	output  int
 }
 
+
+// Limits # of parallel execs by using a channel with a limited buffer
+type SizedWaitGroup struct {
+	current chan bool
+	*sync.WaitGroup
+}
+
+func newSizedWaitGroup(limit int) SizedWaitGroup {
+	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
+}
+func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
+func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
+
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
@@ -465,6 +478,12 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions() {
+	if 0 == batch {
+		return
+	}
+
+	wg := newSizedWaitGroup(batch)
+
 	for _, v := range versions {
 		// ignore helpers, they don't store all results
 		if v.isHelper {
@@ -503,17 +522,24 @@ func batchScheduleNewVersions() {
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
 				if err != nil {
 					panic("batchScheduleNewVersions: unable to check load: " + err.Error())
-			}
+				}
 			}
 
-			input.prepare(false)
-			input.execute(v, ResourceLimit{0, 2500, 32768})
-			input.complete()
+			wg.Add()
+			go func(i *Input) {
+				i.prepare(false)
+				i.execute(v, ResourceLimit{0, 2500, 32768})
+				i.complete()
+
+				wg.Done()
+			}(&input)
 
 			if found % 1e5 == 0 {
 				fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
 			}
 		}
+
+		wg.Wait()
 
 		fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
 	}
@@ -564,6 +590,7 @@ func doWork() {
 var (
 	db       *sql.DB
 	versions []Version
+	batch    int
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -583,6 +610,14 @@ func init() {
 	var err error
 	db, err = sql.Open("postgres", DSN)
 	db.SetMaxOpenConns(32)
+
+	if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
+		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
+			panic("while parsing batch: "+ err.Error())
+		} else {
+			batch = b
+		}
+	}
 
 	if err != nil {
 		panic("init - failed to connect to db: " + err.Error())
