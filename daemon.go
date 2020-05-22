@@ -38,7 +38,6 @@ type Input struct {
 	created       time.Time
 	runArchived   bool
 	lastSubmit    time.Time
-	mutations     int
 }
 
 type Output struct {
@@ -108,10 +107,6 @@ func (this *Input) prepare(fg bool) {
 	}
 	inputSrc.Unlock()
 
-	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations), 0) FROM result WHERE input = $1`, this.id).Scan(&this.mutations); err != nil {
-		panic("prepare: could not get original mutation count: " + err.Error())
-	}
-
 	if this.lastSubmit.IsZero() {
 		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
 			db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit)
@@ -135,18 +130,11 @@ func (this *Input) complete() {
 		state = "abusive"
 	}
 
-	var mutations int
-	if err := db.QueryRow(`SELECT COALESCE(SUM(mutations) - $1, 0) FROM result WHERE input = $2`, this.mutations, this.id).Scan(&mutations); err != nil {
-		panic("complete: could not get new mutation count: " + err.Error())
-	}
-
 	if _, err := db.Exec(`UPDATE input
-		SET penalty = LEAST(penalty + $2, 32767), state = $3, "lastResultChange" = (CASE WHEN $4>0 THEN TIMEZONE('UTC'::text, NOW()) ELSE "lastResultChange" END)
-		WHERE short = $1 AND state IN('busy', 'done')`, this.short, this.penalty, state, mutations); err != nil {
+		SET penalty = LEAST(penalty + $2, 32767), state = $3
+		WHERE short = $1 AND state IN('busy', 'done')`, this.short, this.penalty, state); err != nil {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
-
-	stats.Lock(); stats.c["mutations"] += mutations; stats.Unlock()
 
 	inputSrc.Lock(); inputSrc.srcUse[this.short]--
 	if 0 == inputSrc.srcUse[this.short] {
