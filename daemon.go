@@ -81,7 +81,7 @@ func (this *Input) penalize(r string, p int) {
 	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
 
 	if p > 1 {
-		this.Lock(); this.penaltyDetail[r] = this.penaltyDetail[r] + p; this.Unlock()
+		this.Lock(); this.penaltyDetail[r] += p; this.Unlock()
 	}
 }
 
@@ -132,7 +132,7 @@ func (this *Input) complete() {
 
 	if _, err := db.Exec(`UPDATE input
 		SET penalty = LEAST(penalty + $2, 32767), state = $3
-		WHERE short = $1 AND state IN('busy', 'done')`, this.short, this.penalty, state); err != nil {
+		WHERE short = $1`, this.short, this.penalty, state); err != nil {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 

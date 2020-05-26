@@ -1363,7 +1363,7 @@ CREATE TRIGGER queue_insert_notify AFTER INSERT ON public.queue FOR EACH ROW EXE
 -- Name: result result_mutated; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-CREATE TRIGGER result_mutated AFTER UPDATE ON public.result FOR EACH ROW WHEN ((old.mutations <> new.mutations)) EXECUTE FUNCTION public.input_mutated();
+CREATE TRIGGER result_mutated AFTER UPDATE ON public.result FOR EACH ROW WHEN (((old.mutations <> new.mutations) AND (new.version > 31))) EXECUTE FUNCTION public.input_mutated();
 
 
 --

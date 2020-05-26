@@ -70,13 +70,16 @@ int gettimeofday(struct timeval *__restrict tp, void *__restrict tzp) {
 }
 
 time_t time(time_t *t) {
-	time_t r = org_time(t);
+	// cannot use org_time here, diff.tv_usec possibly causes decrease of tv_sec
+	struct timeval a;
+	gettimeofday(&a, NULL);
 
-	r -= diff.tv_sec;
+	time_t r = (time_t)a.tv_sec;
 
 	if (t)
 		*t = r;
 
+//fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, r);
 	return r;
 }
 
@@ -93,6 +96,7 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 	}
 	tp->tv_nsec -= 1000*diff.tv_usec;
 
+//fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld.%06ld\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->tv_sec, tp->tv_nsec);
 	return 0;
 }
 
@@ -112,11 +116,12 @@ int ftime(struct timeb *tp) {
 
 	tp->time -= diff.tv_sec;
 	if (tp->millitm < diff.tv_usec) {
-		tp->millitm--;
+		tp->time--;
 		tp->millitm += 1000*1000;
 	}
 	tp->millitm -= diff.tv_usec;
 
+//fprintf(stderr, "\n%s using offset: %ld.%06ld, returning %ld.%d\n", __FUNCTION__, diff.tv_sec, diff.tv_usec, tp->time, tp->millitm);
 	return 0;
 }
 
@@ -127,6 +132,7 @@ int uname(struct utsname *buf) {
 	strcpy(buf->release, "4.8.6-1-ARCH");
 	strcpy(buf->version, "#1 SMP PREEMPT Mon Oct 31 18:51:30 CET 2016");
 	strcpy(buf->machine, "x86_64");
+	strcpy(buf->domainname, "");
 
 	return 0;
 }
@@ -142,7 +148,7 @@ int __xstat (int __ver, const char *__filename, struct stat *__stat_buf) {
 	__stat_buf->st_mtim.tv_sec = offset;
 	__stat_buf->st_ctim.tv_sec = offset;
 
-//	fprintf(stderr, "\n%s for %s returning st_ino: %ld\n", __FUNCTION__, __filename, __stat_buf->st_ino);
+//fprintf(stderr, "\n%s for %s returning st_ino: %ld\n", __FUNCTION__, __filename, __stat_buf->st_ino);
 
 	return s;
 }
