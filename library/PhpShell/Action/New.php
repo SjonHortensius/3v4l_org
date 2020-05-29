@@ -94,7 +94,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
 		# the second submit.created check is 'useless' but makes pg match the submitRecent index greatly lowering query time
-		$stats = PhpShell_Submit::find("ip = ? AND NOW()- submit.created < ? AND submit.created > ?", [$_SERVER['REMOTE_ADDR'], '1 day', date('Y-m-d', strtotime('-1 day'))])
+		$stats = PhpShell_Submit::find("ip = ? AND NOW()- submit.created < ? AND submit.created > ?", [$_SERVER['REMOTE_ADDR'], '8 hours', date('Y-m-d', strtotime('-8 hours'))])
 			->includePenalties()
 			->getAggregate()
 			->fetchArray();

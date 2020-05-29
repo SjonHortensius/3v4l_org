@@ -72,9 +72,14 @@ int gettimeofday(struct timeval *__restrict tp, void *__restrict tzp) {
 time_t time(time_t *t) {
 	// cannot use org_time here, diff.tv_usec possibly causes decrease of tv_sec
 	struct timeval a;
-	gettimeofday(&a, NULL);
+	// don't use gettimeofday as it triggers setsServerRequestTime. PHP 5.4.4+ perform an extra time() call too
+	org_gettimeofday(&a, NULL);
 
 	time_t r = (time_t)a.tv_sec;
+
+	r -= diff.tv_sec;
+	if (a.tv_usec < diff.tv_usec)
+		r--;
 
 	if (t)
 		*t = r;

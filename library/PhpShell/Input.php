@@ -114,7 +114,8 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$calls[ $match['operand'] ] = true;
 
-			$bughuntIgnore = $bughuntIgnore || in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST);
+			if (in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
+				$bughuntIgnore = true;
 		}
 
 		// Delete or update db by going through all existing rows

@@ -1037,6 +1037,13 @@ var evalOrg = {};
 	this.handleStats = function()
 	{
 		this.localTime(function(el, d, t){ el.innerHTML = t;}, 'tbody td:nth-child(2)');
+
+		var n = $('table tbody').rows;
+		for (var i=0, tr=n[i]; i<n.length; tr=n[++i])
+		{
+			var p = parseFloat(tr.cells[5].textContent) * parseFloat(tr.cells[6].textContent) * parseFloat(tr.cells[7].textContent);
+			tr.cells[0].innerHTML += '<br><span style="color:red">' + Math.round(p / 1000) + ' sec</span>';
+		}
 	};
 
 	var object2Dom = function(node, wrapper)
