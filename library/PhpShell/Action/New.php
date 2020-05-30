@@ -112,6 +112,8 @@ class PhpShell_Action_New extends PhpShell_Action
 
 			if ($input->state == 'busy')
 				throw new PhpShell_ScriptAlreadyRunningException('The server is already processing your code, please wait for it to finish.');
+			if ($input->state == 'abusive')
+				throw new PhpShell_TemporaryBlockedException('It seems you are submitting abusive scripts. Is this incorrect? Contact me! [abuse:%1.2f:%1d:%1d]', [$stats['agePenalty'], $stats['weightPenalty'], $stats['busyPenalty']], 402);
 
 			$input->runArchived = (bool)Basic::$userinput['archived'];
 

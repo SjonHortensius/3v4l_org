@@ -41,7 +41,7 @@
 		</div>
 	{/}
 
-	{if (in_array($this->input->state, ['misbehaving', 'abusive']))}
+	{if ($this->input->state == 'abusive')}
 		<div class="alert error">
 			<h2>Abusive script</h2>
 			<p>This script was stopped while abusing our resources</p>
