@@ -1043,6 +1043,9 @@ var evalOrg = {};
 		{
 			var p = parseFloat(tr.cells[5].textContent) * parseFloat(tr.cells[6].textContent) * parseFloat(tr.cells[7].textContent);
 			tr.cells[0].innerHTML += '<br><span style="color:red">' + Math.round(p / 1000) + ' sec</span>';
+
+			tr.cells[6].textContent = Math.round(tr.cells[6].textContent);
+			tr.cells[7].textContent = Math.round(tr.cells[7].textContent);
 		}
 	};
 
