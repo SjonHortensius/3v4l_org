@@ -13,7 +13,78 @@
 		 previous version. Traffic has steadily been growing as more developers found this site to be a helpful daily tool, as the following sessions-graph shows:
 		<br/>
 		<br/>
-		<img src="/s/ga-sessions.png" width="150" height="18" /> - we've served 850k sessions to 500k users.</p>
+
+<svg width="450" height="350" style="overflow: hidden;" aria-label="Visitors per year">
+	{!-- background --}
+	<rect width="450" height="350" fill="#ddd"></rect>
+
+	{!-- legend --}
+	<g>
+		{$x = 115;}
+		{$y = 5;}
+		<g>
+			<rect x="{x}" y="{y}" width="26" height="13" fill="{colors['submits']}"></rect>
+			<g><text text-anchor="start" x="{print $x+30;}" y="{print $y+11;}" fill="#222222">submits</text></g>
+		</g>
+		<g>
+			<rect x="{print $x+120;}" y="{y}" width="26" height="13" fill="{colors['bots']}"></rect>
+			<g><text text-anchor="start" x="{print $x+150;}" y="{print $y+11;}" fill="#222222">bots</text></g>
+		</g>
+		{$y += 25;}
+		<g>
+			<rect x="{x}" y="{print $y;}" width="26" height="13" fill="{colors['homepage']}"></rect>
+			<g><text text-anchor="start" x="{print $x+30;}" y="{print $y+11;}" fill="#222222">homepage</text></g>
+		</g>
+		<g>
+			<rect x="{print $x+120;}" y="{print $y;}" width="26" height="13" fill="{colors['uncategorized']}"></rect>
+			<g><text text-anchor="start" x="{print $x+150;}" y="{print $y+11;}" fill="#222222">uncategorized</text></g>
+		</g>
+	</g>
+	<g>
+		{$xMaxM = 36;}
+		{$xSlots = 6;}
+		{!-- grid --}
+		<g>
+			{$y = 77;}
+			{foreach (range(0, $xSlots) as $i)}
+				<rect x="35" y="{print $y + $i*41;}" width="400" height="1" fill="#cccccc"></rect>
+			{/}
+
+			{!-- border-bottom: black --}
+			<rect x="35" y="323" width="400" height="1" fill="#333333"></rect>
+		</g>
+		{!-- data --}
+		<g>
+			{$pixPerM=4;}
+			{$x=40;}
+			{foreach ($this->hitsPerYear as $year => $data)}
+				{$y = 323;}
+
+				{foreach ($data as $type => $hits)}
+					{$n = round($hits / 1E6 * $pixPerM);}{$y -= $n;}
+					<rect x="{x}" y="{y}" width="40" height="{n}" fill="{colors[$type]}"><title>{print number_format($hits, 0, '', ' ');}</title></rect>
+				{/}
+
+				{$x += 50;}
+			{/}
+		</g>
+		{!-- horizontal labels --}
+		<g>
+			{foreach (array_keys($this->hitsPerYear) as $i => $year)}
+				<text text-anchor="middle" x="{print 60 + 50*$i;}" y="343" fill="#222222">{year}</text>
+			{/}
+		</g>
+		{!-- vertical labels --}
+		<g>
+			{$y=82;}
+			{foreach (range(0, $xSlots) as $i)}
+				<g><text text-anchor="end" x="30" y="{print $y + $i*40;}" fill="#444444">{print round($xMaxM/$xSlots*($xSlots-$i), 0);} M</text></g>
+			{/}
+		</g>
+	</g>
+</svg>
+
+		<p>This site is build and maintained by Sjon Hortensius.</p>
 
 		<h2>Statistics</h2>
 		<p>I started in april 2012 and have been adding features ever since. If you like numbers, here are a some from the database:</p>
@@ -65,7 +136,7 @@
 
 		<h2>Links</h2>
 		<ul>
-			<li>3v4l is frequently used on <a href="https://github.com/search?q=%223v4l.org%22&type=Code">GitHub</a> &amp; <a href="https://bugs.php.net/search.php?search_for=3v4l.org&order_by=ts1&cmd=display">bugs.php.net</a></li>
+			<li>3v4l is frequently used on <a href="https://github.com/search?q=%223v4l.org%22&amp;type=Code">GitHub</a> &amp; <a href="https://bugs.php.net/search.php?search_for=3v4l.org&amp;order_by=ts1&amp;cmd=display">bugs.php.net</a></li>
 			<li>Donate <a href="bitcoin://1Hk7gntGcQQp6FUoqLdCqKDwoMmi62o7NQ?amount=0.1&amp;label=3v4l.org%20support">bitcoins</a> or use <a href="https://www.paypal.me/3v4l">Paypal</a> for financial support.</li>
 			<li><a href="https://twitter.com/3v4l_org">Twitter</a> for announcements.</li>
 			<li><a href="mailto:root@3v4l.org">E-mail</a> if the above channels don't suffice.</li>
