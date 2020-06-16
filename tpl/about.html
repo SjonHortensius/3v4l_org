@@ -40,13 +40,19 @@
 			<g><text text-anchor="start" x="{print $x+150;}" y="{print $y+11;}" fill="#222222">uncategorized</text></g>
 		</g>
 	</g>
+
 	<g>
-		{$xMaxM = 36;}
-		{$xSlots = 6;}
+		{$yMaxM = 36;}
+		{$ySlots = 6;}
+		{$pixPerM = 144 / $yMaxM;}
+
+		{$xWidth = 400 / count($this->hitsPerYear);}
+		{$yHeight = 246/$ySlots;}
+
 		{!-- grid --}
 		<g>
 			{$y = 77;}
-			{foreach (range(0, $xSlots) as $i)}
+			{foreach (range(0, $ySlots) as $i)}
 				<rect x="35" y="{print $y + $i*41;}" width="400" height="1" fill="#cccccc"></rect>
 			{/}
 
@@ -55,30 +61,29 @@
 		</g>
 		{!-- data --}
 		<g>
-			{$pixPerM=4;}
-			{$x=40;}
+			{$i = 0;}
 			{foreach ($this->hitsPerYear as $year => $data)}
 				{$y = 323;}
 
 				{foreach ($data as $type => $hits)}
-					{$n = round($hits / 1E6 * $pixPerM);}{$y -= $n;}
-					<rect x="{x}" y="{y}" width="40" height="{n}" fill="{colors[$type]}"><title>{print number_format($hits, 0, '', ' ');}</title></rect>
+					{$n = round($hits / 1E6 * $pixPerM);}
+					{$y -= $n;}
+					<rect x="{print 40 + $i*$xWidth;}" y="{y}" width="40" height="{n}" fill="{colors[$type]}"><title>{print number_format($hits, 0, '', ' ');}</title></rect>
 				{/}
 
-				{$x += 50;}
+				{$i++;}
 			{/}
 		</g>
 		{!-- horizontal labels --}
 		<g>
 			{foreach (array_keys($this->hitsPerYear) as $i => $year)}
-				<text text-anchor="middle" x="{print 60 + 50*$i;}" y="343" fill="#222222">{year}</text>
+				<text text-anchor="middle" x="{print 60 + $i*$xWidth;}" y="343" fill="#222222">{year}</text>
 			{/}
 		</g>
 		{!-- vertical labels --}
 		<g>
-			{$y=82;}
-			{foreach (range(0, $xSlots) as $i)}
-				<g><text text-anchor="end" x="30" y="{print $y + $i*40;}" fill="#444444">{print round($xMaxM/$xSlots*($xSlots-$i), 0);} M</text></g>
+			{foreach (range(0, $ySlots) as $i)}
+				<g><text text-anchor="end" x="30" y="{print 78 + $i*$yHeight;}" fill="#444444">{print round($yMaxM/$ySlots*($ySlots-$i), 0);} M</text></g>
 			{/}
 		</g>
 	</g>
@@ -121,18 +126,26 @@
 			<li><b>Apr 2012</b> - launch</li>
 		</ul>
 
-		<h2>Consistent dates and times</h2>
-		<p>To get consistent output I try to eliminate as much environmental changes as possible. The chroot is rarely changed, and some methods are overloaded to provide consistent results. For example, <i>php_uname</i> will always return the same output.</p>
-		<p>This is to keep the number of unique results down, and make <a href="/bughunt">the bughunt</a> a more useful tool. This fixation is also done on all date/time methods. A run will start at the same time for all versions, even though the actual walltime progresses.</p>
-		<p>For example - <a href="/MtDjZ">this simple <i>echo date();</i> script</a> was submitted in 2012. Since it was created, I have executed it on new versions as well - which all output 2012 even though most of the PHP versions weren't even released at at that time!</p>
-		<p>The date/time fixation uses the <b>last submit time</b> as reference. This means a quick-preview can sometimes show "outdated" timestamps as you are actually looking at output from a run with the previous submit-time.<p>
-
 		<h2>Pro-tricks</h2>
-		<p>There are a few tricks you might appreciate; did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? Did you ever want to copy a script to run it yourself? You can simply download it, use:</p>
-		<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>
+		<p>There are a few tricks and some hidden functionality you might appreciate:</p>
+		<ul>
+			<li>
+				<p>Did you know you can submit a script using the keyboard shortcut <i>ctrl + enter</i>? The quick-preview can be triggered by using <i>alt + enter</i>.</p>
+			</li>
 
-		<p>Did you ever complain there is no API? Well, REST is an API too, and I offer json output for most pages:</p>
-		<pre>$ curl -H Accept:application/json https://3v4l.org/uNUDC</pre>
+			<li>
+				<p>Want to copy a script to run it yourself? You can simply download it, use:</p>
+				<pre>$ curl -H Accept:text/plain https://3v4l.org/uNUDC</pre>
+			</li>
+
+			<li>
+				<p>While there is no official API, you can use REST and get json output for most pages:</p>
+				<pre>$ curl -H Accept:application/json https://3v4l.org/uNUDC</pre>
+
+			<li>
+				<p>Do you ever use the inline <i class="icon-tasks active"></i> diff functionality? You can select the base of the diff by clicking the 'Output for &lt;version&gt;' header first.</p>
+			</li>
+		</ul>
 
 		<h2>Links</h2>
 		<ul>
@@ -221,5 +234,12 @@ chmod u-w /out/$1/
 		<p>The layout has taken a few cues from Bootstrap but given the verboseness of both its HTML and CSS I don't actually use that.
 		 The initial layout allowed for only the input and output to be visible, which was why I did an update where I added the tabs allowing for various helpers to be included.
 		 You're currently looking at the third layout iteration, which was done specifically to allow for some global contextual links to be visible and allow for various other features.</p>
+
+		<h2>Consistent dates and times</h2>
+		<p>To get consistent output I try to eliminate as much environmental changes as possible. The chroot is rarely changed, and some methods are overloaded to provide consistent results. For example, <i>php_uname</i> will always return the same output.</p>
+		<p>This is to keep the number of unique results down, and make <a href="/bughunt">the bughunt</a> a more useful tool. This fixation is also done on all date/time methods. A run will start at the same time for all versions, even though the actual walltime progresses.</p>
+		<p>For example - <a href="/MtDjZ">this simple <i>echo date();</i> script</a> was submitted in 2012. Since it was created, I have executed it on new versions as well - which all output 2012 even though most of the PHP versions weren't even released at at that time!</p>
+		<p>The date/time fixation uses the <b>last submit time</b> as reference. This means a quick-preview can sometimes show "outdated" timestamps as you are actually looking at output from a run with the previous submit-time.</p>
+
 	</div>
 </div>

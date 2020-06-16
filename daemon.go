@@ -437,18 +437,17 @@ func checkPendingInputs() {
 }
 
 func canBatch(doSleep bool) (bool, error) {
-	scale := 65536.0 // magic
-
 	var i syscall.Sysinfo_t
 	if err := syscall.Sysinfo(&i); err != nil {
 		return false, err
 	}
 
+	scale := 65536.0 // magic
 	l1 := float64(i.Loads[0]) / scale
 	l5 := float64(i.Loads[1]) / scale
 
 	if doSleep {
-		time.Sleep(time.Duration(int(10*l1/scale)/runtime.NumCPU()) * time.Millisecond)
+		time.Sleep(time.Duration(int(10*l1)/runtime.NumCPU()) * time.Millisecond)
 	}
 
 	if int(l5) > runtime.NumCPU() {
@@ -523,13 +522,13 @@ func batchScheduleNewVersions() {
 			}(&input)
 
 			if found % 1e5 == 0 {
-				fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
+				fmt.Printf("batchScheduleNewVersions: %s - completed %.3f M scripts\n", v.name, float64(found)/1e6)
 			}
 		}
 
 		wg.Wait()
 
-		fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
+		fmt.Printf("batchScheduleNewVersions: %s - completed %.3f M scripts\n", v.name, float64(found)/1e6)
 	}
 }
 
