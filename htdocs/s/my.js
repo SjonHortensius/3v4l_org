@@ -538,10 +538,23 @@ var evalOrg = {};
 
 		var select = $('select#version');
 		var versions = JSON.parse(select.dataset['values']);
+		var majors = Object.keys(versions);
+		var addOpt = function (g, v){
+			var o = document.createElement('option');
+			o.setAttribute('value', v);
+			o.appendChild(document.createTextNode(v));
+			g.appendChild(o);
+		};
 
-		Object.keys(versions).forEach(function(key) {
+		var curr = document.createElement('optgroup');
+		curr.label = 'current';
+
+		majors.forEach(function(key, idx) {
 			var group = document.createElement('optgroup'), options = [];
 			group.label = (key.substr(-1) === '.' || key.substr(-1) === '-') ? key.substr(0, key.length-1) : key;
+
+			if (idx <=2)
+				addOpt(curr, key + versions[key]);
 
 			if (typeof versions[key] === 'number')
 				for (var i = versions[key]; i >= 0; i--)
@@ -551,16 +564,13 @@ var evalOrg = {};
 			else
 				options = [versions[key]];
 
-			options.forEach(function (v){
-				var o = document.createElement('option');
-				o.setAttribute('value', key + v);
-				o.appendChild(document.createTextNode(key + v));
-				group.appendChild(o);
-			});
+			options.forEach(function (v){ addOpt(group, key + v); });
 
 			select.appendChild(group);
 		});
 
+		versions['git-'].forEach(function (v){ addOpt(curr, 'git-' + v); });
+		select.insertBefore(curr, select.firstChild);
 		$('#previewForm button').addEventListener('click', this.preview.bind(this));
 	};
 
