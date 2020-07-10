@@ -21,7 +21,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 				'output' => 'Output',
 				'perf' => 'Performance',
 				'vld' => 'VLD opcodes',
-				'ast' => 'Syntax Tree',
 				'refs' => 'References',
 				'rfc' => 'Branches',
 			]
