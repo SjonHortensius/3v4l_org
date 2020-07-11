@@ -104,11 +104,4 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		$this->showTemplate(Basic::$userinput['action'], Basic_Template::UNBUFFERED);
 	}
-
-	public static function sortAnalyzeByLine(&$messages)
-	{
-		usort($messages, function($a, $b){
-			return $a[1]->c1[1] - $b[1]->c1[1];
-		});
-	}
 }
