@@ -197,7 +197,11 @@ class PhpShell_Input extends PhpShell_Entity
 
 		$abbrMax = function($name)
 		{
-			return $name;
+			// strip repeating version in max for non-releases, but keep html intact
+			if (preg_match('~^(.*>)(.*)(alpha|beta|rc)(.*)(<.*)$~', $name, $m))
+				return $m[1] . $m[3] . $m[4] . $m[5] . $m[6];
+			else
+				return $name;
 		};
 
 		$outputs = [];
@@ -209,11 +213,12 @@ class PhpShell_Input extends PhpShell_Entity
 			$hash = sha1($html);
 			$slot =& $outputs[ $hash ];
 
+			$major = substr($result->version->name, 0, 3);
 			$name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
-			if (!isset($slot)) #FIXME; use PhpShell_Output as $slot for getSubmitHash ?
+			if (!isset($slot))
 				$slot = ['min' => $name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
-			elseif ($hash != $prevHash)
+			elseif ($hash != $prevHash || $major !== $prevMajor)
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -224,8 +229,6 @@ class PhpShell_Input extends PhpShell_Entity
 				$slot['min'] = $name;
 				unset($slot['max']);
 			}
-			elseif (!isset($slot['min']))
-				$slot['min'] = $name;
 			else
 				$slot['max'] = $name;
 
@@ -233,6 +236,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$slot['output'] = $html;
 
 			$prevHash = $hash;
+			$prevMajor = $major;
 		}
 
 		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
