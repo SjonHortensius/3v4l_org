@@ -4,22 +4,22 @@
 "start_url": "/",
 "icons": [
 	{
-		"src": "/s/logo.png",
+		"src": "https://3v4l.org/s/logo.png",
 		"sizes": "66x21",
 		"type":"image/png"
 	},
 	{
-		"src": "/s/site_thumb.png",
+		"src": "https://3v4l.org/s/site_thumb.png",
 		"sizes":"120x120",
 		"type": "image/png"
 	},
 	{
-		"src": "/s/site_thumb_360.png",
+		"src": "https://3v4l.org/s/site_thumb_360.png",
 		"sizes":"360x360",
 		"type": "image/png"
 	},
 	{
-		"src": "/s/site_thumb_719.png",
+		"src": "https://3v4l.org/s/site_thumb_719.png",
 		"sizes":"719x719",
 		"type": "image/png"
 	}
