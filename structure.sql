@@ -296,7 +296,7 @@ CREATE TABLE public.result_php73 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419', '425', '429', '434', '439', '443', '448', '452', '455', '458', '461', '464', '466');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419', '425', '429', '434', '439', '443', '448', '452', '455', '458', '461', '464', '466', '470', '473');
 
 
 ALTER TABLE public.result_php73 OWNER TO postgres;
@@ -316,10 +316,47 @@ CREATE TABLE public.result_php74 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465', '469', '472');
 
 
 ALTER TABLE public.result_php74 OWNER TO postgres;
+
+--
+-- Name: result_php80; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php80 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT NULL NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT NULL NOT NULL,
+    mutations smallint DEFAULT NULL NOT NULL
+);
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES IN ('471', '475', '17');
+
+
+ALTER TABLE public.result_php80 OWNER TO postgres;
+
+--
+-- Name: version; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.version (
+    name character varying(24) NOT NULL,
+    released date DEFAULT now(),
+    "order" integer,
+    command character varying(254) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
+    "isHelper" boolean DEFAULT false NOT NULL,
+    id smallint NOT NULL,
+    eol date
+);
+
+
+ALTER TABLE public.version OWNER TO postgres;
 
 --
 -- Name: results_supported; Type: VIEW; Schema: public; Owner: postgres
@@ -336,6 +373,9 @@ CREATE VIEW public.results_supported AS
     result_php73.runs,
     result_php73.mutations
    FROM public.result_php73
+  WHERE (result_php73.version IN ( SELECT version.id
+           FROM public.version
+          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)))
 UNION ALL
  SELECT result_php74.input,
     result_php74.version,
@@ -346,10 +386,45 @@ UNION ALL
     result_php74."maxMemory",
     result_php74.runs,
     result_php74.mutations
-   FROM public.result_php74;
+   FROM public.result_php74
+  WHERE (result_php74.version IN ( SELECT version.id
+           FROM public.version
+          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)))
+UNION ALL
+ SELECT result_php80.input,
+    result_php80.version,
+    result_php80.output,
+    result_php80."exitCode",
+    result_php80."userTime",
+    result_php80."systemTime",
+    result_php80."maxMemory",
+    result_php80.runs,
+    result_php80.mutations
+   FROM public.result_php80
+  WHERE (result_php80.version IN ( SELECT version.id
+           FROM public.version
+          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)));
 
 
 ALTER TABLE public.results_supported OWNER TO postgres;
+
+--
+-- Name: version_forBughunt; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public."version_forBughunt" AS
+ SELECT version.name,
+    version.released,
+    version."order",
+    version.command,
+    version."isHelper",
+    version.id,
+    version.eol
+   FROM public.version
+  WHERE (((now() - (version.released)::timestamp with time zone) < '6 mons'::interval) AND (NOT version."isHelper"));
+
+
+ALTER TABLE public."version_forBughunt" OWNER TO postgres;
 
 --
 -- Name: result_bughunt; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
@@ -366,14 +441,14 @@ CREATE MATERIALIZED VIEW public.result_bughunt AS
     results_supported.runs,
     results_supported.mutations
    FROM public.results_supported
-  WHERE (results_supported.input IN ( SELECT x.input
-           FROM ( SELECT r1.input,
-                    count(DISTINCT r1.output) AS count
-                   FROM (public.results_supported r1
-                     JOIN public.input i1 ON ((i1.id = r1.input)))
-                  WHERE (NOT i1."bughuntIgnore")
-                  GROUP BY r1.input) x
-          WHERE (x.count > 1)))
+  WHERE ((results_supported.version IN ( SELECT "version_forBughunt".id
+           FROM public."version_forBughunt")) AND (results_supported.input IN ( SELECT input.id
+           FROM (public.results_supported results_supported_1
+             JOIN public.input ON ((input.id = results_supported_1.input)))
+          WHERE ((NOT input."bughuntIgnore") AND (results_supported_1.version IN ( SELECT "version_forBughunt".id
+                   FROM public."version_forBughunt")))
+          GROUP BY input.id
+         HAVING (count(DISTINCT results_supported_1.output) > 1))))
   WITH NO DATA;
 
 
@@ -394,7 +469,7 @@ CREATE TABLE public.result_helper (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_helper FOR VALUES IN ('1', '2', '5', '8', '10', '11', '12', '13', '14', '15', '16', '17');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_helper FOR VALUES IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16');
 
 
 ALTER TABLE public.result_helper OWNER TO postgres;
@@ -574,7 +649,7 @@ CREATE TABLE public.result_php72 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php72 FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420', '426', '430', '435', '440', '444', '449', '453', '456', '459', '462', '467', '468');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php72 FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420', '426', '430', '435', '440', '444', '449', '453', '456', '459', '462', '467', '468', '474');
 
 
 ALTER TABLE public.result_php72 OWNER TO postgres;
@@ -710,23 +785,6 @@ ALTER TABLE public.user_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
-
---
--- Name: version; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.version (
-    name character varying(24) NOT NULL,
-    released date DEFAULT now(),
-    "order" integer,
-    command character varying(254) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
-    "isHelper" boolean DEFAULT false NOT NULL,
-    id smallint NOT NULL,
-    eol date
-);
-
-
-ALTER TABLE public.version OWNER TO postgres;
 
 --
 -- Name: version_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -968,6 +1026,14 @@ ALTER TABLE ONLY public.result_php74
 
 
 --
+-- Name: result_php80 result_php80_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result_php80
+    ADD CONSTRAINT result_php80_input_version_key UNIQUE (input, version);
+
+
+--
 -- Name: submit submit_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1064,20 +1130,6 @@ CREATE INDEX "inputsPending" ON public.input USING btree (state) WHERE (NOT (((s
 
 
 --
--- Name: resultBughunt; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX "resultBughunt" ON public.result_bughunt USING btree (input, version);
-
-
---
--- Name: resultBughuntVersion; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "resultBughuntVersion" ON public.result_bughunt USING btree (version);
-
-
---
 -- Name: resultExitCode; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1169,6 +1221,13 @@ CREATE INDEX "result_php74_exitCode_idx" ON public.result_php74 USING brin ("exi
 
 
 --
+-- Name: result_php80_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php80_exitCode_idx" ON public.result_php80 USING brin ("exitCode");
+
+
+--
 -- Name: submitLast; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1181,7 +1240,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2020-04-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2020-06-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1350,6 +1409,20 @@ ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php74_exitCo
 --
 
 ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php74_input_version_key;
+
+
+--
+-- Name: result_php80_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php80_exitCode_idx";
+
+
+--
+-- Name: result_php80_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php80_input_version_key;
 
 
 --
@@ -1659,10 +1732,25 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.result TO daemon;
 
 
 --
+-- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public.version TO website;
+GRANT SELECT ON TABLE public.version TO daemon;
+
+
+--
+-- Name: TABLE "version_forBughunt"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public."version_forBughunt" TO PUBLIC;
+
+
+--
 -- Name: TABLE result_bughunt; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public.result_bughunt TO website;
+GRANT SELECT ON TABLE public.result_bughunt TO PUBLIC;
 
 
 --
@@ -1706,15 +1794,6 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public."user" TO website;
 --
 
 GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
-
-
---
--- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.version TO website;
-GRANT SELECT ON TABLE public.version TO daemon;
-
 
 --
 -- PostgreSQL database dump complete

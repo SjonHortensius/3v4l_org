@@ -472,8 +472,7 @@ func batchScheduleNewVersions() {
 	wg := newSizedWaitGroup(batch)
 
 	for _, v := range versions {
-		// ignore helpers, they don't store all results
-		if v.isHelper {
+		if time.Now().Sub(v.released) > 30*24*time.Hour || v.name[0:3] == "git" {
 			continue
 		}
 
