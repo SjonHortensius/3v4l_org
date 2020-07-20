@@ -8,7 +8,7 @@
 	{!-- ace version must be updated in htdocs/s/worker-php.js as well --}
 	{!-- curl URL | openssl dgst -sha384 -binary | openssl base64 -A --}
 	{foreach ($this->aceScripts as $this->src => $this->sha384)}
-		<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.7/src-min-noconflict/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4.12/src-min-noconflict/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>
 	{/}
 </body>
 </html>

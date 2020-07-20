@@ -32,11 +32,11 @@ class PhpShell_Action extends Basic_Action
 	public $httpPreloads = [];
 	public $aceScripts = [
 		// curl URL | openssl dgst -sha384 -binary | openssl base64 -A
-		'ace'               => 'rUYyP7fFwtUNNUI58AukTAA09xPFvyGdaZjThfjMoOvJqOrKQP19dw4U9zs2Fvjv',
-		'ext-language_tools'=> 'tc93qxndTmhzoGrBxjaa9P+O2Qwv8pIxq+GhjDoKfj3SENyU7Zm4DMQwk05pG3UJ',
-		'mode-php'          => 'vPD3DrKLLxVVNiyVg9HHAfpWS+V8EZjwlvTQha6eKEuo+mULV3HG47C1fvibRP2v',
-		'theme-chrome'      => 'TMSA2R4Dwlyv981WAb6YKZhpVnbp2hb6SRZzwPFsWAG6Ejp8P1vsnMVRsf0/q6u2',
-		'theme-chaos'       => '0lG3fDjcbmfHTMnTJ+H9YzwwT3OTTmb/tTTQnd+yJk4O0c19Z1q+Zb/66LG1aFzm',
+		'ace'				=> 'hrjkfJF+wiarMlNc/Nqv8RItRca1TOp8FBggbKsUJfRaKgioqs8qgKw6PIPMIpMV',
+		'ext-language_tools'=> 'ekAdgyeUwbzV1dQD5bw4YmjEcT3gPjuMQxr7LHj97tDXgH7pSVJu94xhdk41dm0o',
+		'mode-php'			=> 'StpQu3neqdlAzrsRTrSGF0uK2jacPlkEooevUU6xMvI06o2rrdxt2GXheKpPQ117',
+		'theme-chrome'		=> 'TMSA2R4Dwlyv981WAb6YKZhpVnbp2hb6SRZzwPFsWAG6Ejp8P1vsnMVRsf0/q6u2',
+		'theme-chaos'		=> 'yIFFODljZieTIYGxaProehZYpFE67Z3ax7l0b9iglUEgHK7/WxLrrsT6kjzTWTtm',
 	];
 
 	public function init(): void
