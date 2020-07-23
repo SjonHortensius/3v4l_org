@@ -52,6 +52,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (in_array(Basic::$userinput['script'], ['aV2i2', 'XD6qI']) && 'Blackboard Safeassign' === $_SERVER['HTTP_USER_AGENT'])
 			die(http_response_code(429));
 
+		// we want to possibly truncate the header if _handleLastModified() exits
+		ob_start();
+
 		parent::init();
 	}
 
@@ -82,7 +85,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		}
 
 		// Rerun caching logic now that we have input.lastModified
-		parent::_handleLastModified();
+		$this->_handleLastModified();
 
 		// Attempt to retrigger the daemon
 		if ($this->input->state == 'new')
@@ -103,5 +106,16 @@ class PhpShell_Action_Script extends PhpShell_Action
 			$this->input->logHit();
 
 		$this->showTemplate(Basic::$userinput['action'], Basic_Template::UNBUFFERED);
+	}
+
+	protected function _handleLastModified(): void
+	{
+		// truncate header of we're gonna send a 304 - required because we call _handleLastModified from run() which is unsupported
+		register_shutdown_function(function() { if (304 == http_response_code()) ob_end_clean();});
+
+		parent::_handleLastModified();
+
+		// if we didn't exit, end the output buffer
+		ob_end_flush();
 	}
 }
