@@ -569,7 +569,9 @@ var evalOrg = {};
 			select.appendChild(group);
 		});
 
-		versions['git-'].forEach(function (v){ addOpt(curr, 'git-' + v); });
+		if (versions['git-'])
+			versions['git-'].forEach(function (v){ addOpt(curr, 'git-' + v); });
+
 		select.insertBefore(curr, select.firstChild);
 		$('#previewForm button').addEventListener('click', this.preview.bind(this));
 	};
