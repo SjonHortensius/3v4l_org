@@ -553,7 +553,7 @@ var evalOrg = {};
 			var group = document.createElement('optgroup'), options = [];
 			group.label = (key.substr(-1) === '.' || key.substr(-1) === '-') ? key.substr(0, key.length-1) : key;
 
-			if (idx <=2)
+			if (idx <=2 && key.length == 4)
 				addOpt(curr, key + versions[key]);
 
 			if (typeof versions[key] === 'number')
