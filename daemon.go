@@ -90,7 +90,9 @@ func (this *Input) penalize(r string, p int) {
 	stats.Increase("penalty", p)
 
 	if p > 1 {
-		this.Lock(); this.penaltyDetail[r] += p; this.Unlock()
+		this.Lock()
+		this.penaltyDetail[r] += p
+		this.Unlock()
 	}
 }
 
@@ -145,7 +147,8 @@ func (this *Input) complete() {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 
-	inputSrc.Lock(); inputSrc.srcUse[this.short]--
+	inputSrc.Lock()
+	inputSrc.srcUse[this.short]--
 	if 0 == inputSrc.srcUse[this.short] {
 		if err := os.Remove("/in/" + this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
@@ -225,10 +228,14 @@ func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
 	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
 	switch v.name {
-		case "vld":
-			if exitCode == 0 {  r.store() } else { r.delete() }
-		default:
+	case "vld":
+		if exitCode == 0 {
 			r.store()
+		} else {
+			r.delete()
+		}
+	default:
+		r.store()
 	}
 
 	stats.Increase("results", 1)
@@ -625,12 +632,9 @@ func init() {
 		syscall.RLIMIT_FSIZE:  16 * 1024 * 1024,
 		syscall.RLIMIT_CORE:   0,
 		syscall.RLIMIT_NOFILE: 2048,
-		RLIMIT_NPROC:          64,
-/*
-		syscall.RLIMIT_FSIZE:  64 * 1024,
 		syscall.RLIMIT_CPU:    2,
 		syscall.RLIMIT_AS:     512 * 1024 * 1024,
-*/
+		RLIMIT_NPROC:          64,
 	}
 
 	for key, value := range limits {
@@ -655,9 +659,11 @@ func main() {
 
 	fmt.Printf("daemon ready\n")
 
-	doPrintStats      := time.NewTicker( 1 * time.Hour)
-	doCheckPending    := time.NewTicker(45 * time.Minute)
-	doShutdown        := make(chan os.Signal, 1)
+	var (
+		doPrintStats   = time.NewTicker(1 * time.Hour)
+		doCheckPending = time.NewTicker(45 * time.Minute)
+		doShutdown     = make(chan os.Signal, 1)
+	)
 	signal.Notify(doShutdown, os.Interrupt)
 
 	// do some bg work when we're idle
