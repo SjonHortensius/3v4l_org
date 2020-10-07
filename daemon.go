@@ -64,6 +64,7 @@ type ResourceLimit struct {
 }
 
 type SizedWaitGroup struct {
+	limit   int
 	current chan bool
 	*sync.WaitGroup
 }
@@ -74,7 +75,7 @@ type Stats struct {
 }
 
 func newSizedWaitGroup(limit int) SizedWaitGroup {
-	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
+	return SizedWaitGroup{limit, make(chan bool, limit), &sync.WaitGroup{}}
 }
 func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
 func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
@@ -271,7 +272,9 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 
 	cmdArgs = append(cmdArgs, "/in/"+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99}}
 	cmd.Env = []string{
+		"LD_PRELOAD=/usr/bin/daemon-preload.so",
 		"TERM=xterm",
 		"PATH=/usr/bin:/bin",
 		"LANG=C",
@@ -281,13 +284,9 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		"USER=nobody",
 		"HOME=/tmp",
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99, Groups: []uint32{}}}
 
 	if !this.lastSubmit.IsZero() {
-		cmd.Env = append(cmd.Env, []string{
-			"TIME=" + strconv.FormatInt(this.lastSubmit.Unix(), 10),
-			"LD_PRELOAD=/usr/bin/daemon-preload.so",
-		}...)
+		cmd.Env = append(cmd.Env, "TIME=" + strconv.FormatInt(this.lastSubmit.Unix(), 10))
 	}
 
 	/*
@@ -481,7 +480,11 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions() {
-	// wait until other instances are done
+	// with batching disabled, skip heavy SELECT (only Add blocks)
+	if 0 == batch.limit {
+		return
+	}
+
 	batch.Wait()
 
 	for _, v := range versions {
@@ -603,10 +606,6 @@ const (
 )
 
 func init() {
-	var err error
-	db, err = sql.Open("postgres", DSN)
-	db.SetMaxOpenConns(32)
-
 	if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
 		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
 			panic("while parsing batch: " + err.Error())
@@ -615,9 +614,13 @@ func init() {
 		}
 	}
 
-	if err != nil {
+	if c, err := sql.Open("postgres", DSN); err != nil {
 		panic("init - failed to connect to db: " + err.Error())
+	} else {
+		db = c
 	}
+
+	db.SetMaxOpenConns(32)
 
 	if err := db.Ping(); err != nil {
 		panic("init - failed to ping db: " + err.Error())
@@ -625,23 +628,6 @@ func init() {
 
 	stats = Stats{c: make(map[string]int)}
 	inputSrc.srcUse = make(map[string]int)
-
-	//FIXME these limits should apply to scripts, not us
-	var limits = map[int]int{
-		syscall.RLIMIT_DATA:   256 * 1024 * 1024,
-		syscall.RLIMIT_FSIZE:  16 * 1024 * 1024,
-		syscall.RLIMIT_CORE:   0,
-		syscall.RLIMIT_NOFILE: 2048,
-		syscall.RLIMIT_CPU:    2,
-		syscall.RLIMIT_AS:     512 * 1024 * 1024,
-		RLIMIT_NPROC:          64,
-	}
-
-	for key, value := range limits {
-		if err := syscall.Setrlimit(key, &syscall.Rlimit{Cur: uint64(value), Max: uint64(float64(value) * 1.25)}); err != nil {
-			panic(fmt.Sprintf("init - failed to set resourceLimit: %d to %d: %s", key, value, err))
-		}
-	}
 
 	refreshVersions()
 }

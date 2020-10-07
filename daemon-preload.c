@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/resource.h>
 
 struct timeval diff;
 int offset = 0;
@@ -21,6 +22,17 @@ int (*org_clock_gettime)(clockid_t clk_id, struct timespec *tp);
 struct tm *(*org_localtime_r)(const time_t *timep, struct tm *result);
 int (*org__xstat)(int __ver, const char *__filename, struct stat *__stat_buf);
 
+
+void _setrlimit(int resource, int max) {
+	struct rlimit limits;
+	limits.rlim_cur = max;
+	limits.rlim_max = max;
+
+	if (setrlimit(resource, &limits)) {
+		perror("setlimit failed");
+		exit(205);
+	}
+}
 
 void _init(void) {
 	org_gettimeofday =	dlsym(RTLD_NEXT, "gettimeofday");
@@ -34,7 +46,7 @@ void _init(void) {
 
 	if (0 == offset) {
 		fprintf(stderr, "\nSomeone set us up the bomb, please report to root@3v4l.org: %s\n", getenv("TIME"));
-		exit(1);
+		exit(2);
 	}
 
 	// don't change usec, this makes us start at offset.0
@@ -43,6 +55,16 @@ void _init(void) {
 
 	unsetenv("TIME");
 	unsetenv("LD_PRELOAD");
+
+	// this doesn't strictly belong here, but go doesn't allow setting this on os.Exec-ed threads
+	_setrlimit(RLIMIT_CPU, 2);
+	_setrlimit(RLIMIT_DATA, 128 * 1024 * 1024);
+	_setrlimit(RLIMIT_AS, 192 * 1024 * 1024);
+	_setrlimit(RLIMIT_FSIZE, 64 * 1024);
+	_setrlimit(RLIMIT_NPROC, 64);
+	_setrlimit(RLIMIT_NOFILE, 2048);
+	_setrlimit(RLIMIT_CORE, 0);
+	nice(5);
 }
 
 int gettimeofday(struct timeval *__restrict tp, void *__restrict tzp) {
