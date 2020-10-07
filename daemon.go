@@ -68,15 +68,26 @@ type SizedWaitGroup struct {
 	*sync.WaitGroup
 }
 
+type Stats struct {
+	sync.RWMutex
+	c map[string]int
+}
+
 func newSizedWaitGroup(limit int) SizedWaitGroup {
 	return SizedWaitGroup{make(chan bool, limit), &sync.WaitGroup{}}
 }
 func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
 func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
 
+func (this *Stats) Increase(t string, i int) {
+	this.Lock()
+	this.c[t] += i
+	this.Unlock()
+}
+
 func (this *Input) penalize(r string, p int) {
 	this.penalty += p
-	stats.Lock(); stats.c["penalty"] += p; stats.Unlock()
+	stats.Increase("penalty", p)
 
 	if p > 1 {
 		this.Lock(); this.penaltyDetail[r] += p; this.Unlock()
@@ -144,7 +155,7 @@ func (this *Input) complete() {
 	}
 	inputSrc.Unlock()
 
-	stats.Lock(); stats.c["inputs"]++; stats.Unlock()
+	stats.Increase("inputs", 1)
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
@@ -171,7 +182,7 @@ func newOutput(raw string, i *Input, v Version) Output {
 			panic("Output: failed to retrieve after storing: " + err.Error())
 		}
 
-		stats.Lock(); stats.c["outputs"]++; stats.Unlock()
+		stats.Increase("outputs", 1)
 	}
 
 	i.Lock()
@@ -220,7 +231,7 @@ func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
 			r.store()
 	}
 
-	stats.Lock(); stats.c["results"]++; stats.Unlock()
+	stats.Increase("results", 1)
 	return r
 }
 
@@ -570,15 +581,12 @@ func doWork() {
 
 var (
 	db       *sql.DB
-	versions []Version
 	batch    SizedWaitGroup
+	stats    Stats
+	versions []Version
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
-	}
-	stats struct {
-		sync.RWMutex
-		c map[string]int
 	}
 )
 
@@ -608,7 +616,7 @@ func init() {
 		panic("init - failed to ping db: " + err.Error())
 	}
 
-	stats.c = make(map[string]int)
+	stats = Stats{c: make(map[string]int)}
 	inputSrc.srcUse = make(map[string]int)
 
 	//FIXME these limits should apply to scripts, not us
