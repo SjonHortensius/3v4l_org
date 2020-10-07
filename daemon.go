@@ -63,8 +63,6 @@ type ResourceLimit struct {
 	output  int
 }
 
-
-// Limits # of parallel execs by using a channel with a limited buffer
 type SizedWaitGroup struct {
 	current chan bool
 	*sync.WaitGroup
@@ -465,11 +463,8 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions() {
-	if 0 == batch {
-		return
-	}
-
-	wg := newSizedWaitGroup(batch)
+	// wait until other instances are done
+	batch.Wait()
 
 	for _, v := range versions {
 		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" {
@@ -511,21 +506,21 @@ func batchScheduleNewVersions() {
 				}
 			}
 
-			wg.Add()
+			batch.Add()
 			go func(i *Input) {
 				i.prepare(false)
 				i.execute(v, ResourceLimit{0, 2500, 32768})
 				i.complete()
 
-				wg.Done()
+				batch.Done()
 			}(&input)
 
-			if found % 1e5 == 0 {
+			if found%1e5 == 0 {
 				fmt.Printf("batchScheduleNewVersions: %s - completed %.3f M scripts\n", v.name, float64(found)/1e6)
 			}
 		}
 
-		wg.Wait()
+		batch.Wait()
 
 		fmt.Printf("batchScheduleNewVersions: %s - completed %.3f M scripts\n", v.name, float64(found)/1e6)
 	}
@@ -576,7 +571,7 @@ func doWork() {
 var (
 	db       *sql.DB
 	versions []Version
-	batch    int
+	batch    SizedWaitGroup
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -599,9 +594,9 @@ func init() {
 
 	if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
 		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
-			panic("while parsing batch: "+ err.Error())
+			panic("while parsing batch: " + err.Error())
 		} else {
-			batch = b
+			batch = newSizedWaitGroup(b)
 		}
 	}
 
@@ -677,8 +672,11 @@ LOOP:
 
 		case n := <-l.Notify:
 			switch n.Extra {
-				case "version": go refreshVersions()
-				case "queue":   go doWork()
+			case "version":
+				refreshVersions()
+				go batchScheduleNewVersions()
+			case "queue":
+				go doWork()
 			}
 
 		case <-doShutdown:
