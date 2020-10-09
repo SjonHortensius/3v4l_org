@@ -37,6 +37,8 @@ var evalOrg = {};
 	this.initialize = function()
 	{
 		window.onerror = this.postError;
+		// do this immediately to prevent a fouc
+		this.applyDarkmode();
 
 		$$('a[href^="http"]').forEach(function (el){
 			el.setAttribute('target', '_blank');

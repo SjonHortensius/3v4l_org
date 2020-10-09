@@ -105,11 +105,11 @@ func (this *Input) prepare(fg bool) {
 	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
 		if f, err := os.Create(inPath + this.short); err != nil {
-			panic("prepare: could not create file: " + err.Error())
+			panic("Input: could not create file: " + err.Error())
 		} else {
 			var raw []byte
 			if err := db.QueryRow(`SELECT raw FROM input_src WHERE input = $1`, this.id).Scan(&raw); err != nil {
-				panic("prepare: could not retrieve source: " + err.Error())
+				panic("Input: could not retrieve source: " + err.Error())
 			} else {
 				f.Write(raw)
 			}
@@ -408,14 +408,14 @@ func refreshVersions() {
 		ORDER BY "released" DESC, "order" DESC`)
 
 	if err != nil {
-		panic("Could not populate versions: " + err.Error())
+		panic("daemon: could not SELECT: " + err.Error())
 	}
 
 	for rs.Next() {
 		v := Version{}
 
 		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.isHelper); err != nil {
-			panic("Error fetching version: " + err.Error())
+			panic("daemon: error Scanning: " + err.Error())
 		}
 
 		newVersions = append(newVersions, v)
@@ -433,7 +433,7 @@ func checkPendingInputs() {
 		ORDER BY created DESC`)
 
 	if err != nil {
-		panic("checkPendingInputs - could not SELECT: " + err.Error())
+		panic("checkPendingInputs: could not SELECT: " + err.Error())
 	}
 
 	l := ResourceLimit{0, 2500, 32768}
@@ -443,7 +443,7 @@ func checkPendingInputs() {
 	for rs.Next() {
 		var input Input
 		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
-			panic("checkPendingInputs: error fetching work: " + err.Error())
+			panic("checkPendingInputs: error Scanning: " + err.Error())
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
@@ -520,7 +520,7 @@ func batchScheduleNewVersions() {
 				AND "runQuick" IS NULL;`,
 			v.id, v.eol.Format("2006-01-02"))
 		if err != nil {
-			panic("batchScheduleNewVersions: error in SELECT query: " + err.Error())
+			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
 
 		fmt.Printf("batchScheduleNewVersions: %s - executing missing scripts\n", v.name)
@@ -531,7 +531,7 @@ func batchScheduleNewVersions() {
 
 			var input Input
 			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
-				panic("batchScheduleNewVersions: error fetching work: " + err.Error())
+				panic("batchScheduleNewVersions: error Scanning: " + err.Error())
 			}
 
 			for c, err := canBatch(true); err != nil || !c; c, err = canBatch(true) {
@@ -564,7 +564,7 @@ func doWork() {
 	rs, err := db.Query(`DELETE FROM queue WHERE "maxPackets" = 0 RETURNING *`)
 
 	if err != nil {
-		panic("doWork: error in DELETE query: " + err.Error())
+		panic("doWork: could not DELETE: " + err.Error())
 	}
 
 	for rs.Next() {
@@ -573,7 +573,7 @@ func doWork() {
 		var rMax ResourceLimit
 
 		if err := rs.Scan(&input.short, &version, &rMax.packets, &rMax.runtime, &rMax.output); err != nil {
-			panic("doWork: error fetching work: " + err.Error())
+			panic("doWork: error Scanning: " + err.Error())
 		}
 
 		if err := db.QueryRow(`SELECT id, created, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.runArchived); err != nil {
@@ -635,7 +635,7 @@ func init() {
 	}
 
 	if c, err := sql.Open("postgres", DSN); err != nil {
-		panic("init - failed to connect to db: " + err.Error())
+		panic("init: failed to connect to db: " + err.Error())
 	} else {
 		db = c
 	}
@@ -643,7 +643,7 @@ func init() {
 	db.SetMaxOpenConns(32)
 
 	if err := db.Ping(); err != nil {
-		panic("init - failed to ping db: " + err.Error())
+		panic("init: failed to ping db: " + err.Error())
 	}
 
 	stats = Stats{c: make(map[string]int)}
@@ -661,13 +661,13 @@ func main() {
 
 		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C')`)
 		if err != nil {
-			panic("could not SELECT: " + err.Error())
+			panic("daemon: could not SELECT: " + err.Error())
 		}
 
 		var i Input
 		for rs.Next() {
 			if err := rs.Scan(&i.id, &i.short, &i.runArchived, &i.created); err != nil {
-				panic("could not Scan: " + err.Error())
+				panic("daemon: error Scanning: " + err.Error())
 			}
 
 			i.prepare(false)
@@ -680,12 +680,12 @@ func main() {
 
 	l := pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
-			panic("While creating listener: " + err.Error())
+			panic("daemon: error creating Listener: " + err.Error())
 		}
 	})
 
 	if err := l.Listen("daemon"); err != nil {
-		panic("Could not setup Listener " + err.Error())
+		panic("daemon: error Listening: " + err.Error())
 	}
 
 	fmt.Printf("daemon ready\n")
