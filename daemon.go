@@ -104,7 +104,7 @@ func (this *Input) prepare(fg bool) {
 	inputSrc.Lock()
 	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
-		if f, err := os.Create("/in/" + this.short); err != nil {
+		if f, err := os.Create(inPath + this.short); err != nil {
 			panic("prepare: could not create file: " + err.Error())
 		} else {
 			var raw []byte
@@ -125,7 +125,7 @@ func (this *Input) prepare(fg bool) {
 		}
 	}
 
-	if !fg {
+	if !fg || dryRun {
 		return
 	}
 
@@ -142,16 +142,10 @@ func (this *Input) complete() {
 		state = "abusive"
 	}
 
-	if _, err := db.Exec(`UPDATE input
-		SET penalty = LEAST(penalty + $2, 32767), state = $3
-		WHERE short = $1`, this.short, this.penalty, state); err != nil {
-		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
-	}
-
 	inputSrc.Lock()
 	inputSrc.srcUse[this.short]--
 	if 0 == inputSrc.srcUse[this.short] {
-		if err := os.Remove("/in/" + this.short); err != nil {
+		if err := os.Remove(inPath + this.short); err != nil {
 			fmt.Fprintf(os.Stderr, "[%s] failed to remove source: %s\n", this.short, err)
 		}
 
@@ -159,9 +153,19 @@ func (this *Input) complete() {
 	}
 	inputSrc.Unlock()
 
+	if dryRun {
+		return
+	}
+
 	stats.Increase("inputs", 1)
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
+	}
+
+	if _, err := db.Exec(`UPDATE input
+		SET penalty = LEAST(penalty + $2, 32767), state = $3
+		WHERE short = $1`, this.short, this.penalty, state); err != nil {
+		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 }
 
@@ -206,6 +210,11 @@ func newOutput(raw string, i *Input, v Version) Output {
 }
 
 func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
+	if dryRun {
+		fmt.Printf("\033[1mnewResult: input=%s | version=%s | output:\033[0m %s\n", i.short, v.name, raw)
+		return Result{}
+	}
+
 	waitStatus := s.Sys().(syscall.WaitStatus)
 	usage := s.SysUsage().(*syscall.Rusage)
 
@@ -270,9 +279,8 @@ func (this *Result) delete() {
 func (this *Input) execute(v Version, l ResourceLimit) Result {
 	cmdArgs := strings.Split(v.command, " ")
 
-	cmdArgs = append(cmdArgs, "/in/"+this.short)
+	cmdArgs = append(cmdArgs, inPath+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99}}
 	cmd.Env = []string{
 		"LD_PRELOAD=/usr/bin/daemon-preload.so",
 		"TERM=xterm",
@@ -285,8 +293,12 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		"HOME=/tmp",
 	}
 
+	if !dryRun {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99}}
+	}
+
 	if !this.lastSubmit.IsZero() {
-		cmd.Env = append(cmd.Env, "TIME=" + strconv.FormatInt(this.lastSubmit.Unix(), 10))
+		cmd.Env = append(cmd.Env, "TIME="+strconv.FormatInt(this.lastSubmit.Unix(), 10))
 	}
 
 	/*
@@ -489,6 +501,7 @@ func batchScheduleNewVersions() {
 
 	for _, v := range versions {
 		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" {
+			fmt.Printf("batchScheduleNewVersions: skipping %s\n", v.name)
 			continue
 		}
 
@@ -594,6 +607,8 @@ var (
 	batch    SizedWaitGroup
 	stats    Stats
 	versions []Version
+	dryRun   bool
+	inPath   string
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -606,7 +621,12 @@ const (
 )
 
 func init() {
-	if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
+	inPath = "/in/"
+
+	if len(os.Args) > 1 && os.Args[1] == "--test" {
+		dryRun = true
+		inPath = "/tmp/"
+	} else if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
 		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
 			panic("while parsing batch: " + err.Error())
 		} else {
@@ -633,6 +653,31 @@ func init() {
 }
 
 func main() {
+	if dryRun {
+		// run a predefined set of scripts so we don't trash someones homedir
+		fmt.Printf("running tests\n")
+
+		v := Version{0, "local php binary", "/usr/bin/php -n -q", false, time.Now(), 0, time.Now()}
+
+		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C')`)
+		if err != nil {
+			panic("could not SELECT: " + err.Error())
+		}
+
+		var i Input
+		for rs.Next() {
+			if err := rs.Scan(&i.id, &i.short, &i.runArchived, &i.created); err != nil {
+				panic("could not Scan: " + err.Error())
+			}
+
+			i.prepare(false)
+			i.execute(v, ResourceLimit{0, 2500, 32768})
+			i.complete()
+		}
+
+		os.Exit(0)
+	}
+
 	l := pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
 			panic("While creating listener: " + err.Error())
