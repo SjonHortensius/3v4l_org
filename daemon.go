@@ -153,10 +153,6 @@ func (this *Input) complete() {
 	}
 	inputSrc.Unlock()
 
-	if dryRun {
-		return
-	}
-
 	stats.Increase("inputs", 1)
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
@@ -659,7 +655,7 @@ func main() {
 
 		v := Version{0, "local php binary", "/usr/bin/php -n -q", false, time.Now(), 0, time.Now()}
 
-		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C')`)
+		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO')`)
 		if err != nil {
 			panic("daemon: could not SELECT: " + err.Error())
 		}
@@ -672,7 +668,7 @@ func main() {
 
 			i.prepare(false)
 			i.execute(v, ResourceLimit{0, 2500, 32768})
-			i.complete()
+			// we can skip complete since /tmp is already cleared by the daemon
 		}
 
 		os.Exit(0)
