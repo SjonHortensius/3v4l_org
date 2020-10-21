@@ -421,8 +421,9 @@ func refreshVersions() {
 }
 
 func checkPendingInputs() {
+	// we ignore isQuick but this rarely gets executed so that's not a problem
 	rs, err := db.Query(`
-		SELECT id, short, created, "runArchived", "runQuick", state FROM input
+		SELECT id, short, created, "runArchived", state FROM input
 		WHERE
 			state IN('new', 'busy')
 			AND NOW() - created > '5 minutes'
@@ -434,11 +435,10 @@ func checkPendingInputs() {
 
 	l := ResourceLimit{0, 2500, 32768}
 
-	var version sql.NullInt64
 	var state string
 	for rs.Next() {
 		var input Input
-		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &version, &state); err != nil {
+		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &state); err != nil {
 			panic("checkPendingInputs: error Scanning: " + err.Error())
 		}
 
@@ -446,7 +446,7 @@ func checkPendingInputs() {
 		input.prepare(true)
 
 		for _, v := range versions {
-			if (version.Valid && int(version.Int64) == v.id) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
+			if (input.runArchived || v.eol.After(input.created)) {
 				input.execute(v, l)
 			}
 
@@ -512,8 +512,7 @@ func batchScheduleNewVersions() {
 				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
 				AND NOT "operationCount" IS NULL
-				AND NOT "bughuntIgnore"
-				AND "runQuick" IS NULL;`,
+				AND NOT "bughuntIgnore";`,
 			v.id, v.eol.Format("2006-01-02"))
 		if err != nil {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())

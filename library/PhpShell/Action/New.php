@@ -116,19 +116,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				Basic::$controller->redirect($input->short);
 
 			$input->runArchived = (bool)Basic::$userinput['archived'];
-
-			// Allow a title to be added when upgrading quick>full
-			if (isset($input->runQuick, $title))
-				$input->title = $title;
-
-			if ($input->runQuick != $version)
-				$input->runQuick = null;
-
 			$input->save();
-
-			// Prevent partially running a full script (because of duplicate result)
-			if (!isset($version) || 0 == count($input->getResult($version)))
-				$input->trigger($version);
 		}
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
@@ -158,9 +146,10 @@ class PhpShell_Action_New extends PhpShell_Action
 				'source' => $source,
 				'title' => $title,
 				'runArchived' => Basic::$userinput['archived'],
-				'runQuick' => $version,
 			]);
 		}
+
+		$input->trigger($version);
 
 		if (!isset($version))
 		{

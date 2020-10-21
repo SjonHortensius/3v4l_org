@@ -91,7 +91,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if ($this->input->state == 'new')
 			$this->input->trigger();
 
-		if (!isset($this->input->runQuick) && ($this->input->state=='busy' || (Basic::$config->PRODUCTION_MODE && mt_rand(0,9)<1)))
+		if (Basic::$config->PRODUCTION_MODE && (!isset($this->input->operationCount) || mt_rand(0,9)<1) && count($this->input->getResult(PhpShell_Version::byName('vld'))) > 0)
 			$this->input->updateFunctionCalls();
 
 		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);

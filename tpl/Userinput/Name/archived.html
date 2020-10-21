@@ -1,7 +1,7 @@
 <input class="valid" name="archived" id="archived_1" value="1" type="checkbox" />
 <label for="archived_1" title="{if (Basic::$action->input->runArchived)}[v] {/}Include PHP versions that are older than 3 years">eol versions</label>
 
-{if (isset(Basic::$action->input->source) && !isset(Basic::$action->input->source->runQuick))}
+{if (isset(Basic::$action->input->source))}
 	</div><div><a itemprop="isBasedOnUrl" href="/{action->input->source->short}"><i class="icon-share-alt"></i>based on {action->input->source->short}</a>
 {/}
 

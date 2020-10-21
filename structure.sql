@@ -157,7 +157,6 @@ CREATE TABLE public.input (
     title character varying(64),
     created timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     "runArchived" boolean DEFAULT false NOT NULL,
-    "runQuick" smallint,
     "bughuntIgnore" boolean DEFAULT false NOT NULL,
     "lastResultChange" timestamp without time zone
 );
@@ -1479,14 +1478,6 @@ ALTER TABLE ONLY public."functionCall"
 
 
 --
--- Name: input input_runQuick_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.input
-    ADD CONSTRAINT "input_runQuick_fkey" FOREIGN KEY ("runQuick") REFERENCES public.version(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
 -- Name: input input_source_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1660,13 +1651,6 @@ GRANT SELECT(penalty),UPDATE(penalty) ON TABLE public.input TO daemon;
 --
 
 GRANT UPDATE("runArchived") ON TABLE public.input TO website;
-
-
---
--- Name: COLUMN input."runQuick"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT("runQuick"),INSERT("runQuick"),UPDATE("runQuick") ON TABLE public.input TO website;
 
 
 --

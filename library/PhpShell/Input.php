@@ -5,7 +5,6 @@ class PhpShell_Input extends PhpShell_Entity
 	protected static $_relations = [
 		'user' => PhpShell_User::class,
 		'source' => PhpShell_Input::class,
-		'runQuick' => PhpShell_Version::class,
 	];
 	protected static $_numerical = ['operationCount', 'penalty'];
 
@@ -75,8 +74,6 @@ class PhpShell_Input extends PhpShell_Entity
 			PhpShell_InputSource::create(['input' => $input, 'raw' => $code]);
 		}
 		Basic::$database->commit();
-
-		$input->trigger($input->runQuick);
 
 		return $input;
 	}

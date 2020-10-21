@@ -16,6 +16,11 @@ class PhpShell_Action_Last extends PhpShell_Action
 			'source' => ['superglobal' => 'GET', 'key' => 'mine'],
 			'values' => [1, 0],
 		],
+		'draft' => [
+			'valueType' => 'integer',
+			'source' => ['superglobal' => 'GET', 'key' => 'draft'],
+			'values' => [1, 0],
+		],
 	];
 	public $entries;
 
@@ -24,16 +29,14 @@ class PhpShell_Action_Last extends PhpShell_Action
 		$this->entries = PhpShell_Input::find()
 			->includeVariance()
 			->includeFunctionCalls()
-			->setOrder(['id' => false]);
+			->setOrder(['id' => false])
+			->addJoin(PhpShell_Submit::class, "submit.input = input.id", null, 'INNER', false);
 
-		if ($_GET['draft']==1)
-			$this->entries = $this->entries->getSubset('NOT "runQuick" ISNULL', []);
-		else
-			$this->entries = $this->entries->getSubset('"runQuick" ISNULL');
+		if (!Basic::$userinput['draft'])
+			$this->entries = $this->entries->getSubset('NOT submit."isQuick"');
 
 		if (Basic::$userinput['mine'])
-			$this->entries = $this->entries->addJoin(PhpShell_Submit::class, "submit.input = input.id", null, 'INNER', false)
-				->getSubset('submit.ip = ?', [$_SERVER['REMOTE_ADDR']]);
+			$this->entries = $this->entries->getSubset('submit.ip = ?', [$_SERVER['REMOTE_ADDR']]);
 
 		parent::run();
 	}
