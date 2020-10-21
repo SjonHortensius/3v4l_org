@@ -588,7 +588,7 @@ func doWork() {
 			}
 		}
 
-		if !input.runArchived {
+		if !input.runArchived && !version.Valid {
 			if _, err := db.Exec(`DELETE FROM result WHERE input = $1 AND version IN (SELECT id FROM version WHERE eol < $2)`, input.id, input.created); err != nil {
 				fmt.Printf("doWork: failed to clean: input=%d,eol=%s: %s\n", input.id, input.created, err)
 			}
