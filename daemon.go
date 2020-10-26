@@ -497,7 +497,6 @@ func batchScheduleNewVersions() {
 
 	for _, v := range versions {
 		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" {
-			fmt.Printf("batchScheduleNewVersions: skipping %s\n", v.name)
 			continue
 		}
 
