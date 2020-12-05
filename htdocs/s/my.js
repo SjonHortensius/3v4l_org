@@ -995,6 +995,10 @@ var evalOrg = {};
 					delete window.liveTiming;
 				}
 
+				// live output might have been replaced by quick output
+				if (!$('#live_preview'))
+					return;
+
 				if (s == String.fromCharCode(27) + String.fromCharCode(91) + 'H' + String.fromCharCode(27) + String.fromCharCode(91) + 'J')
 				{
 					while ($('#live_preview').firstChild)

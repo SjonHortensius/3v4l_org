@@ -115,8 +115,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			if ($input->state == 'abusive') # the submitter doesn't necessarily know why his submit is abusive, forward to results
 				Basic::$controller->redirect($input->short);
 
-			$input->runArchived = (bool)Basic::$userinput['archived'];
-			$input->save();
+			$input->save(['runArchived' => (bool)Basic::$userinput['archived']]);
 		}
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
