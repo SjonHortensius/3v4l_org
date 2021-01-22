@@ -7,6 +7,8 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		71 => '2019-12-01',
 		72 => '2019-11-30',
 		73 => '2020-12-06',
+		74 => '2021-11-28',
+		80 => '2022-11-26',
 	];
 
 	const EOL = [
@@ -24,13 +26,14 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		72 => '2020-11-30',
 		73 => '2021-12-31',
 		74 => '2022-11-28',
+		80 => '2023-11-26',
 	];
 
 	public function run(): void
 	{
 		$nextVersionId = Basic::$database->query("SELECT MAX(id) FROM version")->fetchColumn();
 
-		foreach ([4, 5, 7] as $major)
+		foreach ([4, 5, 7, 8] as $major)
 		{
 			foreach ($this->_getReleases($major) as $name => $released)
 			{
