@@ -38,7 +38,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		$this->title = Basic::$userinput['tab'] .' for '. Basic::$userinput['script'];
 
 		// needed because we serve different content on the same URI, which browsers may cache
-		if ('.json' == strpbrk(Basic::$userinput['script'], '.') && 'application/json' == $_SERVER['HTTP_ACCEPT'])
+		if ('.json' == strpbrk(Basic::$userinput['script'], '.') && 'application/json' == $_SERVER['HTTP_ACCEPT']??'')
 		{
 			// Discourage public /script.json usage - they should use only Accept: for that
 			Basic::$template->scriptSkipCode = true;

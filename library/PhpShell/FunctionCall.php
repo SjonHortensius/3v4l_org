@@ -23,7 +23,7 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 			'function' => $this->function->id,
 		];
 
-		$query = Basic::$database->query("INSERT INTO \"functionCall\" (input, function) VALUES (:input, :function)", $data);
+		$query = Basic::$database->q("INSERT INTO \"functionCall\" (input, function) VALUES (:input, :function)", $data);
 
 		if (1 != $query->rowCount())
 			throw new Basic_Entity_StorageException('New `%s` could not be created', [get_class($this)]);
@@ -36,13 +36,13 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 		$this->_checkPermissions('delete');
 		$this->removeCached();
 
-		$result = Basic::$database->query(
-			"DELETE FROM \"functionCall\" WHERE input = ? AND function = (SELECT id FROM function WHERE text = ?)",
+		$result = Basic::$database->q(
+			"DELETE FROM \"functionCall\" WHERE input = ? AND function = ?",
 			[$this->input, $this->function]
 		);
 
 		if ($result != 1)
-			throw new Basic_Entity_DeleteException('An error occured while deleting `%s`:`%s`', [get_class($this), $this->id]);
+			throw new Basic_Entity_DeleteException('An error occured while deleting `%s`:`%s/%s`', [get_class($this), $this->input->short, $this->function->text]);
 	}
 
 	public static function getTable(): string

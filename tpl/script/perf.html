@@ -3,6 +3,7 @@
 {$count = 0;}
 {$perf = iterator_to_array($this->input->getPerf());}
 
+{$hasSuccess = false;}
 {foreach ($perf as $r)}
 	{$hasSuccess = $hasSuccess || ($r['exit_sum']==0);}
 {/}

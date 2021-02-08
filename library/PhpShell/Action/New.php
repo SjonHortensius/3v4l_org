@@ -46,7 +46,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		return Basic::$cache->lockedGet('quickVersionList:'.intval($forJson), function() use($forJson){
 			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc-%' OR name LIKE 'git-%'", [], ['"isHelper"' => true, 'version.order' => false]);
+			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc.%' OR name LIKE 'git.%'", [], ['"isHelper"' => true, 'version.order' => false]);
 
 			$list = iterator_to_array($v->getSimpleList('name', 'name'));
 
@@ -125,7 +125,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			// ignore submits from /#preview which have no correct referer
 			if (!isset(Basic::$userinput['version']))
 			{
-				if (preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
+				if (isset($_SERVER['HTTP_REFERER']) && preg_match('~^https?://'. preg_quote($_SERVER['HTTP_HOST'], '~').'/([a-zA-Z0-9]{5,})[/#]?~', $_SERVER['HTTP_REFERER'], $match))
 					$match = $match[1];
 
 				try
@@ -144,11 +144,11 @@ class PhpShell_Action_New extends PhpShell_Action
 				'code' => $code,
 				'source' => $source,
 				'title' => $title,
-				'runArchived' => Basic::$userinput['archived'],
+				'runArchived' => (bool)Basic::$userinput['archived'],
 			]);
 		}
 
-		$input->trigger($version);
+		$input->trigger($version ?? null);
 
 		if (!isset($version))
 		{

@@ -8,5 +8,5 @@
 	{/}
 	{unset($this->input);}
 
-	<input type="submit" value="{formSubmit}" title="shortcut: ctrl+enter"{if ('abusive' == Basic::$action->input->state)} disabled="disabled"{/} />
+	<input type="submit" value="{formSubmit}" title="shortcut: ctrl+enter"{if (isset(Basic::$action?->input) && 'abusive' == Basic::$action->input->state)} disabled="disabled"{/} />
 </form>

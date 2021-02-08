@@ -43,12 +43,8 @@ class PhpShell_Action extends Basic_Action
 	{
 		Basic::$database->exec("SET statement_timeout TO 5000;");
 
-		// https://bugs.chromium.org/p/chromium/issues/detail?id=686369
-		if (false !== strpos($_SERVER['HTTP_USER_AGENT'], 'Chrome/') || false !== strpos($_SERVER['HTTP_USER_AGENT'], 'ChriOS/'))
-			$this->cspDirectives['script-src'] []= "'unsafe-eval'";
-
 		// For now; don't autoStart sessions
-		if (isset($_COOKIE[ Basic::$config->Session->name ]))
+		if (isset(Basic::$config->Session, $_COOKIE[ Basic::$config->Session->name ]))
 		{
 			session_name(Basic::$config->Session->name);
 			session_set_cookie_params(Basic::$config->lifetime, Basic::$config->Site->baseUrl);
@@ -70,27 +66,22 @@ class PhpShell_Action extends Basic_Action
 		header('X-Frame-Options: DENY');
 		header('Referrer-Policy: origin-when-cross-origin');
 
+		// https://bugs.chromium.org/p/chromium/issues/detail?id=686369
+		if (isset($_SERVER['HTTP_USER_AGENT']) && (false !== strpos($_SERVER['HTTP_USER_AGENT'], 'Chrome/') || false !== strpos($_SERVER['HTTP_USER_AGENT'], 'ChriOS/')))
+			$this->cspDirectives['script-src'] []= "'unsafe-eval'";
+
 		$csp = "default-src 'none'; ";
 		foreach ($this->cspDirectives as $directive => $settings)
 			$csp .= $directive .' '.implode(' ', $settings). '; ';
 
 		header('Content-Security-Policy: '. $csp);
 
-		if (0 && $_GET['waa']=='meukee')
-		{
-			$wasOn = Basic::$config->PRODUCTION_MODE;
-			Basic::$config->PRODUCTION_MODE = false;
-
-			if ($wasOn)
-				Basic::$log->start(get_class(Basic::$action) .'::init');
-		}
-
 		if (isset($_GET['resetOpcache']) && $_GET['resetOpcache'] == sha1_file(APPLICATION_PATH .'/htdocs/index.php'))
 			die(print_r(opcache_get_status(false)+['RESET' => opcache_reset()]));
 
-		if ('application/json' == $_SERVER['HTTP_ACCEPT'])
+		if (isset($_SERVER['HTTP_ACCEPT']) && 'application/json' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'application/json';
-		elseif ('text/plain' == $_SERVER['HTTP_ACCEPT'])
+		elseif (isset($_SERVER['HTTP_ACCEPT']) && 'text/plain' == $_SERVER['HTTP_ACCEPT'])
 			$this->contentType = 'text/plain';
 
 		if (Basic::$config->PRODUCTION_MODE && 'text/html' == $this->contentType)

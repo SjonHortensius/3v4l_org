@@ -30,7 +30,7 @@
 	{/}
 	<tr>
 		<td>
-			{if ($this->prevrow->sourceId === $this->row->id)}
+			{if (isset($this->prevrow) && $this->prevrow->sourceId === $this->row->id)}
 				<i class="icon icon-edit" title="draft for {prevrow->short}"></i>
 			{:}
 				{if ($this->row->bughuntIgnore && (!$this->entries->includesVariance || $this->row->variance>95))}

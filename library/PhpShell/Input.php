@@ -152,7 +152,7 @@ class PhpShell_Input extends PhpShell_Entity
 			return;
 
 		PhpShell_Submit::create(['input' => $this->id, 'ip' => $_SERVER['REMOTE_ADDR'], 'isQuick' => isset($version)]);
-		Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$this->short, $version->name]);
+		Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$this->short, $version?->name]);
 
 		$this->waitUntilNoLonger('new');
 
@@ -280,7 +280,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getPerf(): Basic_DatabaseQuery
 	{
-		return Basic::$database->query("
+		return Basic::$database->q("
 			SELECT
 				ROUND(AVG(\"systemTime\")::numeric, 3) as system,
 				ROUND(AVG(\"userTime\")::numeric, 3) as user,

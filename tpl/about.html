@@ -94,12 +94,12 @@
 		<h2>Statistics</h2>
 		<p>I started in april 2012 and have been adding features ever since. If you like numbers, here are a some from the database:</p>
 		<ul>
-			<li><a href="versions">Versions</a> (including helpers):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
-			<li>Scripts in database:			 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
-			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
-			<li>Functions called by scripts:	 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'functionCall';")->fetchColumn());}</b></li>
-			<li>Results:						 <b>{print number_format(Basic::$database->query("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%' AND reltype>0;")->fetchColumn());}</b></li>
-			<li>Registered users:				 <b>{print number_format(Basic::$database->query("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
+			<li><a href="versions">Versions</a> (including helpers):	 <b>{print number_format(Basic::$database->q("SELECT reltuples FROM pg_class WHERE relname = 'version';")->fetchColumn());}</b></li>
+			<li>Scripts in database:			 <b>{print number_format(Basic::$database->q("SELECT reltuples FROM pg_class WHERE relname = 'input';")->fetchColumn());}</b></li>
+			<li>Submissions (new + existing):	 <b>{print number_format(Basic::$database->q("SELECT reltuples FROM pg_class WHERE relname = 'submit';")->fetchColumn());}</b></li>
+			<li>Functions called by scripts:	 <b>{print number_format(Basic::$database->q("SELECT reltuples FROM pg_class WHERE relname = 'functionCall';")->fetchColumn());}</b></li>
+			<li>Results:						 <b>{print number_format(Basic::$database->q("SELECT SUM(reltuples) FROM pg_class WHERE relname LIKE 'result_%' AND reltype>0;")->fetchColumn());}</b></li>
+			<li>Registered users:				 <b>{print number_format(Basic::$database->q("SELECT reltuples FROM pg_class WHERE relname = 'user';")->fetchColumn());}</b></li>
 		</ul>
 
 		<h2>Major changes</h2>

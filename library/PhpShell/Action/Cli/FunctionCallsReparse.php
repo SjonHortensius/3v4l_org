@@ -25,7 +25,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			{
 				if ('hard' == Basic::$userinput['type'])
 				{
-					Basic::$database->query("INSERT INTO queue VALUES (?, ?)", [$input->short, 'vld']);
+					Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$input->short, 'vld']);
 					$input->waitUntilNoLonger('busy');
 				}
 

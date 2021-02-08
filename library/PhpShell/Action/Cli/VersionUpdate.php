@@ -31,7 +31,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 	public function run(): void
 	{
-		$nextVersionId = Basic::$database->query("SELECT MAX(id) FROM version")->fetchColumn();
+		$nextVersionId = Basic::$database->q("SELECT MAX(id) FROM version")->fetchColumn();
 
 		foreach ([4, 5, 7, 8] as $major)
 		{
@@ -100,7 +100,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 					$minorIds = array_merge($minorIds, $this->_getIdsForMinor($vMajor, $vMinor));
 					asort($minorIds);
 
-					$current = Basic::$database->query("
+					$current = Basic::$database->q("
 						SELECT pg_get_expr(pt.relpartbound, pt.oid, true)
 						FROM pg_class base_tb
 						JOIN pg_inherits i ON i.inhparent = base_tb.oid
@@ -146,6 +146,6 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 	protected function _getIdsForMinor(int $major, int $minor): array
 	{
-		return explode(',', trim(Basic::$database->query("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn(), '{}'));
+		return explode(',', trim(Basic::$database->q("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn(), '{}'));
 	}
 }
