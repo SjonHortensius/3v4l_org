@@ -110,31 +110,6 @@ class PhpShell_Action extends Basic_Action
 		if (! Basic::$action instanceof PhpShell_Action_Script)
 			$this->bodyClass = trim($this->bodyClass .' '.Basic::$userinput['action']);
 
-		try
-		{
-			$this->adminMessage = Basic::$cache->get('banMessage::'. $_SERVER['REMOTE_ADDR']);
-		}
-		catch (Basic_Memcache_ItemNotFoundException $e)
-		{
-			#care
-		}
-
-		try
-		{
-			$this->adminMessage = Basic::$cache->get('adminMessage::'. $_SERVER['REMOTE_ADDR']);
-			Basic::$cache->delete('adminMessage::'. $_SERVER['REMOTE_ADDR']);
-		}
-		catch (Basic_Memcache_ItemNotFoundException $e)
-		{
-			#care
-		}
-
-		if (isset($this->adminMessage))
-		{
-			header('X-Accel-Expires: 0');
-			$this->_cacheLength = 0;
-		}
-
 		parent::init();
 	}
 

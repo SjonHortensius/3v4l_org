@@ -62,7 +62,12 @@ class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 		$preg = escapeshellarg(self::FUNC_PREG);
 		foreach (explode("\n", `grep -nrP $preg --include=*.c ext/ main/ Zend/`) as $line)
 		{
-			list($file, $lineNo, $match, $trash) = explode(':', $line, 4);
+			try
+			{
+				list($file, $lineNo, $match, $trash) = explode(':', $line, 4);
+			} catch (Basic_PhpException $e) {
+				#care
+			}
 
 			if (!empty($trash) || !preg_match('~'. self::FUNC_PREG .'(.*)\)(?!;)~', $match, $m) || strlen($m[1]) > 64)
 			{

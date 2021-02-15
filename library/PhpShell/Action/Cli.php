@@ -12,6 +12,8 @@ abstract class PhpShell_Action_Cli extends PhpShell_Action
 		if (33 != posix_getuid())
 			throw new Basic_CliAction_IncorrectUserException('Please run as http user');
 
+		$_SERVER['SERVER_NAME']='localhost';
+
 		parent::init();
 
 		Basic::$database->exec("RESET statement_timeout;");
