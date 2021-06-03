@@ -373,6 +373,18 @@ table
 	border-spacing: 0;
 }
 
+table th.sortable
+{
+	cursor: pointer;
+}
+
+table.sorted th[data-sort-order=asc]:after {
+	content: " ↓";
+}
+table.sorted th[data-sort-order=desc]:after {
+	content: " ↑";
+}
+
 th
 {
 	text-align: right;

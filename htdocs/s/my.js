@@ -36,7 +36,8 @@ var evalOrg = {};
 
 	this.initialize = function()
 	{
-		window.onerror = this.postError;
+		window.addEventListener('error', this.postError)
+
 		// do this immediately to prevent a fouc
 		this.applyDarkmode();
 
@@ -87,18 +88,22 @@ var evalOrg = {};
 		document.head.appendChild(s);
 	};
 
-	this.postError = function(msg, url, line)
+	this.postError = function(e)
 	{
 		// https://www.ravikiranj.net/posts/2014/code/how-fix-cryptic-script-error-javascript/
-		if (msg == 'Script error.')
+		if (e.message == 'Script error.')
 			return;
 
 		// Googlebot throws this when using NodeList.forEach
-		if (msg == 'Uncaught TypeError: undefined is not a function')
+		if (e.message == 'Uncaught TypeError: undefined is not a function')
+			return;
+
+		// Yandex through HeadlessChrome, but not reproducible
+		if (e.message == 'Uncaught ')
 			return;
 
 		var xhr = new XMLHttpRequest();
-		xhr.open('post', '/javascript-error/'+ encodeURIComponent(msg));
+		xhr.open('post', '/javascript-error/'+ encodeURIComponent(e.messge));
 		xhr.send();
 	};
 

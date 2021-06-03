@@ -9,7 +9,7 @@ class PhpShell_Action_About extends PhpShell_Action {
 		'bots' => '#dc3912',
 	];
 	public $hitsPerYear = [
-		# xzcat access_log | grep -Eo '\(compatible;|POST /new|GET /| - - ' | sort | uniq -c
+		# xzcat access_log | grep -Eo '\(compatible;|POST /new|GET / | - - ' | sort | uniq -c
 		2012 => ['sum' => 1097507,  'bots' => 112563,   'homepage' => 27142,   'submits' => 13636],
 		2013 => ['sum' => 4816096,  'bots' => 1507185,  'homepage' => 85295,   'submits' => 122993],
 		2014 => ['sum' => 10701014, 'bots' => 7624321,  'homepage' => 211191,  'submits' => 225718],
@@ -18,7 +18,7 @@ class PhpShell_Action_About extends PhpShell_Action {
 		2017 => ['sum' => 28271126, 'bots' => 18213318, 'homepage' => 464842,  'submits' => 863803],
 		2018 => ['sum' => 36453914, 'bots' => 27431680, 'homepage' => 456999,  'submits' => 1059907],
 		2019 => ['sum' => 25932010, 'bots' => 18783313, 'homepage' => 646845,  'submits' => 1281584],
-		2020 => ['sum' => 7818016,  'bots' => 4578324,  'homepage' => 7113240, 'submits' => 633025],
+		2020 => ['sum' => 23959195, 'bots' => 15450846, 'homepage' => 794184,  'submits' => 1672484],
 	];
 
 	public function run(): void
