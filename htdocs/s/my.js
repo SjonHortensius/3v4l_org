@@ -289,7 +289,7 @@ var evalOrg = {};
 				div.parentNode.removeChild(div);
 			});
 
-			$('#newForm').parentNode.insertBefore(object2Dom({div: {id: 'tab'}}), $('#previewForm').nextSibling);
+			$('#newForm').parentNode.insertBefore(object2Dom({div: {id: 'tab'}}), $('#newForm').nextSibling);
 			$('#newForm').parentNode.insertBefore(object2Dom({ul: {id: 'tabs'}}), $('#tab'));
 		}
 		else
@@ -322,8 +322,8 @@ var evalOrg = {};
 
 		if ($('#tabs.abusive'))
 		{
-			if ($('form#previewForm'))
-				$('form#previewForm').remove();
+			if ($('#version'))
+				$('#version').remove();
 
 			// 2/3d of all js errors from from here, where this.editor is undefined
 			if ('undefined' != typeof this.editor)
@@ -342,9 +342,6 @@ var evalOrg = {};
 
 			if ($('input[type=submit][disabled]') || 13 != e.keyCode)
 				return;
-
-			if (e.altKey)
-				return this.preview();
 
 			var event = new Event('submit', {
 				'view': window,
