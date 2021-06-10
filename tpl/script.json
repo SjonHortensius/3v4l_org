@@ -10,6 +10,7 @@
 	{if (isset($this->input->title))}
 		"title": {input->title},
 	{/}
+	"short": {input->short},
 	"created": {input->getCreatedUtc()},
 	"state": {input->state},
 	"isSubmittable": {print json_encode(in_array($this->input->state, array('new', 'done')));},

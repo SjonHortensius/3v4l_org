@@ -243,8 +243,7 @@ body.touch dd
 {
 	float: right;
 	padding: 0.5em 1em 0.5em;
-	margin: 0;
-	margin-top: -1.5em;
+	margin: -1.5em 0 0;
 	border-radius: 0 0 4px 4px;
 	border: 1px solid #ddd;
 }
@@ -463,26 +462,16 @@ input:disabled + label
 	color: #ccc;
 }
 
-#previewForm
+select#version:empty
 {
 	display: none;
-
-	box-shadow: none;
-	padding: 0.5em 0 0.5em;
-	position: absolute;
-	margin-left: 125px;
-	margin-top: -82px;
-}
-
-#newForm.changed + #previewForm
-{
-	display: block;
 }
 
 select#version
 {
-	width: 100px;
+	width: 175px;
 	height: 25px;
+	margin-left: 50px;
 }
 
 input.busy
@@ -553,7 +542,7 @@ header h1
 	overflow: hidden;
 	color: transparent;
 	margin: 0;
-	box-shadow: 3px 0px 3px -3px #000;
+	box-shadow: 3px 0 3px -3px #000;
 
 	background: url(/s/logo.png) no-repeat center;
 	transition: background-color 250ms ease-in;
@@ -777,8 +766,8 @@ body.sponsor ul
 {
 	position: fixed;
 	background-color: #eee;
-	bottom: 0px;
-	left: 0px;
+	bottom: 0;
+	left: 0;
 	margin: 5px;
 }
 
@@ -810,7 +799,6 @@ html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert
 	ul#tabs li.disabled{			display: none; }
 	ul#tabs li a{					padding: 5px; }
 	#options:not(:empty){			margin-top: 0; }
-	#previewForm{					display: none !important; }
 	header span{					display: none; }
 	header ul{						padding-right: 5px; padding: 0.5em; }
 	header h1{						height: 30px; }
@@ -836,6 +824,5 @@ html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert
 {
 	input#title { width: 96% !important; }
 	form { padding: 0.5em; }
-	#previewForm { margin-top: -63px; }
 	ul#tabs + div { padding: 0.5em; }
 }

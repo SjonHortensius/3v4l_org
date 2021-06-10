@@ -5,11 +5,11 @@
 <div id="tab">
 	<dl>
 		<dt>
-			Output for {userinput['version']} | took {print round(1000 * ($this->result->userTime + $this->result->systemTime));} ms, {print round($this->result->maxMemory/1024, 2);} MiB
+			Output for {*version->name} | took {print round(1000 * ($this->result->userTime + $this->result->systemTime));} ms, {print round($this->result->maxMemory/1024, 2);} MiB
 		</dt>
 
 		<dd>
-			{output}
+			{result->getHtml()}
 		</dd>
 	</dl>
 </div>

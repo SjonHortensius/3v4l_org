@@ -23,20 +23,16 @@ class PhpShell_Action_New extends PhpShell_Action
 		],
 		'version' => [
 			'inputType' => 'select',
-			'values' => [],
-		],
-		'archived' => [
-			'valueType' => 'integer',
-			'inputType' => 'checkbox',
 			'values' => [
-				1 => 'eol versions'
+				'' => 'all supported versions',
+				'eol' => '+ include eol (slow)',
 			],
 		],
 	];
 
 	public function init(): void
 	{
-		$this->userinputConfig['version']['values'] = self::getPreviewVersions();
+		$this->userinputConfig['version']['values'] += self::getPreviewVersions();
 
 		parent::init();
 	}
@@ -44,37 +40,37 @@ class PhpShell_Action_New extends PhpShell_Action
 	// separate method for version.html
 	public static function getPreviewVersions(bool $forJson = false): array
 	{
-		return Basic::$cache->lockedGet('quickVersionList:'.intval($forJson), function() use($forJson){
+		$list = Basic::$cache->lockedGet('quickVersionList', function() {
 			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("NOT \"isHelper\" OR name LIKE 'rfc.%' OR name LIKE 'git.%'", [], ['"isHelper"' => true, 'version.order' => false]);
+			$v = PhpShell_Version::find("released IS NOT NULL", [], ['"isHelper"' => true, 'version.order' => false]);
 
-			$list = iterator_to_array($v->getSimpleList('name', 'name'));
-
-			if (!$forJson)
-				return $list;
-
-			$o = [];
-			foreach ($list as $v)
-			{
-				if (in_array(substr($v, 5, 2), ['al', 'be', 'rc']))
-					$k = substr($v, 0, 5);
-				else
-					$k = substr($v, 0, 4);
-
-				if (!isset($o[$k]))
-					$o[$k] = [];
-
-				$o[$k] []= substr($v, strlen($k));
-			}
-
-			foreach ($o as &$l)
-			{
-				if (array_sum($l) == array_sum(array_keys($l)))
-					$l = max($l);
-			}
-
-			return $o;
+			return iterator_to_array($v->getSimpleList('name', 'name'));
 		}, 150);
+
+		if (!$forJson)
+			return $list;
+
+		$o = [];
+		foreach ($list as $v)
+		{
+			if (in_array(substr($v, 5, 2), ['al', 'be', 'rc']))
+				$k = substr($v, 0, 5);
+			else
+				$k = substr($v, 0, 4);
+
+			if (!isset($o[$k]))
+				$o[$k] = [];
+
+			$o[$k] []= substr($v, strlen($k));
+		}
+
+		foreach ($o as &$l)
+		{
+			if (array_sum($l) == array_sum(array_keys($l)))
+				$l = max($l);
+		}
+
+		return $o;
 	}
 
 	public function run(): void
@@ -82,6 +78,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		$title = Basic::$userinput['title'];
 		$code = PhpShell_Input::clean(Basic::$userinput['code']);
 		$hash = PhpShell_Input::getHash($code);
+		$runArchived = false;
 
 		# don't store any more empty submits
 		if ($code === '<?php')
@@ -90,7 +87,11 @@ class PhpShell_Action_New extends PhpShell_Action
 			Basic::$controller->redirect('kuLmD');
 		}
 
-		if (isset(Basic::$userinput['version']))
+		if (!isset(Basic::$userinput['version']) || Basic::$userinput['version'] == '')
+			;
+		elseif (Basic::$userinput['version'] == 'eol')
+			$runArchived = true;
+		else
 			$version = PhpShell_Version::byName(Basic::$userinput['version']);
 
 		# the second submit.created check is 'useless' but makes pg match the submitRecent index greatly lowering query time
@@ -115,7 +116,7 @@ class PhpShell_Action_New extends PhpShell_Action
 			if ($input->state == 'abusive') # the submitter doesn't necessarily know why his submit is abusive, forward to results
 				Basic::$controller->redirect($input->short);
 
-			$input->save(['runArchived' => (bool)Basic::$userinput['archived']]);
+			$input->save(['runArchived' => $runArchived]);
 		}
 		// No results from ::byHash
 		catch (Basic_EntitySet_NoSingleResultException $e)
@@ -144,7 +145,7 @@ class PhpShell_Action_New extends PhpShell_Action
 				'code' => $code,
 				'source' => $source,
 				'title' => $title,
-				'runArchived' => (bool)Basic::$userinput['archived'],
+				'runArchived' => $runArchived,
 			]);
 		}
 

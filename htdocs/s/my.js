@@ -54,18 +54,6 @@ var evalOrg = {};
 				setTimeout(this[ 'handle'+c.ucFirst() ].bind(this), 0);
 		}.bind(this));
 
-		// Allow #key=value pairs to specify defaults for certain form inputs
-		if (document.location.hash.length>1 && document.location.hash.match(/^#[a-z0-9.&=\-_]+$/i))
-		{
-			document.location.hash.substr(1).split('&').forEach(function(p){
-				p = p.split('=');
-
-				// beware of injections
-				if (p[0].match(/^[a-z]+$/i) && $('select#'+p[0]+' option[value="'+p[1]+'"]'))
-					$('select#'+p[0]).value = p[1];
-			});
-		}
-
 		$$('.alert').forEach(function (el){
 			el.addEventListener('touchstart', function(){ el.remove(); });
 		});
@@ -103,7 +91,7 @@ var evalOrg = {};
 			return;
 
 		var xhr = new XMLHttpRequest();
-		xhr.open('post', '/javascript-error/'+ encodeURIComponent(e.messge));
+		xhr.open('post', '/javascript-error/'+ encodeURIComponent(e.message));
 		xhr.send();
 	};
 
@@ -223,7 +211,7 @@ var evalOrg = {};
 		this.editor.on('change', function(){
 			$('#newForm').classList.add('changed');
 
-			if ($('input[type=submit][disabled]') && !$('#tabs.abusive'))
+			if (!$('#tabs.abusive'))
 				$('input[type=submit]').removeAttribute('disabled');
 
 			if ($('#live_preview'))
@@ -237,10 +225,6 @@ var evalOrg = {};
 			if ($('#livePreview').checked)
 				this.livePreviewCreate();
 		}.bind(this));
-
-		$('#archived_1').addEventListener('change', function(){
-			$('input[type=submit]').removeAttribute('disabled');
-		});
 	};
 
 	this.livePreviewCreate = function()
@@ -346,7 +330,7 @@ var evalOrg = {};
 				this.editor.setReadOnly(true);
 		}
 
-		this.enablePreview();
+		this.enableFocus();
 
 		document.body.addEventListener('keydown', function(e){
 			// cancel ctrl/cmd+s > prevent browser from saving page
@@ -390,14 +374,7 @@ var evalOrg = {};
 		outputAddExpander();
 		outputAddDiff();
 		outputAsHtml();
-/*
-		$$('a[href^="/assert"][data-hash]').forEach(function (el){
-			el.addEventListener('click', function(e){
-				//FIXME xhr submit
-				e.preventDefault();
-			});
-		});
-*/	};
+	};
 
 	var outputAddExpander = function()
 	{
@@ -538,12 +515,28 @@ var evalOrg = {};
 		});
 	};
 
-	this.enablePreview = function()
-	{
-		if (!$('form#previewForm'))
+	var focusVersion = '';
+	var focusIsBranch = false;
+	this.enableFocus = function() {
+		if (-1 != window.location.hash.indexOf('focus=')) {
+			focusVersion = window.location.hash.substring('#focus='.length);
+			focusIsBranch = (-1 != window.location.pathname.indexOf('/rfc'));
+			document.body.classList.add('focus');
+		}
+
+		this.fillVersionSelector();
+
+		if ($('#version option[value="'+focusVersion+'"]'))
+			$('#version option[value="'+focusVersion+'"]').setAttribute('selected', 'selected');
+
+		$('#newForm').addEventListener('submit', this.preview.bind(this));
+	};
+
+	this.fillVersionSelector = function() {
+		if (!$('#version'))
 			return;
 
-		var select = $('select#version');
+		var select = $('#version');
 		var versions = JSON.parse(select.dataset['values']);
 		var majors = Object.keys(versions);
 		var addOpt = function (g, v){
@@ -552,52 +545,68 @@ var evalOrg = {};
 			o.appendChild(document.createTextNode(v));
 			g.appendChild(o);
 		};
+		var getGroup = function(l){
+			var group = $('#version optgroup[label="'+l+'"]');
 
-		var curr = document.createElement('optgroup');
-		curr.label = 'current';
+			if (!group)
+			{
+				group = document.createElement('optgroup');
+				group.label = l;
+				select.appendChild(group);
+			}
+
+			return group
+		}
+
+		// Enforce the order of these
+		select.appendChild(object2Dom({'option': {value: '', _text: 'all supported versions'}}));
+		select.appendChild(object2Dom({'option': {value: 'eol', _text: '+ include eol (slow)'}}));
+		var current = select.appendChild(object2Dom({'optgroup': {label: 'current'}}));
+		var branches = select.appendChild(object2Dom({'optgroup': {label: 'branches'}}));
 
 		majors.forEach(function(key, idx) {
-			var group = document.createElement('optgroup'), options = [];
-			group.label = (key.substr(-1) === '.' || key.substr(-1) === '-') ? key.substr(0, key.length-1) : key;
-
-			if (idx <=2 && key.length == 4)
-				addOpt(curr, key + versions[key]);
+			if (key[1] != '.')
+				var group = branches
+			else
+				var group = getGroup((key.substr(-1) === '.') ? key.substr(0, key.length-1) : key);
 
 			if (typeof versions[key] === 'number')
+			{
+				// assume there are 3 supported major versions and filter out betas
+				if (idx <=2 && key.length == 4)
+					addOpt(current, key + versions[key]);
+
 				for (var i = versions[key]; i >= 0; i--)
-					options.push(i);
+					addOpt(group, key + i);
+			}
 			else if (typeof versions[key] === 'object')
-				options = versions[key];
+				versions[key].forEach(function(v){addOpt(group, key + v);});
 			else
-				options = [versions[key]];
-
-			options.forEach(function (v){ addOpt(group, key + v); });
-
-			select.appendChild(group);
+				addOpt(group, key + versions[key]);
 		});
 
-		if (versions['git-'])
-			versions['git-'].forEach(function (v){ addOpt(curr, 'git-' + v); });
+		// Move select to end of form
+		$('#newForm').appendChild(select);
 
-		select.insertBefore(curr, select.firstChild);
-		$('#previewForm button').addEventListener('click', this.preview.bind(this));
+		select.addEventListener('change', function(){
+			$('input[type=submit]').removeAttribute('disabled');
+			focusVersion = $('#version').value;
+			focusIsBranch = $('#version').selectedOptions[0].parentNode.label == 'branches';
+			document.location.hash = '#focus='+ focusVersion;
+		});
+
+		$('#newForm').addEventListener('submit', this.preview.bind(this));
 	};
 
-	this.preview = function()
+	this.preview = function(e)
 	{
-		// for people submitting from existing pages; prevent them sharing the original input
-		history.pushState({code: this.editor.getValue(), version: $('#version').value}, 'preview', '/#preview');
+		if (!$('#version') || $('#version').value == '' || $('#version').value == 'eol')
+			return;
 
 		var xhr = new XMLHttpRequest();
-		xhr.onload = _refreshOutput;
+		xhr.onload = _refreshFocus;
 		xhr.open('post', '/new');
 		xhr.setRequestHeader('Accept', 'application/json');
-
-		var data = new FormData($('#previewForm'));
-		if (this.editor)
-			data.append('code', this.editor.getValue());
-		else
-			data.append('code', $('textarea[name=code]').value);
 
 		outputClearTabs();
 
@@ -612,7 +621,12 @@ var evalOrg = {};
 		$('#tab').appendChild(document.createElement('dl'));
 		$('#tabs').classList.add('busy');
 
-		xhr.send(data);
+		// is this required?
+		if (this.editor)
+			$('textarea[name=code]').value = this.editor.getValue();
+
+		xhr.send(new FormData($('#newForm')));
+		e.preventDefault();
 
 		return false;
 	};
@@ -674,6 +688,29 @@ var evalOrg = {};
 			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
 				this[ 'handle'+c.ucFirst() ]();
 		}.bind(self));
+	};
+
+	var _refreshFocus = function()
+	{
+		if (this.status == 200)
+		{
+			try
+			{
+				var r = JSON.parse(this.responseText);
+				var path = '/'+ r.script.short +'#focus='+ focusVersion
+
+				if (focusIsBranch)
+					path = path.replace('#', '/rfc#');
+
+				history.pushState({code: evalOrg.editor.getValue(), version: focusVersion}, 'focus', path);
+				// fix tab-href for aParts below
+				$('#tabs li.active a').href = path
+			} catch (e) {
+				// ignore for now
+			}
+		}
+
+		return _refreshOutput.bind(this)();
 	};
 
 	var _refreshOutput = function()

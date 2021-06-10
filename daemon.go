@@ -401,7 +401,7 @@ func refreshVersions() {
 	rs, err := db.Query(`
 		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper"
 		FROM version
-		ORDER BY "released" DESC, "order" DESC`)
+		ORDER BY "eol" DESC, "order" DESC`)
 
 	if err != nil {
 		panic("daemon: could not SELECT: " + err.Error())
@@ -496,7 +496,7 @@ func batchScheduleNewVersions() {
 	batch.Wait()
 
 	for _, v := range versions {
-		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" {
+		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
 			continue
 		}
 
