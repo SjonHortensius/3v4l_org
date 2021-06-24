@@ -20,7 +20,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 			'values' => [
 				'output' => 'Output',
 				'perf' => 'Performance',
-				'vld' => 'VLD opcodes',
+				'vld' => 'VLD',
 				'refs' => 'References',
 				'rfc' => 'Branches',
 			]

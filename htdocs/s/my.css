@@ -162,6 +162,11 @@ ul#tabs + div
 	border: 1px solid #ddd;
 }
 
+ul#tabs li.notify a::after {
+    content: " *";
+    color: orangered;
+}
+
 #tab a#expand,
 #tab a#diff,
 #tab a#asHtml
@@ -239,42 +244,8 @@ body.touch dd
 	max-height: 50em;
 }
 
-#options:not(:empty)
-{
-	float: right;
-	padding: 0.5em 1em 0.5em;
-	margin: -1.5em 0 0;
-	border-radius: 0 0 4px 4px;
-	border: 1px solid #ddd;
-}
-
-html.darkMode #options:not(:empty)
-{
-	border-color: #333;
-}
-
-
-#options input[type=checkbox] + label
-{
-	position: relative;
-	top: -4px;
-	margin: 0;
-}
-
-#options div
-{
-	float: left;
-}
-
-#options div:not(:first-child)
-{
-	margin-left: 10px;
-	padding-top: 0.15em;
-}
-
-#options i.icon-share-alt
-{
-	transform: scaleY(-1);
+#prefs input {
+	margin-left: 15px;
 }
 
 form.submit-attempted textarea.invalid,
@@ -762,20 +733,13 @@ body.sponsor ul
 	padding-left: 25px;
 }
 
-#toggleOptions
+#prefs
 {
-	position: fixed;
-	background-color: #eee;
-	bottom: 0;
-	left: 0;
-	margin: 5px;
+	float: right;
+	margin-top: -2px;
 }
 
-body.mobile #toggleOptions { position: inherit; }
-
-html.darkMode #toggleOptions { background: #333; }
-
-#toggleOptions label
+#prefs label
 {
 	cursor: pointer;
 }
@@ -798,7 +762,6 @@ html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert
 {
 	ul#tabs li.disabled{			display: none; }
 	ul#tabs li a{					padding: 5px; }
-	#options:not(:empty){			margin-top: 0; }
 	header span{					display: none; }
 	header ul{						padding-right: 5px; padding: 0.5em; }
 	header h1{						height: 30px; }
@@ -817,7 +780,6 @@ html.darkMode [class^="icon-"], html.darkMode [class*=" icon-"] { filter: invert
 	/* keep menu on single line, remove bughunt & search; prevent LI from taking up space */
 	nav li:nth-of-type(3),
 	nav li:nth-of-type(4){	display: none; }
-	#toggleOptions{			position: inherit; }
 }
 
 @media (max-width: 1000px)

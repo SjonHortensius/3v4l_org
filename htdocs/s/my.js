@@ -38,10 +38,9 @@ var evalOrg = {};
 	{
 		window.addEventListener('error', this.postError)
 
-		// do this immediately to prevent a fouc
-		this.applyDarkmode();
+		this.applyPrefs();
 
-		$$('a[href^="http"]').forEach(function (el){
+		$$('a[href^="http"]').forEach(function (el) {
 			el.setAttribute('target', '_blank');
 			el.setAttribute('rel', 'noopener');
 		});
@@ -49,24 +48,24 @@ var evalOrg = {};
 		if ($('h2.exception'))
 			document.body.classList = 'error';
 
-		document.body.classList.forEach(function(c){
-			if ('function' == typeof this[ 'handle'+c.ucFirst() ])
-				setTimeout(this[ 'handle'+c.ucFirst() ].bind(this), 0);
+		document.body.classList.forEach(function (c) {
+			if ('function' == typeof this['handle' + c.ucFirst()])
+				setTimeout(this['handle' + c.ucFirst()].bind(this), 0);
 		}.bind(this));
 
-		$$('.alert').forEach(function (el){
-			el.addEventListener('touchstart', function(){ el.remove(); });
+		$$('.alert').forEach(function (el) {
+			el.addEventListener('touchstart', function () {
+				el.remove();
+			});
 		});
-
-		this.createOptionsToggle();
 	};
 
 	var loadScript = function(url, f)
 	{
 		var s = document.createElement('script');
-			s.setAttribute('src', url);
+		s.setAttribute('src', url);
 
-		s.onload = function(){
+		s.onload = function () {
 			if ('function' == typeof f)
 				f();
 
@@ -76,8 +75,7 @@ var evalOrg = {};
 		document.head.appendChild(s);
 	};
 
-	this.postError = function(e)
-	{
+	this.postError = function(e) {
 		// https://www.ravikiranj.net/posts/2014/code/how-fix-cryptic-script-error-javascript/
 		if (e.message == 'Script error.')
 			return;
@@ -91,40 +89,18 @@ var evalOrg = {};
 			return;
 
 		var xhr = new XMLHttpRequest();
-		xhr.open('post', '/javascript-error/'+ encodeURIComponent(e.message));
+		xhr.open('post', '/javascript-error/' + encodeURIComponent(e.message));
 		xhr.send();
 	};
 
-	this.applyDarkmode = function(e)
+	this.applyDarkmode = function(enable)
 	{
-		var defaul = false, enable = false;
-		if (localStorage.getItem("darkMode") == "enable")
-			defaul = true;
-		else if (localStorage.getItem("darkMode") == "disable")
-			defaul = false;
-		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
-			defaul = true;
-
-		if ($('#toggleOptions input#darkMode'))
-		{
-			enable = $('#darkMode').checked;
-
-			// Only store pref for explicit user actions
-			if (typeof e != undefined)
-				localStorage.setItem('darkMode', enable ? 'enable' : 'disable');
-		}
-		else
-			enable = defaul
-
-		if (enable)
-		{
+		if (enable) {
 			document.documentElement.classList.add('darkMode');
 
 			if (this.editor)
 				this.editor.setTheme('ace/theme/chaos');
-		}
-		else
-		{
+		} else {
 			document.documentElement.classList.remove('darkMode');
 
 			if (this.editor)
@@ -132,33 +108,34 @@ var evalOrg = {};
 		}
 	};
 
-	this.createOptionsToggle = function()
+	this.applyPrefs = function()
 	{
-		document.body.appendChild(object2Dom({
-			fieldset: {
-				id: 'toggleOptions',
-				children: [
-					{input: {id: 'darkMode', type: 'checkbox'}},
-					{label: {'for': 'darkMode', _text: 'Enable dark-mode'}},
-					{hr:{}},
-					{input: {id: 'livePreview', type: 'checkbox'}},
-					{label: {'for': 'livePreview', _text: 'Enable live-preview', title: 'BETA feature'}},
-				]
-			}
-		}));
+		var defaul = false;
+		if (localStorage.getItem("darkMode") == "enable")
+			defaul = true;
+		else if (localStorage.getItem("darkMode") == "disable")
+			defaul = false;
+		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
+			defaul = true;
 
-		if (document.documentElement.classList.contains('darkMode'))
+		this.applyDarkmode(defaul);
+
+		if (defaul)
 			$('#darkMode').setAttribute('checked', 'checked');
-		$('#darkMode').addEventListener('change', this.applyDarkmode.bind(this));
 
-		if (localStorage.getItem("livePreview") == "enable")
+		$('#darkMode').addEventListener('change', function (e) {
+			localStorage.setItem('darkMode', e.target.checked ? 'enable' : 'disable');
+			this.applyDarkmode(e.target.checked)
+		}.bind(this));
+
+
+		if (localStorage.getItem("livePreview") === "enable")
 			$('#livePreview').setAttribute('checked', 'checked');
-		$('#livePreview').addEventListener('change', function(){
-			localStorage.setItem('livePreview', $('#livePreview').checked ? 'enable' : 'disable');
-		});
 
-		this.applyDarkmode();
-	};
+		$('#livePreview').addEventListener('change', function (e) {
+			localStorage.setItem('livePreview', e.target.checked ? 'enable' : 'disable');
+		});
+	}
 
 	this.richEditor = function()
 	{
@@ -1142,7 +1119,8 @@ var evalOrg = {};
 	if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
 		document.body.classList.add('mobile');
 
-	this.applyDarkmode();
+	// do this immediately to prevent a fouc
+	this.applyPrefs();
 
 	window.addEventListener('load', function(){ evalOrg.initialize(); });
 

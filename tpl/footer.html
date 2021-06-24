@@ -1,3 +1,15 @@
+	<hr />
+	{$statistics = Basic::$log->getStatistics();}
+	<p>
+		<div id="prefs">
+			preferences:
+			<input type="checkbox" id="darkMode" /><label for="darkMode">dark mode</label>
+			<input type="checkbox" id="livePreview" /><label for="livePreview">live preview</label>
+		</div>
+
+		<b>{print round($statistics['time']*1000, 2);}</b> ms | <b>{statistics['memory']}</b>  KiB | <b>{statistics['queryCount']}</b> Q
+	</p>
+
 	{if (Basic::$config->PRODUCTION_MODE)}
 		<script src="/s/c.js" async></script>
 	{:}
