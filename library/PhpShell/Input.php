@@ -189,6 +189,7 @@ class PhpShell_Input extends PhpShell_Entity
 		$results = $this->getRelated(PhpShell_Result::class)
 			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->getSubset("NOT version.\"isHelper\"")
+			->getSubset("version >= 32")
 			->addJoin(PhpShell_Output::class, "output.id = result.output")
 			->setOrder(['version.order' => true]);
 
@@ -289,7 +290,7 @@ class PhpShell_Input extends PhpShell_Entity
 				SUM(\"exitCode\") as exit_sum
 			FROM result
 			INNER JOIN version ON version.id = version
-			WHERE input = ? AND NOT version.\"isHelper\"
+			WHERE input = ? AND version.id <= 32
 			GROUP BY version
 			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
