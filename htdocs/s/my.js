@@ -545,18 +545,16 @@ var evalOrg = {};
 				var group = getGroup((key.substr(-1) === '.') ? key.substr(0, key.length-1) : key);
 
 			if (typeof versions[key] === 'number')
-			{
-				// assume there are 3 supported major versions and filter out betas
-				if (idx <=2 && key.length == 4)
-					addOpt(current, key + versions[key]);
-
 				for (var i = versions[key]; i >= 0; i--)
 					addOpt(group, key + i);
-			}
 			else if (typeof versions[key] === 'object')
 				versions[key].forEach(function(v){addOpt(group, key + v);});
 			else
 				addOpt(group, key + versions[key]);
+
+			// assume there are 3 supported major versions and filter out betas
+			if (idx <=2 && key.length === 4)
+				addOpt(current, group.firstChild.textContent);
 		});
 
 		// Move select to end of form

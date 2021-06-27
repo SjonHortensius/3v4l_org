@@ -12,6 +12,7 @@ body
 hr
 {
 	clear: both;
+	border: 1px solid gray;
 }
 
 form
