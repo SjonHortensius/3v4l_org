@@ -174,24 +174,18 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
-	public function getRfcOutput(): Basic_EntitySet
-	{
-		return $this->getRelated(PhpShell_Result::class)
-			->getSubset("( version.name LIKE 'rfc.%' OR version.name LIKE 'git.%')")
-			->addJoin(PhpShell_Version::class, "version.id = result.version")
-		# prevent pg from querying all result tables
-			->getSubset("version < 32")
-			->setOrder(['version.released' => false]);
-	}
-
-	public function getOutput(): array
+	public function getOutput(bool $forRfc = false): array
 	{
 		$results = $this->getRelated(PhpShell_Result::class)
 			->addJoin(PhpShell_Version::class, "version.id = result.version")
 			->getSubset("NOT version.\"isHelper\"")
-			->getSubset("version >= 32")
 			->addJoin(PhpShell_Output::class, "output.id = result.output")
 			->setOrder(['version.order' => true]);
+
+		if ($forRfc)
+			$results = $results->getSubset("version < 32")->setOrder(['version.released' => false]);
+		else
+			$results = $results->getSubset("version > 32");
 
 		$abbrMax = function($name)
 		{
@@ -216,7 +210,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 			if (!isset($slot))
 				$slot = ['min' => $name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
-			elseif ($hash != $prevHash || $major !== $prevMajor)
+			elseif ($hash != $prevHash || $major !== $prevMajor || $forRfc)
 			{
 				// Close previous slot
 				if (isset($slot['max']))

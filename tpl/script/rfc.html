@@ -1,35 +1,28 @@
-<p>Shows result from various feature-branches currently under review from the php developers. Contact me to have additional branches featured.</p>
+<p>Shows result from various feature-branches currently under review by the php developers. Contact me to have additional branches featured.</p>
+<h3>Active branches</h3>
+<ul>
+	<li><a href="https://github.com/php/php-src/commits/master">Development branch: master</a></li>
+	<li><a href="https://github.com/php/php-src/commits/master">Development branch: master with JIT enabled</a></li>
+	<li><a href="https://wiki.php.net/rfc/partial_function_application">RFC: Partial Function Application</a></li>
+	<li><a href="https://wiki.php.net/rfc/is_literal">RFC: Is_Literal</a></li>
+</ul>
 
-<dl>
-{foreach ($this->input->getRfcOutput() as $this->result)}
-	<dt id="{result->version->name}">
-	{if ("rfc-" == substr($this->result->version->name, 0, 4))}
-		{$this->rfc = substr($this->result->version->name, 4);}
-		Output for <a href="https://wiki.php.net/rfc/{rfc}">{print ucfirst(str_replace(['-', '_'], ' ', $this->rfc));}</a>
-	{:}
-		Output for <span title="build {result->version->released}">branch {print substr($this->result->version->name, 4);}</span>
-	{/}
-	</dt>
-	<dd>
-		{print $this->result->getHtml();}
-	</dd>
-{/}
-</dl>
+{$this->show("script/output");}
 
 <h3>Archived branches</h3>
 <p>Once feature-branches are merged or declined, they are no longer available. Their functionality (when merged) can be viewed from the <a href="/{input->short}">main output page</a></p>
 <ul>
 	<li id="rfc-array_change_keys"><a href="https://wiki.php.net/rfc/array_change_keys">array_change_keys()</a> - withdrawn</li>
 	<li id="rfc-object-typehint"><a href="https://wiki.php.net/rfc/object-typehint">Object typehint</a> - included in PHP 7.2</li>
-	<li id="rfc-arrow_functions"><a href=https://wiki.php.net/rfc/arrow_functions">Arrow functions</a> - withdrawn</li>
+	<li id="rfc-arrow_functions"><a href="https://wiki.php.net/rfc/arrow_functions">Arrow functions</a> - withdrawn</li>
 	<li id="rfc-typed-properties-v2"><a href="https://wiki.php.net/rfc/typed-properties-vs">Typed Properties v2</a> - superseded by another RFC implemented in PHP 7.4</li>
-	<li id="rfc-lexical-anon"><a href="https://wiki.php.net/rfc/lexical-anon">Lexical scope suport for anonymous classes</a> - suspended</li>
+	<li id="rfc-lexical-anon"><a href="https://wiki.php.net/rfc/lexical-anon">Lexical scope support for anonymous classes</a> - suspended</li>
 
 	<li id="rfc-typed-properties"><a href="https://wiki.php.net/rfc/typed-properties">Typed Properties</a> - declined</li>
 	<li id="rfc-multi-types"><a href="https://wiki.php.net/rfc/union_types">Union Types</a> - declined</li>
 	<li id="rfc-callable_typehint"><a href="https://wiki.php.net/rfc/callable-types">Callable Prototypes</a> - declined</li>
-	<li id="rfc-short_closures"><a href="https://wiki.php.net/rfc/short_closures">Short Closures</a> - declined / withdrawn in favor of <a href="http://wiki.php.net/rfc/arrow_functions">Arrow Functions</a></li>
+	<li id="rfc-short_closures"><a href="https://wiki.php.net/rfc/short_closures">Short Closures</a> - declined / withdrawn in favor of <a href="https://wiki.php.net/rfc/arrow_functions">Arrow Functions</a></li>
 	<li id="rfc-func_interfaces"><a href="https://wiki.php.net/rfc/callable-types">Function Interfaces</a> - declined</li>
-	<li id="rfc-scalar_type_hints_v5"><a href="http://wiki.php.net/rfc/scalar_type_hints_v5">Scalar type hints v5</a> - included in PHP 7</li>
-	<li id="rfc-anonymous_classes"><a href="http://wiki.php.net/rfc/anonymous_classes">Anonymous classes</a> - included in PHP 7</li>
+	<li id="rfc-scalar_type_hints_v5"><a href="https://wiki.php.net/rfc/scalar_type_hints_v5">Scalar type hints v5</a> - included in PHP 7</li>
+	<li id="rfc-anonymous_classes"><a href="https://wiki.php.net/rfc/anonymous_classes">Anonymous classes</a> - included in PHP 7</li>
 </ul>

@@ -1,5 +1,5 @@
 <dl>
-{foreach ($this->input->getOutput() as $this->versions => $this->output)}
+{foreach ($this->input->getOutput(Basic::$userinput['tab']=='rfc') as $this->versions => $this->output)}
 	{$this->id = @array_shift(explode(' ', str_replace(',', ' ', strip_tags($this->versions))));}
 
 	<dt id="v{print str_replace('.', '', $this->id);}">

@@ -28,7 +28,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 	];
 	/** @var $input PhpShell_Input */
 	public $input;
-	public $showTab = [];
+	public $showTab = [
+		'output' => true,
+		'perf' => true,
+		'vld' => false,
+		'refs' => false,
+		'rfc' => false,
+	];
+	public $notifyTab = [];
 	public $bodyClass = 'new script';
 	public $quickVersionList;
 
@@ -94,10 +101,34 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (Basic::$config->PRODUCTION_MODE && (!isset($this->input->operationCount) || mt_rand(0,9)<1) && count($this->input->getResult(PhpShell_Version::byName('vld'))) > 0)
 			$this->input->updateFunctionCalls();
 
-		$this->showTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), true);
-		$this->showTab['vld'] =		isset($this->input->operationCount) && $this->input->operationCount > 0;
-		$this->showTab['refs'] =	isset($this->input->operationCount) && count($this->input->getFunctionCalls()) > 0;
-		$this->showTab['rfc'] =		count($this->input->getRfcOutput()) > 0;
+		$this->notifyTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), false);
+
+		// Determine if the rfc tab has output that differs from the main output tab
+		$outputPerMajor = array_map('json_decode', iterator_to_array($this->input->getRelated(PhpShell_Result::class)
+			->addJoin(PhpShell_Version::class, "id = version")
+			->getAggregate("output, array_to_json(ARRAY_AGG(DISTINCT SUBSTRING(version.name FOR 3))) versions", "output")->fetchArray("versions", "output")));
+
+		$output = ['main' => [], 'rfc' => []];
+		foreach ($outputPerMajor as $outputId => $majors)
+		{
+			if (in_array('vld', $majors))
+			{
+				$this->showTab['vld'] = true;
+				unset($outputPerMajor[$outputId]);
+			}
+			elseif (in_array('rfc', $majors) || in_array('git', $majors))
+			{
+				$this->showTab['rfc'] = true;
+				$output['rfc'] []= $outputId;
+			}
+			else
+				$output['main'] []= $outputId;
+		}
+
+		if (count($outputPerMajor) > 1 && count(array_diff($output['rfc'], $output['main'])) > 1)
+			$this->notifyTab['rfc'] = true;
+
+		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);
@@ -110,7 +141,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 	protected function _handleLastModified(): void
 	{
-		// truncate header of we're gonna send a 304 - required because we call _handleLastModified from run() which is unsupported
+		// truncate header if we're gonna send a 304 - required because we call _handleLastModified from run() which is unsupported
 		register_shutdown_function(function() { if (304 == http_response_code()) ob_end_clean();});
 
 		parent::_handleLastModified();
