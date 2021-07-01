@@ -50,7 +50,7 @@ var evalOrg = {};
 
 		document.body.classList.forEach(function (c) {
 			if ('function' == typeof this['handle' + c.ucFirst()])
-				setTimeout(this['handle' + c.ucFirst()].bind(this), 0);
+				window.addEventListener('load', this['handle' + c.ucFirst()].bind(this));
 		}.bind(this));
 
 		$$('.alert').forEach(function (el) {
@@ -77,15 +77,15 @@ var evalOrg = {};
 
 	this.postError = function(e) {
 		// https://www.ravikiranj.net/posts/2014/code/how-fix-cryptic-script-error-javascript/
-		if (e.message == 'Script error.')
+		if (e.message === 'Script error.')
 			return;
 
 		// Googlebot throws this when using NodeList.forEach
-		if (e.message == 'Uncaught TypeError: undefined is not a function')
+		if (e.message === 'Uncaught TypeError: undefined is not a function')
 			return;
 
 		// Yandex through HeadlessChrome, but not reproducible
-		if (e.message == 'Uncaught ')
+		if (e.message === 'Uncaught ')
 			return;
 
 		var xhr = new XMLHttpRequest();
@@ -111,9 +111,9 @@ var evalOrg = {};
 	this.applyPrefs = function()
 	{
 		var defaul = false;
-		if (localStorage.getItem("darkMode") == "enable")
+		if (localStorage.getItem("darkMode") === "enable")
 			defaul = true;
-		else if (localStorage.getItem("darkMode") == "disable")
+		else if (localStorage.getItem("darkMode") === "disable")
 			defaul = false;
 		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
 			defaul = true;
@@ -1117,10 +1117,7 @@ var evalOrg = {};
 	if (navigator.userAgent.match(/(Android|BlackBerry|iPhone|iPad|iPod|Opera Mini|IEMobile)/))
 		document.body.classList.add('mobile');
 
-	// do this immediately to prevent a fouc
-	this.applyPrefs();
-
-	window.addEventListener('load', function(){ evalOrg.initialize(); });
+	evalOrg.initialize();
 
 	if ('serviceWorker' in navigator)
 		navigator.serviceWorker.register('/pwa-worker.js');
