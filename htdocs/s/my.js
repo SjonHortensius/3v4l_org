@@ -39,6 +39,7 @@ var evalOrg = {};
 		window.addEventListener('error', this.postError)
 
 		this.applyPrefs();
+		this.enableFocus();
 
 		$$('a[href^="http"]').forEach(function (el) {
 			el.setAttribute('target', '_blank');
@@ -46,7 +47,7 @@ var evalOrg = {};
 		});
 
 		if ($('h2.exception'))
-			document.body.classList = 'error';
+			document.body.setAttribute('class', 'error');
 
 		document.body.classList.forEach(function (c) {
 			if ('function' == typeof this['handle' + c.ucFirst()])
@@ -307,8 +308,6 @@ var evalOrg = {};
 				this.editor.setReadOnly(true);
 		}
 
-		this.enableFocus();
-
 		document.body.addEventListener('keydown', function(e){
 			// cancel ctrl/cmd+s > prevent browser from saving page
 			if (83 == e.which && (e.ctrlKey || e.metaKey))
@@ -492,18 +491,57 @@ var evalOrg = {};
 	var focusVersion = '';
 	var focusIsBranch = false;
 	this.enableFocus = function() {
-		if (-1 != window.location.hash.indexOf('focus=')) {
-			focusVersion = window.location.hash.substring('#focus='.length);
-			focusIsBranch = (-1 != window.location.pathname.indexOf('/rfc'));
-			document.body.classList.add('focus');
-		}
-
 		this.fillVersionSelector();
 
-		if ($('#version option[value="'+focusVersion+'"]'))
-			$('#version option[value="'+focusVersion+'"]').setAttribute('selected', 'selected');
+		if ($('#newForm'))
+			$('#newForm').addEventListener('submit', this.preview.bind(this));
 
-		$('#newForm').addEventListener('submit', this.preview.bind(this));
+		// b/c
+		if (0 === window.location.hash.indexOf('#focus='))
+			window.location.hash = 'v'+ window.location.hash.substr('#focus='.length);
+
+		if (-1 === window.location.hash.indexOf('#v'))
+			return;
+
+		// verify the hash is a valid version
+		var version = window.location.hash.substr(2), option = $('#version option[value="' + version + '"]');
+
+		if (version.match(/^[.0-9a-z_-]+$/) && option) {
+			focusVersion = version;
+			focusIsBranch = 'branches' === option.parentElement.label;
+
+			option.setAttribute('selected', 'selected');
+			outputHighlightVersion(version)
+		}
+	};
+
+	var outputHighlightVersion = function(version)
+	{
+		$$('#tab dl dt').forEach(function (dt) {
+			var dtTitle = dt.textContent;
+
+			// for rfcs
+			if (-1 !== dtTitle.indexOf(version))
+				dt.setAttribute('id', 'v'+version)
+			else if (version.split('.').length === 3)
+			{
+				var l = version.match(/(\d\.\d.)(\d+)/), vPrefix = l[1], vReleaseStr = l[2];
+				var vRelease = Number(vReleaseStr)
+
+				var matches = Array.from(dtTitle.matchAll(/([.\d]+)(?: - ([\d.]+))?/g));
+				for (var i = 0; i < matches.length; i++)
+				{
+					var rangeMin = matches[i][1], rangeMax = matches[i][2];
+//					console.log(vPrefix, vRelease, rangeMin.substr(vPrefix.length), rangeMax.substr(vPrefix.length));
+
+					if (
+						rangeMin.startsWith(vPrefix) && Number(rangeMin.substr(vPrefix.length)) <= vRelease &&
+						rangeMax.startsWith(vPrefix) && Number(rangeMax.substr(vPrefix.length)) >= vRelease
+					)
+						dt.setAttribute('id', 'v'+version)
+				}
+			}
+		});
 	};
 
 	this.fillVersionSelector = function() {
@@ -562,9 +600,12 @@ var evalOrg = {};
 
 		select.addEventListener('change', function(){
 			$('input[type=submit]').removeAttribute('disabled');
+
 			focusVersion = $('#version').value;
 			focusIsBranch = $('#version').selectedOptions[0].parentNode.label == 'branches';
-			document.location.hash = '#focus='+ focusVersion;
+
+			outputHighlightVersion(focusVersion)
+			document.location.hash = '#v'+ focusVersion;
 		});
 
 		$('#newForm').addEventListener('submit', this.preview.bind(this));
@@ -669,7 +710,7 @@ var evalOrg = {};
 			try
 			{
 				var r = JSON.parse(this.responseText);
-				var path = '/'+ r.script.short +'#focus='+ focusVersion
+				var path = '/'+ r.script.short +'#v'+ focusVersion
 
 				if (focusIsBranch)
 					path = path.replace('#', '/rfc#');

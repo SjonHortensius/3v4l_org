@@ -1,4 +1,6 @@
-<p>Shows result from various feature-branches currently under review by the php developers. Contact me to have additional branches featured.</p>
+{$this->show("script/output");}
+
+<p>This tab shows result from various feature-branches currently under review by the php developers. Contact me to have additional branches featured.</p>
 <h3>Active branches</h3>
 <ul>
 	<li><a href="https://github.com/php/php-src/commits/master">Development branch: master</a></li>
@@ -6,8 +8,6 @@
 	<li><a href="https://wiki.php.net/rfc/partial_function_application">RFC: Partial Function Application</a></li>
 	<li><a href="https://wiki.php.net/rfc/is_literal">RFC: Is_Literal</a></li>
 </ul>
-
-{$this->show("script/output");}
 
 <h3>Archived branches</h3>
 <p>Once feature-branches are merged or declined, they are no longer available. Their functionality (when merged) can be viewed from the <a href="/{input->short}">main output page</a></p>
