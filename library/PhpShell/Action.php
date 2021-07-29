@@ -67,7 +67,7 @@ class PhpShell_Action extends Basic_Action
 		header('Referrer-Policy: origin-when-cross-origin');
 
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=686369
-		if (isset($_SERVER['HTTP_USER_AGENT']) && (false !== strpos($_SERVER['HTTP_USER_AGENT'], 'Chrome/') || false !== strpos($_SERVER['HTTP_USER_AGENT'], 'ChriOS/')))
+		if (isset($_SERVER['HTTP_USER_AGENT']) && (str_contains($_SERVER['HTTP_USER_AGENT'], 'Chrome/') || str_contains($_SERVER['HTTP_USER_AGENT'], 'ChriOS/')))
 			$this->cspDirectives['script-src'] []= "'unsafe-eval'";
 
 		$csp = "default-src 'none'; ";

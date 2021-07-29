@@ -284,7 +284,7 @@ class PhpShell_Input extends PhpShell_Entity
 				SUM(\"exitCode\") as exit_sum
 			FROM result
 			INNER JOIN version ON version.id = version
-			WHERE input = ? AND version.id <= 32
+			WHERE input = ? AND version.id >= 32
 			GROUP BY version
 			ORDER BY MAX(version.order) DESC", [$this->id]);
 	}
