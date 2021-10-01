@@ -249,20 +249,58 @@ func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
 }
 
 func (this *Result) store() {
-	_, err := db.Exec(`
-		INSERT INTO result VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (input, version) DO UPDATE SET
-			output = excluded.output, "exitCode" = excluded."exitCode",
-			"userTime" =   ((result.runs * result."userTime"  + excluded."userTime")  / (result.runs+1)),
-			"systemTime" = ((result.runs * result."systemTime"+ excluded."systemTime")/ (result.runs+1)),
-			"maxMemory" =  ((result.runs * result."maxMemory" + excluded."maxMemory") / (result.runs+1)),
-			runs = result.runs + 1, mutations = result.mutations + (CASE WHEN (result.output!=excluded.output OR result."exitCode"!=excluded."exitCode") THEN 1 ELSE 0 END)`,
-		this.input.id, this.version.id, this.output.id, this.exitCode,
-		this.userTime, this.systemTime, this.maxMemory,
-	)
-
+	old := &Result{}
+	tx, err := db.Begin()
 	if err != nil {
-		fmt.Printf("Result: failed to store: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+		fmt.Printf("Result: failed to start tx: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+
+		return
+	}
+
+	if err := tx.QueryRow(
+		`SELECT output, "exitCode" FROM result WHERE input = $1 AND version = $2 FOR UPDATE`,
+		this.input.id, this.version.id).Scan(&old.output.id, &old.exitCode); err == sql.ErrNoRows {
+
+		// Instead of locking the whole results table, use the `input` as lock target, this allows concurrent calls but only on other inputs
+		if _, err := tx.Exec(`SELECT * FROM input WHERE id = $1 FOR UPDATE`, this.input.id); err != nil {
+			fmt.Printf("Result: failed to lock input: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+
+			return
+		}
+
+		if _, err := tx.Exec(`INSERT INTO result VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			this.input.id, this.version.id, this.output.id, this.exitCode,
+			this.userTime, this.systemTime, this.maxMemory); err != nil {
+			fmt.Printf("Result: failed to create: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+		}
+	} else if err == nil {
+		mutated := 0
+
+		if old.output.id != this.output.id || old.exitCode != this.exitCode {
+			mutated = 1
+		}
+
+		if _, err := tx.Exec(`
+			UPDATE result
+			SET
+				output = $3, "exitCode" = $4,
+				"userTime" =   ((runs * "userTime"  + $5) / (result.runs+1)),
+				"systemTime" = ((runs * "systemTime"+ $6) / (result.runs+1)),
+				"maxMemory" =  ((runs * "maxMemory" + $7) / (result.runs+1)),
+				runs = result.runs + 1, mutations = result.mutations + $8
+			WHERE
+				input = $1 AND version = $2`,
+			this.input.id, this.version.id,
+			this.output.id, this.exitCode,
+			this.userTime, this.systemTime, this.maxMemory, mutated); err != nil {
+			fmt.Printf("Result: failed to update: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+		}
+	} else if err != nil {
+		fmt.Printf("Result: failed to select-for-update: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		fmt.Printf("Result: failed to commit: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
 	}
 }
 
