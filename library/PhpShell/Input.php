@@ -10,7 +10,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
-	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle', 'password_hash'];
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle', 'password_hash', 'time_nanosleep'];
 
 	public function getCode(): string
 	{
@@ -97,47 +97,51 @@ class PhpShell_Input extends PhpShell_Entity
 		$bughuntIgnore = false;
 		foreach ($operations as $match)
 		{
-			if ($match['op'] != 'INIT_FCALL' || !isset($match['operand']) || isset($calls[ $match['operand'] ]))
+			if (!isset($match['operand']))
+				continue;
+
+			if ($match['op'] == 'INIT_FCALL')
+				$function = $match['operand'];
+			// we threat all calls within a namespace as global for better matching
+			elseif ($match['op'] == 'INIT_NS_FCALL_BY_NAME')
+				$function = substr($match['operand'], 3+strrpos($match['operand'], '%5C'));
+			else
+				continue;
+
+			if (isset($calls[ $function ]))
 				continue;
 
 			// Only store valid functionCalls, nothing from userspace
-			if (PhpShell_Function::find("text = ?", [$match['operand']])->count() < 1)
-			{
-				if (is_callable($onMissingFunction))
-					$onMissingFunction($this, $match['operand']);
-
-				continue;
-			}
-
-			$calls[ $match['operand'] ] = true;
-
-			if (in_array($match['operand'], PhpShell_Input::BUGHUNT_BLACKLIST))
-				$bughuntIgnore = true;
-		}
-
-		// Delete or update db by going through all existing rows
-		foreach ($this->getRelated(PhpShell_FunctionCall::class) as $f)
-		{
-			if (!isset($calls[ $f->function->text ]))
-				$f->delete();
-
-			unset($calls[ $f->function->text ]);
-		}
-
-		// Now create all missing entities
-		foreach ($calls as $function => $count)
-		{
 			try
 			{
 				$f = PhpShell_Function::find("text = ?", [$function])->getSingle();
 			}
 			catch (Basic_EntitySet_NoSingleResultException $e)
 			{
-				$f = PhpShell_Function::create(['text' => $function]);
+				if (is_callable($onMissingFunction))
+					$onMissingFunction($this, $function);
+
+				continue;
 			}
 
-			PhpShell_FunctionCall::create(['input' => $this, 'function' => $f], false);
+			$calls[$function] = $f;
+
+			if (in_array($function, PhpShell_Input::BUGHUNT_BLACKLIST))
+				$bughuntIgnore = true;
 		}
+
+		// Delete or update db by going through all existing rows
+		foreach ($this->getRelated(PhpShell_FunctionCall::class) as $c)
+		{
+			if (!isset($calls[ $c->function->text ]))
+				$c->delete();
+
+			unset($calls[ $c->function->text ]);
+		}
+
+		// Now create all missing entities
+		foreach ($calls as $function => $f)
+			PhpShell_FunctionCall::create(['input' => $this, 'function' => $f], false);
 
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
 	}
@@ -191,7 +195,7 @@ class PhpShell_Input extends PhpShell_Entity
 		{
 			// strip repeating version in max for non-releases, but keep html intact
 			if (preg_match('~^(.*>)(.*)(alpha|beta|rc)(.*)(<.*)$~', $name, $m))
-				return $m[1] . $m[3] . $m[4] . $m[5] . $m[6];
+				return $m[1] . $m[3] . $m[4] . $m[5];
 			else
 				return $name;
 		};

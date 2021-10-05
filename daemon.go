@@ -534,7 +534,8 @@ func batchScheduleNewVersions() {
 	batch.Wait()
 
 	for _, v := range versions {
-		if time.Now().Sub(v.released) > 7*24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
+		// don't batch versions not in "version_forBughunt" view
+		if time.Now().Sub(v.released) > 90 * 24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
 			continue
 		}
 
@@ -555,7 +556,7 @@ func batchScheduleNewVersions() {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
 
-		fmt.Printf("batchScheduleNewVersions: %s - executing missing scripts\n", v.name)
+		fmt.Printf("batchScheduleNewVersions: %s - executing\n", v.name)
 
 		found := 0
 		for rs.Next() {
@@ -587,8 +588,6 @@ func batchScheduleNewVersions() {
 		}
 
 		batch.Wait()
-
-		fmt.Printf("batchScheduleNewVersions: %s - completed %.3f M scripts\n", v.name, float64(found)/1e6)
 	}
 }
 

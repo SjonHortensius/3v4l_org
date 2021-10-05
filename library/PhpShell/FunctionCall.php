@@ -36,13 +36,7 @@ class PhpShell_FunctionCall extends PhpShell_Entity
 		$this->_checkPermissions('delete');
 		$this->removeCached();
 
-		$result = Basic::$database->q(
-			"DELETE FROM \"functionCall\" WHERE input = ? AND function = ?",
-			[$this->input, $this->function]
-		);
-
-		if ($result != 1)
-			throw new Basic_Entity_DeleteException('An error occured while deleting `%s`:`%s/%s`', [get_class($this), $this->input->short, $this->function->text]);
+		Basic::$database->q("DELETE FROM \"functionCall\" WHERE input = ? AND function = ?", [$this->input, $this->function]);
 	}
 
 	public static function getTable(): string

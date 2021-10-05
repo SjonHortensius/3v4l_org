@@ -5,7 +5,12 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	public $userinputConfig = [
 		'type' => [
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
-			'values' => ['full', 'quick', 'hard'],
+			'values' => [
+				'full' => 'rescan all existing vld outputs',
+				'quick'=> 'scan only scripts that were unparsed until now',
+				'hard' => 're-execute vld and rescan all scripts',
+			],
+			'default' => 'full'
 		],
 	];
 	public static $unknownFunctions = [];
@@ -14,7 +19,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	{
 		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" ISNULL" : "true";
 
-		printf(" ** starting with %.3f K functionCalls (mode %s) **\n", PhpShell_FunctionCall::find()->count()/1000, Basic::$userinput['type']);
+		printf(" ** starting with %.3f K functionCalls (mode: %s) **\n", PhpShell_FunctionCall::find()->count()/1000, Basic::$userinput['type']);
 
 		for ($found = $i = 0; ($i==0 || $found >= $i*250); $i++)
 		{

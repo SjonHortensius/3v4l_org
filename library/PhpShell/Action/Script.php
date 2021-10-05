@@ -94,10 +94,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 		// Rerun caching logic now that we have input.lastModified
 		$this->_handleLastModified();
 
-		// Attempt to retrigger the daemon
-		if ($this->input->state == 'new')
-			$this->input->trigger();
-
 		if (Basic::$config->PRODUCTION_MODE && (!isset($this->input->operationCount) || mt_rand(0,9)<1) && count($this->input->getResult(PhpShell_Version::byName('vld'))) > 0)
 			$this->input->updateFunctionCalls();
 
