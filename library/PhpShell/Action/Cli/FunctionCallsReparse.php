@@ -21,28 +21,32 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 
 		printf(" ** starting with %.3f K functionCalls (mode: %s) **\n", PhpShell_FunctionCall::find()->count()/1000, Basic::$userinput['type']);
 
-		for ($found = $i = 0; ($i==0 || $found >= $i*250); $i++)
+		Basic::$database->beginTransaction();
+		$set = PhpShell_Input::find($filter, [], ['id' => true]);
+		$set->prepareCursor();
+
+		$found = 0;
+		/** @var $input PhpShell_Input */
+		foreach ($set->fetchNext() as $id => $input)
 		{
-			Basic::$database->beginTransaction();
+			$found++;
 
-			/** @var $input PhpShell_Input */
-			foreach (PhpShell_Input::find($filter, [], ['id' => true])->getPage(1+$i, 250) as $id => $input)
+			if ('hard' == Basic::$userinput['type'] && 'done' == $input->state)
 			{
-				if ('hard' == Basic::$userinput['type'] && 'done' == $input->state)
-				{
-					Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$input->short, 'vld']);
-					$input->waitUntilNoLonger('busy');
-				}
-
-				$input->updateFunctionCalls([self::class, 'missingFunctionDefinition']);
-				$input->removeCached();
-
-				$found++;
+				Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$input->short, 'vld']);
+				$input->waitUntilNoLonger('busy');
 			}
 
-			print '.'.(80==$i%81 ? sprintf("%s: %7d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found, Basic_Log::$queryCount /1000, count(self::$unknownFunctions) /1000) : '');
-			Basic::$database->commit();
+			$input->updateFunctionCalls([self::class, 'missingFunctionDefinition']);
+			$input->removeCached();
+
+			if (0 == $found%(80*250))
+				printf(" %s: %7d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found, Basic_Log::$queryCount /1000, count(self::$unknownFunctions));
+			elseif (0 == $found%250)
+				print '.';
 		}
+
+		Basic::$database->commit();
 
 		printf(" ** completed with %.3f K functionCalls **\n", PhpShell_FunctionCall::find()->count()/1000);
 

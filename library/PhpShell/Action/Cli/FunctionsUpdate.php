@@ -37,6 +37,8 @@ class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 			'is_file', 'is_dir', 'is_link', 'file_exists', 'lstat', 'stat'],
 		// grep PHP_ZLIB_ENCODE_FUNC ext/zlib/zlib.c
 		'ext/zlib/zlib.c:static zend_string *php_zlib_encode' => ['zlib_encode', 'gzdeflate', 'gzencode', 'gzcompress'],
+		// grep PHP_ZLIB_DECODE_FUNC ext/zlib/zlib.c
+		'ext/zlib/zlib.c:static int php_zlib_decode' => ['zlib_decode', 'gzinflate', 'gzdecode', 'gzuncompress'],
 	];
 
 	public function run(): void

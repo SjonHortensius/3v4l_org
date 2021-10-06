@@ -23,6 +23,22 @@ class PhpShell_InputSet extends Basic_EntitySet
 		return $this;
 	}
 
+	public function fetchNext(): Generator
+	{
+		do
+		{
+			$result = Basic::$database->q("FETCH NEXT FROM inputCursor");
+			$result->setFetchMode(PDO::FETCH_CLASS, $this->_entityType);
+
+			$entity = $result->fetch();
+			if (!$entity)
+				break;
+
+			yield $entity->id => $entity;
+		}
+		while (true);
+	}
+
 	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
 	{
 		if ($fields != '*' || empty($this->_fields))
@@ -31,5 +47,10 @@ class PhpShell_InputSet extends Basic_EntitySet
 		$fields = 'input.*, input.source AS "sourceId", '. implode(', ', $this->_fields);
 
 		return parent::_query($fields, $groupBy);
+	}
+
+	public function prepareCursor()
+	{
+		Basic::$database->q("DECLARE inputCursor CURSOR FOR SELECT * FROM input ORDER BY id");
 	}
 }
