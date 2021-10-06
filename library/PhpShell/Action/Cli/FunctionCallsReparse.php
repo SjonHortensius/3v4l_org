@@ -28,7 +28,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			/** @var $input PhpShell_Input */
 			foreach (PhpShell_Input::find($filter, [], ['id' => true])->getPage(1+$i, 250) as $id => $input)
 			{
-				if ('hard' == Basic::$userinput['type'])
+				if ('hard' == Basic::$userinput['type'] && 'done' == $input->state)
 				{
 					Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$input->short, 'vld']);
 					$input->waitUntilNoLonger('busy');
@@ -40,7 +40,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 				$found++;
 			}
 
-			print '.'.(80==$i%81 ? sprintf(" %7d processed | %5d K queries | %6d unknown funcs\n", $found, Basic_Log::$queryCount /1000, count(self::$unknownFunctions) /1000) : '');
+			print '.'.(80==$i%81 ? sprintf("%s: %7d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found, Basic_Log::$queryCount /1000, count(self::$unknownFunctions) /1000) : '');
 			Basic::$database->commit();
 		}
 

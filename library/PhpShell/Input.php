@@ -10,7 +10,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
-	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle', 'password_hash', 'time_nanosleep'];
+	const BUGHUNT_BLACKLIST = ['lcg_value', 'rand', 'mt_rand', 'time', 'microtime', 'array_rand', 'disk_free_space', 'memory_get_usage', 'shuffle', 'timezone_version_get', 'random_int', 'uniqid', 'openssl_random_pseudo_bytes', 'phpversion', 'str_shuffle', 'random_bytes', 'str_shuffle', 'password_hash', 'time_nanosleep', 'gettimeofday', 'getrusage'];
 
 	public function getCode(): string
 	{
@@ -94,7 +94,6 @@ class PhpShell_Input extends PhpShell_Entity
 
 		// Parse vld first, then update db accordingly
 		$calls = [];
-		$bughuntIgnore = false;
 		foreach ($operations as $match)
 		{
 			if (!isset($match['operand']))
@@ -127,7 +126,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$calls[$function] = $f;
 
 			if (in_array($function, PhpShell_Input::BUGHUNT_BLACKLIST))
-				$bughuntIgnore = true;
+				$this->bughuntIgnore = true;
 		}
 
 		// Delete or update db by going through all existing rows
@@ -143,7 +142,7 @@ class PhpShell_Input extends PhpShell_Entity
 		foreach ($calls as $function => $f)
 			PhpShell_FunctionCall::create(['input' => $this, 'function' => $f], false);
 
-		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $bughuntIgnore]);
+		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $this->bughuntIgnore]);
 	}
 
 	public function trigger(PhpShell_Version $version = null): void
