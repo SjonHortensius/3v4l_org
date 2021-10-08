@@ -20,16 +20,6 @@ class PhpShell_Action_Search extends PhpShell_Action
 			'minValue' => 1,
 			'maxValue' => 9,
 		],
-		'sort' => [
-			'source' => ['superglobal' => 'GET'],
-			'values' => [
-				'created' => 'input.id + 0'
-			],
-		],
-		'order' => [
-			'source' => ['superglobal' => 'GET'],
-			'values' => ['asc', 'desc'],
-		],
 	];
 	protected $_cacheLength = '24 hours';
 	public $entries;
@@ -49,8 +39,7 @@ class PhpShell_Action_Search extends PhpShell_Action
 			->getSubset("function.text LIKE ?", [Basic::$userinput['query']])
 			->addJoin(PhpShell_Input::class, "input.id = \"functionCall\".input")
 			->getSubset("input.state = 'done'")
-			->includeFunctionCalls()
-			->setOrder(['input.id + 0' => boolval('asc' == Basic::$userinput['order'])]);
+			->includeFunctionCalls();
 
 		parent::run();
 	}
