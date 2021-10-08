@@ -439,7 +439,7 @@ func refreshVersions() {
 	rs, err := db.Query(`
 		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper"
 		FROM version
-		ORDER BY "eol" DESC, "order" DESC`)
+		ORDER BY "order" DESC`)
 
 	if err != nil {
 		panic("daemon: could not SELECT: " + err.Error())
@@ -484,7 +484,7 @@ func checkPendingInputs() {
 		input.prepare(true)
 
 		for _, v := range versions {
-			if (input.runArchived || v.eol.After(input.created)) {
+			if input.runArchived || v.eol.After(input.created) {
 				input.execute(v, l)
 			}
 
@@ -526,6 +526,13 @@ func canBatch(doSleep bool) (bool, error) {
 }
 
 func batchScheduleNewVersions() {
+	if batchSnv {
+		return
+	} else {
+		defer func() { batchSnv = false }()
+		batchSnv = true
+	}
+
 	// with batching disabled, skip heavy SELECT (only Add blocks)
 	if 0 == batch.limit {
 		return
@@ -535,7 +542,7 @@ func batchScheduleNewVersions() {
 
 	for _, v := range versions {
 		// don't batch versions not in "version_forBughunt" view
-		if time.Now().Sub(v.released) > 90 * 24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
+		if time.Now().Sub(v.released) > 90*24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
 			continue
 		}
 
@@ -636,6 +643,7 @@ func doWork() {
 var (
 	db       *sql.DB
 	batch    SizedWaitGroup
+	batchSnv bool
 	stats    Stats
 	versions []Version
 	dryRun   bool

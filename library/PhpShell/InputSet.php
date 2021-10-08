@@ -31,6 +31,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 			$result->setFetchMode(PDO::FETCH_CLASS, $this->_entityType);
 
 			$entity = $result->fetch();
+
 			if (!$entity)
 				break;
 

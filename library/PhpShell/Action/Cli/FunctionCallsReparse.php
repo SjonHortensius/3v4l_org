@@ -27,7 +27,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 
 		$found = 0;
 		/** @var $input PhpShell_Input */
-		foreach ($set->fetchNext() as $id => $input)
+		foreach ($set->fetchNext() as $input)
 		{
 			$found++;
 
@@ -40,21 +40,21 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			$input->updateFunctionCalls([self::class, 'missingFunctionDefinition']);
 			$input->removeCached();
 
-			if (0 == $found%(80*250))
-				printf(" %s: %7d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found, Basic_Log::$queryCount /1000, count(self::$unknownFunctions));
-			elseif (0 == $found%250)
+			if (0 == $found%(120*2500))
+				printf(" %s %4d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found/1000, Basic_Log::$queryCount/1000, count(self::$unknownFunctions));
+			elseif (0 == $found%2500)
 				print '.';
 		}
 
 		Basic::$database->commit();
 
-		printf(" ** completed with %.3f K functionCalls **\n", PhpShell_FunctionCall::find()->count()/1000);
+		printf("\n** completed with %.3f K functionCalls **\n", PhpShell_FunctionCall::find()->count()/1000);
 
 		self::$unknownFunctions = array_filter(self::$unknownFunctions, function($v){ return $v>50; });
 
 		#highest at the end in case we run in screen - we don't see the top
 		asort(self::$unknownFunctions);
-		print_r(self::$unknownFunctions);
+		print serialize(self::$unknownFunctions);
 	}
 
 	public static function missingFunctionDefinition(PhpShell_Input $input, string $name)
