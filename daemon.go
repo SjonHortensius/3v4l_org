@@ -350,6 +350,10 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 	stderr, _ := cmd.StderrPipe()
 	cmdR := io.MultiReader(stdout, stderr)
 
+	if v.name == "vld" {
+		cmdR = stderr
+	}
+
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "While starting: %s\n", err)
 		return Result{}
@@ -541,8 +545,7 @@ func batchScheduleNewVersions() {
 	batch.Wait()
 
 	for _, v := range versions {
-		// don't batch versions not in "version_forBughunt" view
-		if time.Now().Sub(v.released) > 90*24*time.Hour || v.name[0:3] == "git" || v.name[0:3] == "rfc" {
+		if err := db.QueryRow(`SELECT id FROM "version_forBughunt" WHERE id = $1`, v.id).Scan(&v.id); err != nil {
 			continue
 		}
 
