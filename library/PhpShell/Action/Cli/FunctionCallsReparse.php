@@ -41,7 +41,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			$input->removeCached();
 
 			if (0 == $found%(120*2500))
-				printf(" %s %4d processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found/1000, Basic_Log::$queryCount/1000, count(self::$unknownFunctions));
+				printf(" %s %4d K processed | %5d K queries | %3d unknown funcs\n", date('H:i:s'), $found/1000, Basic_Log::$queryCount/1000, count(self::$unknownFunctions));
 			elseif (0 == $found%2500)
 				print '.';
 		}

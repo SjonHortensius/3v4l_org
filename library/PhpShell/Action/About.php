@@ -3,31 +3,30 @@
 class PhpShell_Action_About extends PhpShell_Action {
 	public $title = 'About this site';
 	public $colors = [
-		'homepage' => '#109618',
-		'submits'  => '#3366cc',
-		'uncategorized' => '#990099',
+		'hits' => '#109618',
 		'bots' => '#dc3912',
+		'submits'  => '#3366cc',
 	];
 	public $hitsPerYear = [
-		# xzcat access_log | grep -Eo '\(compatible;|POST /new|GET / | - - ' | sort | uniq -c
-		2012 => ['sum' => 1097507,  'bots' => 112563,   'homepage' => 27142,   'submits' => 13636],
-		2013 => ['sum' => 4816096,  'bots' => 1507185,  'homepage' => 85295,   'submits' => 122993],
-		2014 => ['sum' => 10701014, 'bots' => 7624321,  'homepage' => 211191,  'submits' => 225718],
-		2015 => ['sum' => 18296556, 'bots' => 10248788, 'homepage' => 575802,  'submits' => 348736],
-		2016 => ['sum' => 27683883, 'bots' => 18984187, 'homepage' => 341811,  'submits' => 562122],
-		2017 => ['sum' => 28271126, 'bots' => 18213318, 'homepage' => 464842,  'submits' => 863803],
-		2018 => ['sum' => 36453914, 'bots' => 27431680, 'homepage' => 456999,  'submits' => 1059907],
-		2019 => ['sum' => 25932010, 'bots' => 18783313, 'homepage' => 646845,  'submits' => 1281584],
-		2020 => ['sum' => 23959195, 'bots' => 15450846, 'homepage' => 794184,  'submits' => 1672484],
+		# the /new filter only returns full submits, not previews, by filtering for 302
+		# the dashes exist once for every entry, making a good sum
+		# xzcat access_log | grep -aEo '\(compatible;|POST /new HTTP/..." 302| - - ' | sort | uniq -c
+		2012 => ['hits' => 1097507,  'bots' => 112563,   'submits' =>  399 +  11076],
+		2013 => ['hits' => 4816096,  'bots' => 1507185,  'submits' => 3861 +  99432],
+		2014 => ['hits' => 10701014, 'bots' => 7624321,  'submits' => 2411 + 200793],
+		2015 => ['hits' => 18296556, 'bots' => 10248788, 'submits' => 1438 + 313391],
+		2016 => ['hits' => 27683883, 'bots' => 18984187, 'submits' =>   23 + 156616 + 284600],
+		2017 => ['hits' => 28271126, 'bots' => 18213318, 'submits' =>   94 +  21508 + 536935],
+		2018 => ['hits' => 36453914, 'bots' => 27431680, 'submits' =>   17 +  21596 + 558238],
+		2019 => ['hits' => 25932010, 'bots' => 18783313, 'submits' =>    1 +  24770 + 684733],
+		2020 => ['hits' => 23959191, 'bots' => 15450842, 'submits' =>        795605 + 34182],
+		2021 => ['hits' => 25512548, 'bots' => 13567286, 'submits' =>        473029 + 192145],
 	];
 
 	public function run(): void
 	{
 		foreach ($this->hitsPerYear as $y => &$d)
-		{
-			$d['uncategorized'] = array_sum($d) - $d['sum'];
-			unset($d['sum']);
-		}
+			$d['hits'] = $d['hits'] - $d['bots'] - $d['submits'];
 
 		parent::run();
 	}

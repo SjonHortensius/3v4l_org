@@ -395,6 +395,8 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		}
 
 		procOut <- string(output)
+
+		os.RemoveAll("/tmp/")
 	}(cmd, cmdR)
 
 	// We want ProcessState after successful exit too
@@ -431,8 +433,6 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 
 	// Required to close stdout/err descriptors
 	cmd.Wait()
-
-	os.RemoveAll("/tmp/")
 
 	return newResult(this, v, output, state)
 }
