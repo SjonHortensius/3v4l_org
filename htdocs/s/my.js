@@ -263,7 +263,7 @@ var evalOrg = {};
 	{
 		if (!$('#tabs'))
 		{
-			$$('#newForm ~ div').forEach(function(div){
+			$$('#newForm ~ div.column').forEach(function(div){
 				div.parentNode.removeChild(div);
 			});
 
