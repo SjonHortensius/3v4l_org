@@ -188,7 +188,7 @@ class PhpShell_Input extends PhpShell_Entity
 		if ($forRfc)
 			$results = $results->getSubset("version < 32")->setOrder(['version.released' => false]);
 		else
-			$results = $results->getSubset("version > 32");
+			$results = $results->getSubset("version >= 32");
 
 		$abbrMax = function($name)
 		{
