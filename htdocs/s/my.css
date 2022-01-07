@@ -724,10 +724,23 @@ body.sponsor h2:first-of-type + ul li.active
 	background-color: #cbffba;
 }
 
-body.sponsor h2:nth-of-type(2) + ul li.expired
+html.darkMode body.sponsor h2:first-of-type + ul li.active
+{
+	background-color: #1d4612;
+}
+
+body.sponsor li.expired
 {
 	opacity: 0.65;
 }
+
+body.sponsor li[data-age='3'] { font-size: 12px; }
+body.sponsor li[data-age='4'] { font-size: 11px; }
+body.sponsor li[data-age='5'] { font-size: 10px; }
+body.sponsor li[data-age='6'] { font-size: 9px; }
+body.sponsor li[data-age='7'] { font-size: 8px; }
+body.sponsor li[data-age='8'] { font-size: 7px; }
+
 
 body.sponsor ul
 {

@@ -1099,11 +1099,14 @@ var evalOrg = {};
 
 	this.handleSponsor = function()
 	{
+		var now = new Date().getFullYear();
 		var offset = (new Date).setMonth((new Date).getMonth() - 12);
 
 		$$('ul li i').forEach(function (el){
-			var d = new Date(el.textContent).getTime();
-			el.parentNode.classList.add(d < offset ? 'expired' : 'active');
+			var d = new Date(el.textContent).getFullYear();
+
+			el.parentNode.dataset['age'] = now-d;
+			el.parentNode.classList.add(now-d<2 ? 'active' : 'expired');
 		});
 	};
 
