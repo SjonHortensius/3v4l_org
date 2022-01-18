@@ -9,6 +9,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		73 => '2020-12-06',
 		74 => '2021-11-28',
 		80 => '2022-11-26',
+		81 => '2023-11-25',
 	];
 
 	const EOL = [
@@ -27,6 +28,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		73 => '2021-12-31',
 		74 => '2022-11-28',
 		80 => '2023-11-26',
+		81 => '2024-11-25',
 	];
 
 	public function run(): void
