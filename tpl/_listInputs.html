@@ -56,7 +56,7 @@
 			<td>{row->variance}</td>
 		{/}
 		{if ($this->entries->includesFunctionCalls)}
-			<td>{print substr($this->row->functionCalls, 0, 64);}</td>
+			<td>{print substr($this->row->functionCalls??'', 0, 64);}</td>
 		{/}
 	</tr>
 
