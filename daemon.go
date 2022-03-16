@@ -158,6 +158,10 @@ func (this *Input) complete() {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
 
+	if dryRun {
+		return
+	}
+
 	if _, err := db.Exec(`UPDATE input
 		SET penalty = LEAST(penalty + $2, 32767), state = $3
 		WHERE short = $1`, this.short, this.penalty, state); err != nil {
@@ -327,8 +331,10 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		"HOME=/tmp",
 	}
 
-	if !dryRun {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: 99, Gid: 99}}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential:   &syscall.Credential{Uid: 99, Gid: 99},
+		Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Unshareflags: syscall.CLONE_NEWNS,
 	}
 
 	if !this.lastSubmit.IsZero() {
@@ -354,8 +360,18 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		cmdR = stderr
 	}
 
+	if err := syscall.Mount("none", "/tmp", "tmpfs", 0, "size=32m"); err != nil {
+		fmt.Fprintf(os.Stderr, "While setting up private /tmp: %s\n", err)
+		return Result{}
+	}
+
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "While starting: %s\n", err)
+		return Result{}
+	}
+
+	if err := syscall.Unmount("/tmp", 0); err != nil {
+		fmt.Fprintf(os.Stderr, "While removing private /tmp: %s\n", err)
 		return Result{}
 	}
 
@@ -395,8 +411,6 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		}
 
 		procOut <- string(output)
-
-		os.RemoveAll("/tmp/")
 	}(cmd, cmdR)
 
 	// We want ProcessState after successful exit too
@@ -667,7 +681,7 @@ func init() {
 
 	if len(os.Args) > 1 && os.Args[1] == "--test" {
 		dryRun = true
-		inPath = "/tmp/"
+		inPath = "/var/tmp/"
 	} else if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
 		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
 			panic("while parsing batch: " + err.Error())
@@ -701,7 +715,7 @@ func main() {
 
 		v := Version{0, "local php binary", "/usr/bin/php -n -q", false, time.Now(), 0, time.Now()}
 
-		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO')`)
+		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO', 'p6UfZ', 'MqPNH')`)
 		if err != nil {
 			panic("daemon: could not SELECT: " + err.Error())
 		}
@@ -714,7 +728,7 @@ func main() {
 
 			i.prepare(false)
 			i.execute(v, ResourceLimit{0, 2500, 32768})
-			// we can skip complete since /tmp is already cleared by the daemon
+			i.complete()
 		}
 
 		os.Exit(0)
