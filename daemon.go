@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"net"
 	"runtime"
 	"strconv"
 	"strings"
@@ -651,6 +652,7 @@ var (
 	versions []Version
 	dryRun   bool
 	inPath   string
+	sdSocket *net.UnixConn
 	inputSrc struct {
 		sync.Mutex
 		srcUse map[string]int
@@ -730,7 +732,7 @@ func main() {
 		panic("daemon: error Listening: " + err.Error())
 	}
 
-	fmt.Printf("daemon ready\n")
+	sdNotify("READY=1")
 
 	var (
 		doPrintStats   = time.NewTicker(1 * time.Hour)
@@ -753,7 +755,7 @@ LOOP:
 
 		case <-doPrintStats.C:
 			stats.Lock()
-			fmt.Printf("Stats %v\n", stats.c)
+			sdNotify(fmt.Sprintf("STATUS=%v", stats.c))
 			stats.c = make(map[string]int)
 			stats.Unlock()
 
@@ -767,8 +769,34 @@ LOOP:
 			}
 
 		case <-doShutdown:
+			sdNotify("STOPPING=1")
+
 			l.Close()
 			break LOOP
 		}
+	}
+}
+
+// Notify systemd about our state, see https://freedesktop.org/software/systemd/man/sd_notify.html
+func sdNotify(state string) {
+	if sdSocket == nil {
+		if len(os.Getenv("NOTIFY_SOCKET")) == 0 {
+			return
+		}
+
+		socketAddr := &net.UnixAddr{
+			Name: os.Getenv("NOTIFY_SOCKET"),
+			Net:  "unixgram",
+		}
+
+		if conn, err := net.DialUnix(socketAddr.Net, nil, socketAddr); err != nil {
+			panic("sdNotify: error connecting")
+		} else {
+			sdSocket = conn
+		}
+	}
+
+	if _, err := sdSocket.Write([]byte(state + "\n")); err != nil {
+		panic("sdNotify: error writing: " + err.Error())
 	}
 }

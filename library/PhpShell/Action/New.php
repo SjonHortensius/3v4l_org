@@ -105,7 +105,7 @@ class PhpShell_Action_New extends PhpShell_Action
 		if ($penalty > 9E6)
 			throw new PhpShell_TemporaryBlockedException('It seems you are submitting too many scripts - please come back later. Is this incorrect? Contact me! [penalty:%1.2f:%1d:%1d]', [$stats['agePenalty'], $stats['weightPenalty'], $stats['busyPenalty']], 402);
 
-		usleep($penalty);
+		usleep(intval($penalty));
 
 		try
 		{
