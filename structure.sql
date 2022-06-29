@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 12.3
--- Dumped by pg_dump version 12.3
+-- Dumped from database version 14.3
+-- Dumped by pg_dump version 14.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,6 +16,20 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: pg_repack; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_repack WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner:
+--
+
+COMMENT ON EXTENSION pg_repack IS 'Reorganize tables in PostgreSQL databases with minimal locks';
+
 
 --
 -- Name: pg_stat_statements; Type: EXTENSION; Schema: -; Owner: -
@@ -97,7 +111,7 @@ CREATE TABLE public.function (
     id integer DEFAULT nextval('public.function_id_seq'::regclass) NOT NULL,
     text character varying(64) NOT NULL,
     source character varying(64) NOT NULL,
-    popularity integer
+    popularity integer DEFAULT 0 NOT NULL
 );
 
 
@@ -281,66 +295,6 @@ PARTITION BY LIST (version);
 ALTER TABLE public.result OWNER TO postgres;
 
 --
--- Name: result_php73; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_php73 (
-    input integer NOT NULL,
-    version smallint NOT NULL,
-    output integer NOT NULL,
-    "exitCode" smallint DEFAULT 0 NOT NULL,
-    "userTime" real NOT NULL,
-    "systemTime" real NOT NULL,
-    "maxMemory" integer NOT NULL,
-    runs smallint DEFAULT 1 NOT NULL,
-    mutations smallint DEFAULT 0 NOT NULL
-);
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419', '425', '429', '434', '439', '443', '448', '452', '455', '458', '461', '464', '466', '470', '473');
-
-
-ALTER TABLE public.result_php73 OWNER TO postgres;
-
---
--- Name: result_php74; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_php74 (
-    input integer NOT NULL,
-    version smallint NOT NULL,
-    output integer NOT NULL,
-    "exitCode" smallint DEFAULT 0 NOT NULL,
-    "userTime" real NOT NULL,
-    "systemTime" real NOT NULL,
-    "maxMemory" integer NOT NULL,
-    runs smallint DEFAULT 1 NOT NULL,
-    mutations smallint DEFAULT 0 NOT NULL
-);
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465', '469', '472');
-
-
-ALTER TABLE public.result_php74 OWNER TO postgres;
-
---
--- Name: result_php80; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.result_php80 (
-    input integer NOT NULL,
-    version smallint NOT NULL,
-    output integer NOT NULL,
-    "exitCode" smallint DEFAULT NULL NOT NULL,
-    "userTime" real NOT NULL,
-    "systemTime" real NOT NULL,
-    "maxMemory" integer NOT NULL,
-    runs smallint DEFAULT NULL NOT NULL,
-    mutations smallint DEFAULT NULL NOT NULL
-);
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES IN ('471', '475', '17');
-
-
-ALTER TABLE public.result_php80 OWNER TO postgres;
-
---
 -- Name: version; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -358,56 +312,6 @@ CREATE TABLE public.version (
 ALTER TABLE public.version OWNER TO postgres;
 
 --
--- Name: results_supported; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public.results_supported AS
- SELECT result_php73.input,
-    result_php73.version,
-    result_php73.output,
-    result_php73."exitCode",
-    result_php73."userTime",
-    result_php73."systemTime",
-    result_php73."maxMemory",
-    result_php73.runs,
-    result_php73.mutations
-   FROM public.result_php73
-  WHERE (result_php73.version IN ( SELECT version.id
-           FROM public.version
-          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)))
-UNION ALL
- SELECT result_php74.input,
-    result_php74.version,
-    result_php74.output,
-    result_php74."exitCode",
-    result_php74."userTime",
-    result_php74."systemTime",
-    result_php74."maxMemory",
-    result_php74.runs,
-    result_php74.mutations
-   FROM public.result_php74
-  WHERE (result_php74.version IN ( SELECT version.id
-           FROM public.version
-          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)))
-UNION ALL
- SELECT result_php80.input,
-    result_php80.version,
-    result_php80.output,
-    result_php80."exitCode",
-    result_php80."userTime",
-    result_php80."systemTime",
-    result_php80."maxMemory",
-    result_php80.runs,
-    result_php80.mutations
-   FROM public.result_php80
-  WHERE (result_php80.version IN ( SELECT version.id
-           FROM public.version
-          WHERE ((now() - (version.released)::timestamp with time zone) < '6 mons'::interval)));
-
-
-ALTER TABLE public.results_supported OWNER TO postgres;
-
---
 -- Name: version_forBughunt; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -420,7 +324,7 @@ CREATE VIEW public."version_forBughunt" AS
     version.id,
     version.eol
    FROM public.version
-  WHERE (((now() - (version.released)::timestamp with time zone) < '6 mons'::interval) AND (NOT version."isHelper"));
+  WHERE ((now() - (version.released)::timestamp with time zone) < '2 mons'::interval);
 
 
 ALTER TABLE public."version_forBughunt" OWNER TO postgres;
@@ -430,25 +334,39 @@ ALTER TABLE public."version_forBughunt" OWNER TO postgres;
 --
 
 CREATE MATERIALIZED VIEW public.result_bughunt AS
- SELECT results_supported.input,
-    results_supported.version,
-    results_supported.output,
-    results_supported."exitCode",
-    results_supported."userTime",
-    results_supported."systemTime",
-    results_supported."maxMemory",
-    results_supported.runs,
-    results_supported.mutations
-   FROM public.results_supported
-  WHERE ((results_supported.version IN ( SELECT "version_forBughunt".id
-           FROM public."version_forBughunt")) AND (results_supported.input IN ( SELECT input.id
-           FROM (public.results_supported results_supported_1
-             JOIN public.input ON ((input.id = results_supported_1.input)))
-          WHERE ((NOT input."bughuntIgnore") AND (results_supported_1.version IN ( SELECT "version_forBughunt".id
-                   FROM public."version_forBughunt")))
+ WITH r AS (
+         SELECT result.input,
+            result.version,
+            result.output,
+            result."exitCode",
+            result."userTime",
+            result."systemTime",
+            result."maxMemory",
+            result.runs,
+            result.mutations
+           FROM public.result
+          WHERE (result.version IN ( SELECT "version_forBughunt".id
+                   FROM public."version_forBughunt"))
+        )
+ SELECT r.input,
+    r.version,
+    r.output,
+    r."exitCode",
+    r."userTime",
+    r."systemTime",
+    r."maxMemory",
+    r.runs,
+    r.mutations
+   FROM r
+  WHERE (r.input IN ( SELECT input.id
+           FROM (r r1
+             JOIN public.input ON ((input.id = r1.input)))
+          WHERE (NOT input."bughuntIgnore")
           GROUP BY input.id
-         HAVING (count(DISTINCT results_supported_1.output) > 1))))
+         HAVING (count(DISTINCT r1.output) > 1)))
   WITH NO DATA;
+ALTER TABLE ONLY public.result_bughunt ALTER COLUMN input SET STATISTICS 800;
+ALTER TABLE ONLY public.result_bughunt ALTER COLUMN version SET STATISTICS 800;
 
 
 ALTER TABLE public.result_bughunt OWNER TO postgres;
@@ -468,7 +386,6 @@ CREATE TABLE public.result_helper (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_helper FOR VALUES IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16');
 
 
 ALTER TABLE public.result_helper OWNER TO postgres;
@@ -488,7 +405,6 @@ CREATE TABLE public.result_php4 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php4 FOR VALUES IN ('32', '33', '34', '35', '36', '37', '38', '39', '40', '43', '45', '47', '49', '51', '54', '58', '60', '64', '65', '66', '71', '73');
 
 
 ALTER TABLE public.result_php4 OWNER TO postgres;
@@ -508,7 +424,6 @@ CREATE TABLE public.result_php53 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php53 FOR VALUES IN ('78', '80', '83', '85', '87', '90', '91', '92', '93', '94', '95', '98', '100', '101', '104', '106', '107', '110', '112', '113', '116', '118', '119', '121', '123', '126', '128', '131', '143', '162');
 
 
 ALTER TABLE public.result_php53 OWNER TO postgres;
@@ -528,7 +443,6 @@ CREATE TABLE public.result_php54 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php54 FOR VALUES IN ('96', '97', '99', '102', '103', '105', '108', '109', '111', '114', '115', '117', '120', '122', '124', '125', '127', '130', '133', '135', '138', '140', '141', '145', '146', '149', '151', '153', '155', '157', '158', '161', '163', '168', '172', '175', '177', '181', '183', '186', '190', '194', '197', '205', '212', '372');
 
 
 ALTER TABLE public.result_php54 OWNER TO postgres;
@@ -548,7 +462,6 @@ CREATE TABLE public.result_php55 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php55 FOR VALUES IN ('129', '132', '134', '136', '137', '139', '142', '144', '147', '148', '150', '152', '154', '156', '159', '160', '164', '169', '170', '174', '178', '179', '182', '187', '189', '192', '200', '204', '209', '214', '231', '234', '238', '241', '245', '248', '254', '258', '371');
 
 
 ALTER TABLE public.result_php55 OWNER TO postgres;
@@ -568,7 +481,6 @@ CREATE TABLE public.result_php56 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php56 FOR VALUES IN ('165', '166', '167', '171', '173', '176', '180', '184', '188', '191', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '380', '381', '382', '383', '384', '385', '386', '387', '410', '411');
 
 
 ALTER TABLE public.result_php56 OWNER TO postgres;
@@ -588,7 +500,6 @@ CREATE TABLE public.result_php5x (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php5x FOR VALUES IN ('41', '42', '44', '46', '48', '50', '52', '53', '55', '56', '57', '59', '61', '62', '63', '67', '68', '69', '70', '72', '74', '75', '76', '77', '79', '81', '82', '84', '86', '88', '89');
 
 
 ALTER TABLE public.result_php5x OWNER TO postgres;
@@ -608,7 +519,6 @@ CREATE TABLE public.result_php70 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php70 FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396', '400');
 
 
 ALTER TABLE public.result_php70 OWNER TO postgres;
@@ -628,7 +538,6 @@ CREATE TABLE public.result_php71 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php71 FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '345', '346', '349', '351', '355', '362', '363', '369', '374', '378', '391', '398', '401', '412', '413', '416', '421', '422', '431', '436', '445');
 
 
 ALTER TABLE public.result_php71 OWNER TO postgres;
@@ -648,10 +557,104 @@ CREATE TABLE public.result_php72 (
     runs smallint DEFAULT 1 NOT NULL,
     mutations smallint DEFAULT 0 NOT NULL
 );
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php72 FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420', '426', '430', '435', '440', '444', '449', '453', '456', '459', '462', '467', '468', '474');
 
 
 ALTER TABLE public.result_php72 OWNER TO postgres;
+
+--
+-- Name: result_php73; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php73 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_php73 OWNER TO postgres;
+
+--
+-- Name: result_php74; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php74 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_php74 OWNER TO postgres;
+
+--
+-- Name: result_php80; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php80 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT NULL NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT NULL NOT NULL,
+    mutations smallint DEFAULT NULL NOT NULL
+);
+
+
+ALTER TABLE public.result_php80 OWNER TO postgres;
+
+--
+-- Name: result_php81; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php81 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_php81 OWNER TO postgres;
+
+--
+-- Name: result_rfc; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_rfc (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_rfc OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -807,6 +810,111 @@ ALTER SEQUENCE public.version_id_seq OWNED BY public.version.id;
 
 
 --
+-- Name: result_helper; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_helper FOR VALUES IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16');
+
+
+--
+-- Name: result_php4; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php4 FOR VALUES IN ('32', '33', '34', '35', '36', '37', '38', '39', '40', '43', '45', '47', '49', '51', '54', '58', '60', '64', '65', '66', '71', '73');
+
+
+--
+-- Name: result_php53; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php53 FOR VALUES IN ('78', '80', '83', '85', '87', '90', '91', '92', '93', '94', '95', '98', '100', '101', '104', '106', '107', '110', '112', '113', '116', '118', '119', '121', '123', '126', '128', '131', '143', '162');
+
+
+--
+-- Name: result_php54; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php54 FOR VALUES IN ('96', '97', '99', '102', '103', '105', '108', '109', '111', '114', '115', '117', '120', '122', '124', '125', '127', '130', '133', '135', '138', '140', '141', '145', '146', '149', '151', '153', '155', '157', '158', '161', '163', '168', '172', '175', '177', '181', '183', '186', '190', '194', '197', '205', '212', '372');
+
+
+--
+-- Name: result_php55; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php55 FOR VALUES IN ('129', '132', '134', '136', '137', '139', '142', '144', '147', '148', '150', '152', '154', '156', '159', '160', '164', '169', '170', '174', '178', '179', '182', '187', '189', '192', '200', '204', '209', '214', '231', '234', '238', '241', '245', '248', '254', '258', '371');
+
+
+--
+-- Name: result_php56; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php56 FOR VALUES IN ('165', '166', '167', '171', '173', '176', '180', '184', '188', '191', '193', '198', '203', '210', '216', '221', '225', '230', '233', '239', '242', '244', '247', '253', '259', '263', '268', '272', '276', '282', '285', '380', '381', '382', '383', '384', '385', '386', '387', '410', '411');
+
+
+--
+-- Name: result_php5x; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php5x FOR VALUES IN ('41', '42', '44', '46', '48', '50', '52', '53', '55', '56', '57', '59', '61', '62', '63', '67', '68', '69', '70', '72', '74', '75', '76', '77', '79', '81', '82', '84', '86', '88', '89');
+
+
+--
+-- Name: result_php70; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php70 FOR VALUES IN ('226', '228', '229', '232', '237', '240', '243', '246', '251', '256', '262', '267', '271', '275', '281', '286', '297', '302', '304', '306', '309', '325', '326', '327', '330', '337', '341', '344', '352', '354', '361', '370', '396', '400');
+
+
+--
+-- Name: result_php71; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php71 FOR VALUES IN ('280', '283', '295', '301', '303', '307', '308', '313', '316', '323', '329', '336', '340', '345', '346', '349', '351', '355', '362', '363', '369', '374', '378', '391', '398', '401', '412', '413', '416', '421', '422', '431', '436', '445');
+
+
+--
+-- Name: result_php72; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php72 FOR VALUES IN ('342', '343', '347', '348', '350', '353', '356', '360', '364', '373', '377', '392', '395', '402', '406', '407', '409', '415', '418', '420', '426', '430', '435', '440', '444', '449', '453', '456', '459', '462', '467', '468', '474', '477', '488');
+
+
+--
+-- Name: result_php73; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES IN ('403', '404', '405', '408', '414', '417', '419', '425', '429', '434', '439', '443', '448', '452', '455', '458', '461', '464', '466', '470', '473', '479', '482', '485', '493', '498', '501', '504', '509', '516', '521', '526', '532', '533');
+
+
+--
+-- Name: result_php74; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465', '469', '472', '478', '483', '486', '494', '499', '502', '505', '507', '512', '514', '515', '517', '519', '522', '527', '530', '534', '537', '542', '547', '552');
+
+
+--
+-- Name: result_php80; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES IN ('500', '503', '506', '508', '510', '511', '513', '518', '520', '523', '528', '531', '535', '539', '540', '543', '545', '549', '551', '554');
+
+
+--
+-- Name: result_php81; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553');
+
+
+--
+-- Name: result_rfc; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_rfc FOR VALUES IN ('17', '18');
+
+
+--
 -- Name: input id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -869,11 +977,19 @@ ALTER TABLE ONLY public.function
 
 
 --
--- Name: input input_hash_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: input inputHashes; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.input
-    ADD CONSTRAINT input_hash_key UNIQUE (hash);
+    ADD CONSTRAINT "inputHashes" UNIQUE (hash);
+
+
+--
+-- Name: input inputShorts; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.input
+    ADD CONSTRAINT "inputShorts" UNIQUE (short);
 
 
 --
@@ -884,14 +1000,6 @@ ALTER TABLE ONLY public.input
     ADD CONSTRAINT input_pkey PRIMARY KEY (id);
 
 ALTER TABLE public.input CLUSTER ON input_pkey;
-
-
---
--- Name: input input_short_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.input
-    ADD CONSTRAINT input_short_key UNIQUE (short);
 
 
 --
@@ -918,118 +1026,6 @@ ALTER TABLE ONLY public.output
 
 ALTER TABLE ONLY public.output
     ADD CONSTRAINT output_pkey PRIMARY KEY (id);
-
-
---
--- Name: result resultInputVersion; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result
-    ADD CONSTRAINT "resultInputVersion" UNIQUE (input, version);
-
-
---
--- Name: result_helper result_helper_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_helper
-    ADD CONSTRAINT result_helper_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php4 result_php4_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php4
-    ADD CONSTRAINT result_php4_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php53 result_php53_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php53
-    ADD CONSTRAINT result_php53_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php54 result_php54_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php54
-    ADD CONSTRAINT result_php54_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php55 result_php55_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php55
-    ADD CONSTRAINT result_php55_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php56 result_php56_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php56
-    ADD CONSTRAINT result_php56_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php5x result_php5x_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php5x
-    ADD CONSTRAINT result_php5x_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php70 result_php70_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php70
-    ADD CONSTRAINT result_php70_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php71 result_php71_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php71
-    ADD CONSTRAINT result_php71_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php72 result_php72_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php72
-    ADD CONSTRAINT result_php72_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php73 result_php73_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php73
-    ADD CONSTRAINT result_php73_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php74 result_php74_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php74
-    ADD CONSTRAINT result_php74_input_version_key UNIQUE (input, version);
-
-
---
--- Name: result_php80 result_php80_input_version_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.result_php80
-    ADD CONSTRAINT result_php80_input_version_key UNIQUE (input, version);
 
 
 --
@@ -1104,7 +1100,7 @@ ALTER TABLE public.version CLUSTER ON version_pkey;
 -- Name: functionCallSearch; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "functionCallSearch" ON public."functionCall" USING btree (function, input);
+CREATE INDEX "functionCallSearch" ON public."functionCall" USING btree (function);
 
 
 --
@@ -1115,10 +1111,10 @@ CREATE INDEX "inputAlias" ON public.input USING btree (alias);
 
 
 --
--- Name: input_bhignore; Type: INDEX; Schema: public; Owner: postgres
+-- Name: inputBughuntIgnore; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX input_bhignore ON public.input USING btree ("bughuntIgnore") WHERE (NOT "bughuntIgnore");
+CREATE INDEX "inputBughuntIgnore" ON public.input USING btree ("bughuntIgnore") WHERE (NOT "bughuntIgnore");
 
 
 --
@@ -1129,10 +1125,24 @@ CREATE INDEX "inputsPending" ON public.input USING btree (state) WHERE (NOT (((s
 
 
 --
+-- Name: resultBughuntVersion; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "resultBughuntVersion" ON public.result_bughunt USING btree (version);
+
+
+--
 -- Name: resultExitCode; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "resultExitCode" ON ONLY public.result USING brin ("exitCode");
+
+
+--
+-- Name: resultInput; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "resultInput" ON ONLY public.result USING btree (input);
 
 
 --
@@ -1143,10 +1153,26 @@ CREATE INDEX "result_helper_exitCode_idx" ON public.result_helper USING brin ("e
 
 
 --
+-- Name: result_helper_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_helper_input_idx ON public.result_helper USING btree (input);
+
+
+--
 -- Name: result_php4_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php4_exitCode_idx" ON public.result_php4 USING brin ("exitCode");
+
+
+--
+-- Name: result_php4_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php4_input_idx ON public.result_php4 USING btree (input);
+
+ALTER TABLE public.result_php4 CLUSTER ON result_php4_input_idx;
 
 
 --
@@ -1157,10 +1183,28 @@ CREATE INDEX "result_php53_exitCode_idx" ON public.result_php53 USING brin ("exi
 
 
 --
+-- Name: result_php53_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php53_input_idx ON public.result_php53 USING btree (input);
+
+ALTER TABLE public.result_php53 CLUSTER ON result_php53_input_idx;
+
+
+--
 -- Name: result_php54_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php54_exitCode_idx" ON public.result_php54 USING brin ("exitCode");
+
+
+--
+-- Name: result_php54_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php54_input_idx ON public.result_php54 USING btree (input);
+
+ALTER TABLE public.result_php54 CLUSTER ON result_php54_input_idx;
 
 
 --
@@ -1171,10 +1215,28 @@ CREATE INDEX "result_php55_exitCode_idx" ON public.result_php55 USING brin ("exi
 
 
 --
+-- Name: result_php55_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php55_input_idx ON public.result_php55 USING btree (input);
+
+ALTER TABLE public.result_php55 CLUSTER ON result_php55_input_idx;
+
+
+--
 -- Name: result_php56_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php56_exitCode_idx" ON public.result_php56 USING brin ("exitCode");
+
+
+--
+-- Name: result_php56_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php56_input_idx ON public.result_php56 USING btree (input);
+
+ALTER TABLE public.result_php56 CLUSTER ON result_php56_input_idx;
 
 
 --
@@ -1185,10 +1247,28 @@ CREATE INDEX "result_php5x_exitCode_idx" ON public.result_php5x USING brin ("exi
 
 
 --
+-- Name: result_php5x_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php5x_input_idx ON public.result_php5x USING btree (input);
+
+ALTER TABLE public.result_php5x CLUSTER ON result_php5x_input_idx;
+
+
+--
 -- Name: result_php70_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php70_exitCode_idx" ON public.result_php70 USING brin ("exitCode");
+
+
+--
+-- Name: result_php70_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php70_input_idx ON public.result_php70 USING btree (input);
+
+ALTER TABLE public.result_php70 CLUSTER ON result_php70_input_idx;
 
 
 --
@@ -1199,10 +1279,28 @@ CREATE INDEX "result_php71_exitCode_idx" ON public.result_php71 USING brin ("exi
 
 
 --
+-- Name: result_php71_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php71_input_idx ON public.result_php71 USING btree (input);
+
+ALTER TABLE public.result_php71 CLUSTER ON result_php71_input_idx;
+
+
+--
 -- Name: result_php72_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php72_exitCode_idx" ON public.result_php72 USING brin ("exitCode");
+
+
+--
+-- Name: result_php72_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php72_input_idx ON public.result_php72 USING btree (input);
+
+ALTER TABLE public.result_php72 CLUSTER ON result_php72_input_idx;
 
 
 --
@@ -1213,6 +1311,15 @@ CREATE INDEX "result_php73_exitCode_idx" ON public.result_php73 USING brin ("exi
 
 
 --
+-- Name: result_php73_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php73_input_idx ON public.result_php73 USING btree (input);
+
+ALTER TABLE public.result_php73 CLUSTER ON result_php73_input_idx;
+
+
+--
 -- Name: result_php74_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1220,10 +1327,60 @@ CREATE INDEX "result_php74_exitCode_idx" ON public.result_php74 USING brin ("exi
 
 
 --
+-- Name: result_php74_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php74_input_idx ON public.result_php74 USING btree (input);
+
+ALTER TABLE public.result_php74 CLUSTER ON result_php74_input_idx;
+
+
+--
 -- Name: result_php80_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "result_php80_exitCode_idx" ON public.result_php80 USING brin ("exitCode");
+
+
+--
+-- Name: result_php80_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php80_input_idx ON public.result_php80 USING btree (input);
+
+ALTER TABLE public.result_php80 CLUSTER ON result_php80_input_idx;
+
+
+--
+-- Name: result_php81_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php81_exitCode_idx" ON public.result_php81 USING brin ("exitCode");
+
+
+--
+-- Name: result_php81_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php81_input_idx ON public.result_php81 USING btree (input);
+
+ALTER TABLE public.result_php81 CLUSTER ON result_php81_input_idx;
+
+
+--
+-- Name: result_rfc_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_rfc_exitCode_idx" ON public.result_rfc USING brin ("exitCode");
+
+
+--
+-- Name: result_rfc_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_rfc_input_idx ON public.result_rfc USING btree (input);
+
+ALTER TABLE public.result_rfc CLUSTER ON result_rfc_input_idx;
 
 
 --
@@ -1239,189 +1396,217 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2020-06-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2022-05-01 00:00:00'::timestamp without time zone);
 
 
 --
--- Name: result_helper_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_helper_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_helper_exitCode_idx";
 
 
 --
--- Name: result_helper_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_helper_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_helper_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_helper_input_idx;
 
 
 --
--- Name: result_php4_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php4_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php4_exitCode_idx";
 
 
 --
--- Name: result_php4_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php4_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php4_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php4_input_idx;
 
 
 --
--- Name: result_php53_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php53_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php53_exitCode_idx";
 
 
 --
--- Name: result_php53_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php53_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php53_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php53_input_idx;
 
 
 --
--- Name: result_php54_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php54_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php54_exitCode_idx";
 
 
 --
--- Name: result_php54_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php54_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php54_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php54_input_idx;
 
 
 --
--- Name: result_php55_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php55_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php55_exitCode_idx";
 
 
 --
--- Name: result_php55_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php55_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php55_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php55_input_idx;
 
 
 --
--- Name: result_php56_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php56_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php56_exitCode_idx";
 
 
 --
--- Name: result_php56_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php56_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php56_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php56_input_idx;
 
 
 --
--- Name: result_php5x_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php5x_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php5x_exitCode_idx";
 
 
 --
--- Name: result_php5x_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php5x_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php5x_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php5x_input_idx;
 
 
 --
--- Name: result_php70_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php70_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php70_exitCode_idx";
 
 
 --
--- Name: result_php70_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php70_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php70_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php70_input_idx;
 
 
 --
--- Name: result_php71_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php71_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php71_exitCode_idx";
 
 
 --
--- Name: result_php71_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php71_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php71_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php71_input_idx;
 
 
 --
--- Name: result_php72_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php72_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php72_exitCode_idx";
 
 
 --
--- Name: result_php72_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php72_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php72_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php72_input_idx;
 
 
 --
--- Name: result_php73_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php73_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php73_exitCode_idx";
 
 
 --
--- Name: result_php73_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php73_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php73_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php73_input_idx;
 
 
 --
--- Name: result_php74_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php74_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php74_exitCode_idx";
 
 
 --
--- Name: result_php74_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php74_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php74_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php74_input_idx;
 
 
 --
--- Name: result_php80_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php80_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
 ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php80_exitCode_idx";
 
 
 --
--- Name: result_php80_input_version_key; Type: INDEX ATTACH; Schema: public; Owner: -
+-- Name: result_php80_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER INDEX public."resultInputVersion" ATTACH PARTITION public.result_php80_input_version_key;
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php80_input_idx;
+
+
+--
+-- Name: result_php81_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php81_exitCode_idx";
+
+
+--
+-- Name: result_php81_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php81_input_idx;
+
+
+--
+-- Name: result_rfc_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_rfc_exitCode_idx";
+
+
+--
+-- Name: result_rfc_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_rfc_input_idx;
 
 
 --
@@ -1538,7 +1723,7 @@ ALTER TABLE public.result
 --
 
 ALTER TABLE public.result
-    ADD CONSTRAINT result_version_fkey FOREIGN KEY (version) REFERENCES public.version(id);
+    ADD CONSTRAINT result_version_fkey FOREIGN KEY (version) REFERENCES public.version(id) ON DELETE CASCADE;
 
 
 --
@@ -1778,6 +1963,7 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public."user" TO website;
 --
 
 GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
+
 
 --
 -- PostgreSQL database dump complete
