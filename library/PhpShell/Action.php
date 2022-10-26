@@ -10,6 +10,7 @@ class PhpShell_Action extends Basic_Action
 	public $cspDirectives = [
 		'script-src' => [
 			"'self'",
+			"'wasm-unsafe-eval'", # for live-preview
 			'cdn.jsdelivr.net',
 			'blob:', # required by ace on FF < 58
 		],

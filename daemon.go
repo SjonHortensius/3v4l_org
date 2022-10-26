@@ -599,6 +599,9 @@ func batchScheduleNewVersions() {
 		}
 
 		batch.Wait()
+		if found > 0 {
+			fmt.Printf("batchScheduleNewVersions: %s - completed %d scripts\n", v.name, found)
+		}
 	}
 }
 
@@ -623,6 +626,7 @@ func doWork() {
 		}
 
 		input.prepare(true)
+		sdNotify(fmt.Sprintf("STATUS=executing %s", input.short))
 
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
@@ -640,6 +644,7 @@ func doWork() {
 			}
 		}
 
+		sdNotify(fmt.Sprintf("STATUS=completed %s", input.short))
 		input.complete()
 	}
 }
