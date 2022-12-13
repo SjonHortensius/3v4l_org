@@ -10,6 +10,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		74 => '2021-11-28',
 		80 => '2022-11-26',
 		81 => '2023-11-25',
+		82 => '2024-12-08',
 	];
 
 	const EOL = [
@@ -29,6 +30,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		74 => '2022-11-28',
 		80 => '2023-11-26',
 		81 => '2024-11-25',
+		82 => '2025-12-08',
 	];
 
 	public function run(): void
@@ -148,6 +150,6 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 	protected function _getIdsForMinor(int $major, int $minor): array
 	{
-		return explode(',', trim(Basic::$database->q("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn(), '{}'));
+		return explode(',', trim(Basic::$database->q("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn() ?? '', '{}'));
 	}
 }

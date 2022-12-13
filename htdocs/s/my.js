@@ -130,7 +130,7 @@ var evalOrg = {};
 		}.bind(this));
 
 
-		if (localStorage.getItem("livePreview") === "enable")
+		if (localStorage.getItem("livePreview") !== "disable")
 			$('#livePreview').setAttribute('checked', 'checked');
 
 		$('#livePreview').addEventListener('change', function (e) {
@@ -221,7 +221,7 @@ var evalOrg = {};
 
 		$('#tab').appendChild(object2Dom({
 			dl:{
-				dt: {_text: "Output for php 7.4.0"},
+				dt: {_text: "Output for php 8.1.12"},
 				dd: {
 					div: {
 						id: 'live_preview',
