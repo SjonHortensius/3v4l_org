@@ -63,7 +63,7 @@ class PhpShell_Action extends Basic_Action
 		header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
 		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
-		header("Feature-Policy: geolocation 'none'");
+		header('Permissions-Policy: fullscreen=(), geolocation=()');
 		header('X-Frame-Options: DENY');
 		header('Referrer-Policy: origin-when-cross-origin');
 

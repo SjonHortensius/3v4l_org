@@ -512,6 +512,9 @@ var evalOrg = {};
 
 			option.setAttribute('selected', 'selected');
 			outputHighlightVersion(version)
+
+			// disable live preview when we are focused on another single version
+			$('#livePreview').removeAttribute('checked');
 		}
 	};
 
