@@ -4,13 +4,14 @@ import (
 	"crypto/sha1"
 	"database/sql"
 	"encoding/base64"
+	"flag"
 	"fmt"
 	"github.com/lib/pq"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
-	"net"
 	"runtime"
 	"strconv"
 	"strings"
@@ -650,6 +651,7 @@ func doWork() {
 }
 
 var (
+	dbDsn    string
 	db       *sql.DB
 	batch    SizedWaitGroup
 	batchSnv bool
@@ -666,24 +668,25 @@ var (
 
 const (
 	RLIMIT_NPROC = 0x6
-	DSN          = "user=daemon password=password host=/run/postgresql/ dbname=phpshell sslmode=disable"
 )
 
 func init() {
 	inPath = "/in/"
+	batchThreads := 0
 
-	if len(os.Args) > 1 && os.Args[1] == "--test" {
-		dryRun = true
+	flag.BoolVar(&dryRun, "test", false, "perform a quick sanity check on internal operations")
+	flag.IntVar(&batchThreads, "batch", 0, "perform background batching, specify number of threads")
+	flag.StringVar(&dbDsn, "dsn", "", "DNS for the PostgreSQL backend")
+
+	flag.Parse()
+
+	if dryRun {
 		inPath = "/tmp/"
-	} else if len(os.Args) > 1 && os.Args[1][:8] == "--batch=" {
-		if b, err := strconv.Atoi(os.Args[1][8:]); err != nil {
-			panic("while parsing batch: " + err.Error())
-		} else {
-			batch = newSizedWaitGroup(b)
-		}
+	} else if batchThreads > 0 {
+		batch = newSizedWaitGroup(batchThreads)
 	}
 
-	if c, err := sql.Open("postgres", DSN); err != nil {
+	if c, err := sql.Open("postgres", dbDsn); err != nil {
 		panic("init: failed to connect to db: " + err.Error())
 	} else {
 		db = c
@@ -727,7 +730,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	l := pq.NewListener(DSN, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+	l := pq.NewListener(dbDsn, 1*time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
 			panic("daemon: error creating Listener: " + err.Error())
 		}

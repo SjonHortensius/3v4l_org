@@ -1,0 +1,56 @@
+[Unit]
+Description=php_shell daemon
+After=postgresql.service
+# When pg restarts, the /run/pg directory is recreated - daemon needs restart to find correct (new) socketdir
+Requires=postgresql.service
+OnFailure=fail-notify@%n
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/daemon --dsn='' --batch=1
+MemoryMax=512M
+BlockIOWeight=512
+CPUWeight=512
+Restart=on-failure
+RestartSec=15
+
+#FIXME - empty replace /var/lib/machines/phpShell with as-good-as-empty dir
+RootDirectory=/var/lib/machines/phpShell/
+# use tmpfs for performance and easy size limit
+TemporaryFileSystem=/in:size=5% /tmp:size=5%
+BindPaths=/run/postgresql/
+#FIXME see if recursive rbind option is required
+BindReadOnlyPaths=/srv/http/3v4l.org/bin:/usr/bin:rbind /srv/http/3v4l.org/usr_lib_php:/usr/lib/php:rbind
+
+CapabilityBoundingSet=CAP_SETGID CAP_SETUID CAP_KILL
+NoNewPrivileges=yes
+#CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+#SystemCallFilter=@basic-io @file-system @io-event @memlock @network-io @process @resources @setuid @signal @sync @timer
+
+PrivateDevices=yes
+#PrivateUsers=yes do not enable
+PrivateNetwork=yes
+PrivateTmp=yes
+
+ProtectSystem=strict
+ProtectClock=yes
+ProtectHome=true
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+ProtectHostname=yes
+ProtectControlGroups=yes
+
+DevicePolicy=closed
+ProcSubset=pid
+
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target
