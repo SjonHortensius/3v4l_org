@@ -160,9 +160,7 @@ func (this *Input) complete() {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
 
-	if _, err := db.Exec(`UPDATE input
-		SET penalty = LEAST(penalty + $2, 32767), state = $3
-		WHERE short = $1`, this.short, this.penalty, state); err != nil {
+	if _, err := db.Exec(`UPDATE input SET penalty = LEAST(penalty + $2, 32767), state = $3 WHERE short = $1`, this.short, this.penalty, state); err != nil {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 }
@@ -554,6 +552,7 @@ func batchScheduleNewVersions() {
 		fmt.Printf("batchScheduleNewVersions: %s - searching for missing scripts\n", v.name)
 
 		rs, err := db.Query(`
+			/* batchScheduleNewVersions for `+v.name+` */
 			SELECT id, short, "runArchived", created
 			FROM input
 			LEFT JOIN result ON (version = $1 AND input=id)
