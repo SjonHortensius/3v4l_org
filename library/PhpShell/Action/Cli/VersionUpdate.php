@@ -109,8 +109,8 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 						FROM pg_class base_tb
 						JOIN pg_inherits i ON i.inhparent = base_tb.oid
 						JOIN pg_class pt ON pt.oid = i.inhrelid
-						WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = 'result_php$vMajor$vMinor'
-					")->fetchColumn();
+						WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = ?
+					", ['result_php'.$vMajor.$vMinor])->fetchColumn();
 
 					#FIXME when adding multiple minors don't include previously added version in $expect
 					$expect = "FOR VALUES IN ('". implode("', '", $minorIds) ."')";
@@ -134,7 +134,14 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 		foreach ($json as $name => $data)
 		{
-			[$vMajor, $vMinor, $vRelease] = explode('.', $name);
+			if (!preg_match('/^([0-9]+)\.([0-9]+)\.([0-9]+)$/', $name, $matches))
+			{
+				fprintf(STDERR, "[%s] name cannot be parsed\n", $name);
+				continue;
+			}
+			else
+				[, $vMajor, $vMinor, $vRelease] = $matches;
+
 			$newer = implode('.', [$vMajor, $vMinor, $vRelease+1]);
 			if (!isset($json->$newer) && file_exists(APPLICATION_PATH .'/bin/php-'. $newer) && !in_array($newer, ['5.2.7']))
 				yield $newer => date('Y-m-d', strtotime('tomorrow'));
@@ -150,6 +157,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 
 	protected function _getIdsForMinor(int $major, int $minor): array
 	{
-		return explode(',', trim(Basic::$database->q("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE '$major.$minor.%';")->fetchColumn() ?? '', '{}'));
+		return explode(',', trim(Basic::$database->q("SELECT ARRAY_AGG(id) FROM version WHERE name LIKE ?", ["$major.$minor.%"])->fetchColumn() ?? '', '{}'));
+
 	}
 }

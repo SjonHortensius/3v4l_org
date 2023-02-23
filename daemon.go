@@ -552,7 +552,6 @@ func batchScheduleNewVersions() {
 		fmt.Printf("batchScheduleNewVersions: %s - searching for missing scripts\n", v.name)
 
 		rs, err := db.Query(`
-			/* batchScheduleNewVersions for `+v.name+` */
 			SELECT id, short, "runArchived", created
 			FROM input
 			LEFT JOIN result ON (version = $1 AND input=id)
