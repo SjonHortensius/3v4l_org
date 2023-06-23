@@ -22,7 +22,7 @@ BindPaths=/run/postgresql/
 #FIXME see if recursive rbind option is required
 BindReadOnlyPaths=/srv/http/3v4l.org/bin:/usr/bin:rbind /srv/http/3v4l.org/usr_lib_php:/usr/lib/php:rbind
 
-CapabilityBoundingSet=CAP_SETGID CAP_SETUID CAP_KILL
+CapabilityBoundingSet=CAP_SETGID CAP_SETUID CAP_KILL CAP_FOWNER
 NoNewPrivileges=yes
 #CapabilityBoundingSet=
 SystemCallArchitectures=native

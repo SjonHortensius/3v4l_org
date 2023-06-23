@@ -395,8 +395,6 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		}
 
 		procOut <- string(output)
-
-		os.RemoveAll("/tmp/")
 	}(cmd, cmdR)
 
 	// We want ProcessState after successful exit too
@@ -434,7 +432,35 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 	// Required to close stdout/err descriptors
 	cmd.Wait()
 
+	if err := cleanTmpDirectory(); err != nil {
+		fmt.Fprintf(os.Stderr, "cleanTmpDirectory - %s\n", err)
+	}
+
 	return newResult(this, v, output, state)
+}
+
+func cleanTmpDirectory() error {
+	d, err := os.Open("/tmp")
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	l, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range l {
+		// we have CAP_FOWNER - use it to give the script runner write access
+		os.Chmod("/tmp/"+ n, 0007)
+
+		if err = os.RemoveAll("/tmp/"+ n); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func refreshVersions() {
