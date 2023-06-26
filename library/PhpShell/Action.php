@@ -32,12 +32,12 @@ class PhpShell_Action extends Basic_Action
 	];
 	public $httpPreloads = [];
 	public $aceScripts = [
-		// curl URL | openssl dgst -sha384 -binary | openssl base64 -A
-		'ace'				=> 'hrjkfJF+wiarMlNc/Nqv8RItRca1TOp8FBggbKsUJfRaKgioqs8qgKw6PIPMIpMV',
-		'ext-language_tools'=> 'ekAdgyeUwbzV1dQD5bw4YmjEcT3gPjuMQxr7LHj97tDXgH7pSVJu94xhdk41dm0o',
-		'mode-php'			=> 'StpQu3neqdlAzrsRTrSGF0uK2jacPlkEooevUU6xMvI06o2rrdxt2GXheKpPQ117',
-		'theme-chrome'		=> 'TMSA2R4Dwlyv981WAb6YKZhpVnbp2hb6SRZzwPFsWAG6Ejp8P1vsnMVRsf0/q6u2',
-		'theme-chaos'		=> 'yIFFODljZieTIYGxaProehZYpFE67Z3ax7l0b9iglUEgHK7/WxLrrsT6kjzTWTtm',
+		// curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+		'ace'				=> '/HiYf7uts/FC/PC50yfG3bXnxyMdlMFQpgaXPNOqiTJkQIbiBeth3J86SYJowDdK',
+		'ext-language_tools'=> 'pjdIm81c7GuHpSIwd3CpO3BgZx2B+hNtSvqcFnk7DCwPdEmf0xBCZX5i7jMj/ib6',
+		'mode-php'			=> 'EO1oIq3Wru7Pa4jrHft9hrjz2SKGcYx1J/BteienRTZbIRvIWRADNyaNMCV4AmNN',
+		'theme-chrome'		=> 'uOlVPZfQXFZofTCU/B1H8M3c6hww7F3VOufsGRLzlK4l9blvVqfJeONjYJM5+tnb',
+		'theme-chaos'		=> 'mfoITkRp/u4qWConw/ovtCjvymPkNZiOj9csanbxBv8rdPa/v7wiZdnwF8i+M3UE',
 	];
 
 	public function init(): void

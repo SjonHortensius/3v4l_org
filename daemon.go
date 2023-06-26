@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"github.com/lib/pq"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -440,6 +442,19 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 }
 
 func cleanTmpDirectory() error {
+	filepath.WalkDir("/tmp", func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if len(p) > 5 {
+			// we have CAP_FOWNER - use it to give the script runner write access
+			os.Chmod(p, 0007)
+		}
+
+		return nil
+	})
+
 	d, err := os.Open("/tmp")
 	if err != nil {
 		return err
@@ -452,9 +467,6 @@ func cleanTmpDirectory() error {
 	}
 
 	for _, n := range l {
-		// we have CAP_FOWNER - use it to give the script runner write access
-		os.Chmod("/tmp/"+ n, 0007)
-
 		if err = os.RemoveAll("/tmp/"+ n); err != nil {
 			return err
 		}
