@@ -94,8 +94,16 @@ class PhpShell_Action_Script extends PhpShell_Action
 		// Rerun caching logic now that we have input.lastModified
 		$this->_handleLastModified();
 
-		if (Basic::$config->PRODUCTION_MODE && (!isset($this->input->operationCount) || mt_rand(0,9)<1) && count($this->input->getResult(PhpShell_Version::byName('vld'))) > 0)
-			$this->input->updateFunctionCalls();
+		try
+		{
+			// Retrieve the VLD so we update the operationCount
+			if (Basic::$config->PRODUCTION_MODE && !isset($this->input->operationCount))
+				$this->input->getVld();
+		}
+		catch (Basic_EntitySet_NoSingleResultException $e)
+		{
+			//ignore
+		}
 
 		$this->notifyTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), false);
 
@@ -107,12 +115,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		$output = ['main' => [], 'rfc' => []];
 		foreach ($outputPerMajor as $outputId => $majors)
 		{
-			if (in_array('vld', $majors))
-			{
-				$this->showTab['vld'] = true;
-				unset($outputPerMajor[$outputId]);
-			}
-			elseif (in_array('rfc', $majors) || in_array('git', $majors))
+			if (in_array('rfc', $majors) || in_array('git', $majors))
 			{
 				$this->showTab['rfc'] = true;
 				$output['rfc'] []= $outputId;
@@ -124,6 +127,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (count($outputPerMajor) > 1 && count(array_diff($output['rfc'], $output['main'])) > 1)
 			$this->notifyTab['rfc'] = true;
 
+		$this->showTab['vld'] = isset($this->input->operationCount);
 		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 
 		if (false === $this->showTab[ Basic::$userinput['tab'] ])

@@ -1,3 +1,6 @@
-<pre>{print $this->input->getVld()->getHtml();}</pre>
+{!-- this setup ensures proper encoding --}
+{$this->vld = $this->input->getVld();}
+
+<pre>{vld}</pre>
 
 <p>Generated using <a href="http://derickrethans.nl/projects.html#vld">Vulcan Logic Dumper</a>, using php 8.0.0</p>

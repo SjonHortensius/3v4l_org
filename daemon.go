@@ -526,6 +526,11 @@ func checkPendingInputs() {
 		input.prepare(true)
 
 		for _, v := range versions {
+			// Helpers are only executed on demand
+			if v.isHelper {
+				continue
+			}
+
 			if input.runArchived || v.eol.After(input.created) {
 				input.execute(v, l)
 			}
@@ -666,6 +671,11 @@ func doWork() {
 		sdNotify(fmt.Sprintf("STATUS=executing %s", input.short))
 
 		for _, v := range versions {
+			// Helpers are only executed on demand
+			if v.isHelper && version.String != v.name {
+				continue
+			}
+
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
 				input.execute(v, rMax)
 			}

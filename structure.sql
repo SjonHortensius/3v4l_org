@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 14.3
--- Dumped by pg_dump version 14.3
+-- Dumped from database version 15.4
+-- Dumped by pg_dump version 15.4
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,6 +16,15 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO postgres;
 
 --
 -- Name: pg_repack; Type: EXTENSION; Schema: -; Owner: -
@@ -638,6 +647,25 @@ CREATE TABLE public.result_php81 (
 ALTER TABLE public.result_php81 OWNER TO postgres;
 
 --
+-- Name: result_php82; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php82 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_php82 OWNER TO postgres;
+
+--
 -- Name: result_rfc; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -890,21 +918,28 @@ ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php73 FOR VALUES I
 -- Name: result_php74; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465', '469', '472', '478', '483', '486', '494', '499', '502', '505', '507', '512', '514', '515', '517', '519', '522', '527', '530', '534', '537', '542', '547', '552');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php74 FOR VALUES IN ('450', '451', '454', '457', '460', '463', '465', '469', '472', '478', '483', '486', '494', '499', '502', '505', '507', '512', '514', '515', '517', '519', '522', '527', '530', '534', '537', '542', '547', '552', '567', '570');
 
 
 --
 -- Name: result_php80; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES IN ('500', '503', '506', '508', '510', '511', '513', '518', '520', '523', '528', '531', '535', '539', '540', '543', '545', '549', '551', '554');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES IN ('500', '503', '506', '508', '510', '511', '513', '518', '520', '523', '528', '531', '535', '539', '540', '543', '545', '549', '551', '554', '556', '558', '560', '563', '569', '572', '580', '586', '595', '600');
 
 
 --
 -- Name: result_php81; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553', '555', '557', '559', '562', '568', '571', '581', '583', '585', '588', '590', '592', '594', '597', '599', '602', '603');
+
+
+--
+-- Name: result_php82; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php82 FOR VALUES IN ('578', '579', '582', '584', '587', '589', '591', '593', '596', '598', '601', '604');
 
 
 --
@@ -1368,6 +1403,20 @@ ALTER TABLE public.result_php81 CLUSTER ON result_php81_input_idx;
 
 
 --
+-- Name: result_php82_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php82_exitCode_idx" ON public.result_php82 USING brin ("exitCode");
+
+
+--
+-- Name: result_php82_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php82_input_idx ON public.result_php82 USING btree (input);
+
+
+--
 -- Name: result_rfc_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1396,7 +1445,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2022-05-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2023-09-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1596,6 +1645,20 @@ ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php81_input_idx;
 
 
 --
+-- Name: result_php82_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php82_exitCode_idx";
+
+
+--
+-- Name: result_php82_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php82_input_idx;
+
+
+--
 -- Name: result_rfc_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -1659,7 +1722,7 @@ ALTER TABLE ONLY public."functionCall"
 --
 
 ALTER TABLE ONLY public."functionCall"
-    ADD CONSTRAINT "functionCall_input_fkey" FOREIGN KEY (input) REFERENCES public.input(id);
+    ADD CONSTRAINT "functionCall_input_fkey" FOREIGN KEY (input) REFERENCES public.input(id) ON DELETE CASCADE;
 
 
 --
@@ -1764,14 +1827,6 @@ ALTER TABLE ONLY public.tx_out
 
 ALTER TABLE ONLY public.tx_out
     ADD CONSTRAINT tx_out_user_fkey FOREIGN KEY ("user") REFERENCES public."user"(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
-
-
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
---
-
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO PUBLIC;
 
 
 --
@@ -1896,7 +1951,7 @@ GRANT SELECT,USAGE ON SEQUENCE public.references_id_seq TO website;
 -- Name: TABLE result; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT ON TABLE public.result TO website;
+GRANT SELECT,DELETE ON TABLE public.result TO website;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.result TO daemon;
 
 

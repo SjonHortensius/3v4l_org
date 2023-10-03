@@ -1,4 +1,4 @@
-{$r = $this->input->getVld();}
-{$this->vld = $r->output->getRaw($this->input, $r->version);}
+{!-- this setup ensures proper encoding --}
+{$this->vld = $this->input->getVld();}
 
 "output": {vld}

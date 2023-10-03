@@ -78,19 +78,9 @@ class PhpShell_Input extends PhpShell_Entity
 		return $input;
 	}
 
-	public function updateFunctionCalls(callable $onMissingFunction = null): void
+	protected function _updateFunctionCalls(string $vld)
 	{
-		try
-		{
-			$vld = $this->getVld();
-		}
-		catch (Basic_EntitySet_NoSingleResultException $e)
-		{
-			return;
-		}
-
-		preg_match_all(self::VLD_MATCH, $vld->output->getRaw($this, $vld->version), $operations, PREG_SET_ORDER);
-		$vld->output->removeCached();
+		preg_match_all(self::VLD_MATCH, $vld, $operations, PREG_SET_ORDER);
 
 		// Parse vld first, then update db accordingly
 		$calls = [];
@@ -117,9 +107,6 @@ class PhpShell_Input extends PhpShell_Entity
 			}
 			catch (Basic_EntitySet_NoSingleResultException $e)
 			{
-				if (is_callable($onMissingFunction))
-					$onMissingFunction($this, $function);
-
 				continue;
 			}
 
@@ -160,6 +147,13 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->waitUntilNoLonger('new');
 
 		usleep(100 * 1000);
+	}
+
+	// intended for 'internal' triggers, such as helpers that produce large output we don't want to store
+	protected function _triggerSilent(PhpShell_Version $version = null): void
+	{
+		Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$this->short, $version?->name]);
+		$this->waitUntilNoLonger('busy');
 	}
 
 	public function waitUntilNoLonger($state): void
@@ -309,9 +303,16 @@ class PhpShell_Input extends PhpShell_Entity
 			->getSubset("version = ?", [$version]);
 	}
 
-	public function getVld(): PhpShell_Result
+	// This is a special case, vld output is not stored so we trigger the run, return the result and delete it immediately
+	public function getVld(): string
 	{
-		return $this->getResult(PhpShell_Version::byName('vld'))->getSingle();
+		$this->_triggerSilent(PhpShell_Version::byName('vld'));
+		$result = $this->getResult(PhpShell_Version::byName('vld'))->getSingle();
+		$output = $result->output->getRaw($this, $result->version);
+		$this->_updateFunctionCalls($output);
+		$result->delete();
+
+		return $output;
 	}
 
 	public function getCreatedUtc($format = 'Y-m-d\TH:i:s\Z'): string
