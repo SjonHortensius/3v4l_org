@@ -18,16 +18,25 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 	{
 		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" ISNULL" : "true";
 
-		Basic::$database->beginTransaction();
-		$set = PhpShell_Input::find($filter, [], ['id' => true]);
-		$set->prepareCursor();
+		// cursor must run in tx - but the vld queue insert must run outside of that
+		$dbh = new Basic_Database;
+		$dbh->beginTransaction();
+		$dbh->q("DECLARE inputCursor CURSOR FOR SELECT * FROM input WHERE {$filter} ORDER BY id DESC");
 
-		printf(" ** starting with %.3f K functionCalls (mode: %s) %.3f K inputs **\n", PhpShell_FunctionCall::find()->count()/1000, Basic::$userinput['type'], $set->count()/1000);
+		printf(" ** starting with %.3f K functionCalls (mode: %s) %.3f K inputs **\n", count(PhpShell_FunctionCall::find())/1000, Basic::$userinput['type'], count(PhpShell_Input::find($filter))/1000);
 
 		$found = 0;
-		/** @var $input PhpShell_Input */
-		foreach ($set->fetchNext() as $input)
+		do
 		{
+			$result = $dbh->q("FETCH NEXT FROM inputCursor");
+			$result->setFetchMode(PDO::FETCH_CLASS, PhpShell_Input::class);
+
+			/** @var $input PhpShell_Input */
+			$input = $result->fetch();
+
+			if (!$input)
+				break;
+
 			$found++;
 
 			try
@@ -45,15 +54,8 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			elseif (0 == $found%2500)
 				print '.';
 		}
+		while (true);
 
-		Basic::$database->commit();
-
-		printf("\n** completed with %.3f K functionCalls **\n", PhpShell_FunctionCall::find()->count()/1000);
-
-		self::$unknownFunctions = array_filter(self::$unknownFunctions, function($v){ return $v>50; });
-
-		#highest at the end in case we run in screen - we don't see the top
-		asort(self::$unknownFunctions);
-		print serialize(self::$unknownFunctions);
+		printf("\n** completed with %.3f K functionCalls | %.3f K inputs **\n", count(PhpShell_FunctionCall::find())/1000, count(PhpShell_Input::find($filter))/1000);
 	}
 }
