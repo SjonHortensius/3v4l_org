@@ -47,7 +47,7 @@ var evalOrg = {};
 		});
 
 		if ($('h2.exception'))
-			document.body.setAttribute('class', 'error');
+			document.body.classList.add('error');
 
 		document.body.classList.forEach(function (c) {
 			if ('function' == typeof this['handle' + c.ucFirst()])

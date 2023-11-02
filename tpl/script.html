@@ -5,9 +5,9 @@
 
 <div itemscope itemtype="http://schema.org/Article">
 	{if (isset($this->input->title))}
-		<meta property="og:title" itemprop="name" content="{input->title} - created on 3v4l.org">
+		<meta property="og:title" content="{input->title} - created on 3v4l.org">
 	{:}
-		<meta property="og:title" itemprop="name" content="{input->short} - created on 3v4l.org">
+		<meta property="og:title" content="{input->short} - created on 3v4l.org">
 	{/}
 
 	{$formAction = new PhpShell_Action_New;}
