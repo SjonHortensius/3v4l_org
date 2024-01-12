@@ -49,11 +49,11 @@
 		<g>
 			{$y = 77;}
 			{foreach (range(0, $ySlots) as $i)}
-				<rect x="35" y="{print $y + $i*$yHeight;}" width="400" height="1" fill="#cccccc"></rect>
+				<rect x="30" y="{print $y + $i*$yHeight;}" width="400" height="1" fill="#cccccc"></rect>
 			{/}
 
 			{!-- border-bottom: black --}
-			<rect x="35" y="323" width="400" height="1" fill="#333333"></rect>
+			<rect x="30" y="323" width="400" height="1" fill="#333333"></rect>
 		</g>
 
 		<g>
@@ -61,10 +61,11 @@
 			{foreach ($this->hitsPerYear as $year => $data)}
 				{!-- bars--}
 				{$y = 323;}
-				{foreach (array_reverse($data) as $type => $hits)}
+				{foreach (['submits', 'hits', 'bots'] as $type)}
+					{$hits = $data[$type];}
 					{$n = round($hits / 1E6 * $pixPerM);}
 					{$y -= $n;}
-					<rect x="{print 40 + $i*$xWidth;}" y="{y}" width="35" height="{n}" fill="{colors[$type]}"><title>{print number_format($hits, 0, '', ' ');}</title></rect>
+					<rect x="{print 40 + $i*$xWidth;}" y="{y}" width="30" height="{n}" fill="{colors[$type]}"><title>{print number_format($hits, 0, '', ' ');}</title></rect>
 				{/}
 
 				{$i++;}
