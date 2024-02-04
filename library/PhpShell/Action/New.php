@@ -66,6 +66,9 @@ class PhpShell_Action_New extends PhpShell_Action
 
 		foreach ($o as &$l)
 		{
+			if (!array_filter($l, 'is_numeric'))
+				continue;
+
 			if (array_sum($l) == array_sum(array_keys($l)))
 				$l = max($l);
 		}
