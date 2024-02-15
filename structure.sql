@@ -3,8 +3,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.4
--- Dumped by pg_dump version 15.4
+-- Dumped from database version 16.1
+-- Dumped by pg_dump version 16.1
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -34,7 +34,7 @@ CREATE EXTENSION IF NOT EXISTS pg_repack WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner:
+-- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner: 
 --
 
 COMMENT ON EXTENSION pg_repack IS 'Reorganize tables in PostgreSQL databases with minimal locks';
@@ -48,7 +48,7 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner:
+-- Name: EXTENSION pg_stat_statements; Type: COMMENT; Schema: -; Owner: 
 --
 
 COMMENT ON EXTENSION pg_stat_statements IS 'track execution statistics of all SQL statements executed';
@@ -110,7 +110,7 @@ CREATE SEQUENCE public.function_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.function_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.function_id_seq OWNER TO postgres;
 
 --
 -- Name: function; Type: TABLE; Schema: public; Owner: postgres
@@ -199,7 +199,7 @@ CREATE SEQUENCE public.input_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.input_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.input_id_seq OWNER TO postgres;
 
 --
 -- Name: input_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -245,7 +245,7 @@ CREATE SEQUENCE public.output_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.output_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.output_id_seq OWNER TO postgres;
 
 --
 -- Name: output_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -281,7 +281,7 @@ CREATE SEQUENCE public.references_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.references_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.references_id_seq OWNER TO postgres;
 
 --
 -- Name: result; Type: TABLE; Schema: public; Owner: postgres
@@ -325,18 +325,18 @@ ALTER TABLE public.version OWNER TO postgres;
 --
 
 CREATE VIEW public."version_forBughunt" AS
- SELECT version.name,
-    version.released,
-    version."order",
-    version.command,
-    version."isHelper",
-    version.id,
-    version.eol
+ SELECT name,
+    released,
+    "order",
+    command,
+    "isHelper",
+    id,
+    eol
    FROM public.version
-  WHERE ((now() - (version.released)::timestamp with time zone) < '2 mons'::interval);
+  WHERE ((now() - (released)::timestamp with time zone) < '2 mons'::interval);
 
 
-ALTER TABLE public."version_forBughunt" OWNER TO postgres;
+ALTER VIEW public."version_forBughunt" OWNER TO postgres;
 
 --
 -- Name: result_bughunt; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
@@ -357,17 +357,17 @@ CREATE MATERIALIZED VIEW public.result_bughunt AS
           WHERE (result.version IN ( SELECT "version_forBughunt".id
                    FROM public."version_forBughunt"))
         )
- SELECT r.input,
-    r.version,
-    r.output,
-    r."exitCode",
-    r."userTime",
-    r."systemTime",
-    r."maxMemory",
-    r.runs,
-    r.mutations
+ SELECT input,
+    version,
+    output,
+    "exitCode",
+    "userTime",
+    "systemTime",
+    "maxMemory",
+    runs,
+    mutations
    FROM r
-  WHERE (r.input IN ( SELECT input.id
+  WHERE (input IN ( SELECT input.id
            FROM (r r1
              JOIN public.input ON ((input.id = r1.input)))
           WHERE (NOT input."bughuntIgnore")
@@ -378,7 +378,7 @@ ALTER TABLE ONLY public.result_bughunt ALTER COLUMN input SET STATISTICS 800;
 ALTER TABLE ONLY public.result_bughunt ALTER COLUMN version SET STATISTICS 800;
 
 
-ALTER TABLE public.result_bughunt OWNER TO postgres;
+ALTER MATERIALIZED VIEW public.result_bughunt OWNER TO postgres;
 
 --
 -- Name: result_helper; Type: TABLE; Schema: public; Owner: postgres
@@ -666,6 +666,25 @@ CREATE TABLE public.result_php82 (
 ALTER TABLE public.result_php82 OWNER TO postgres;
 
 --
+-- Name: result_php83; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.result_php83 (
+    input integer NOT NULL,
+    version smallint NOT NULL,
+    output integer NOT NULL,
+    "exitCode" smallint DEFAULT 0 NOT NULL,
+    "userTime" real NOT NULL,
+    "systemTime" real NOT NULL,
+    "maxMemory" integer NOT NULL,
+    runs smallint DEFAULT 1 NOT NULL,
+    mutations smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.result_php83 OWNER TO postgres;
+
+--
 -- Name: result_rfc; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -762,7 +781,7 @@ CREATE SEQUENCE public.tx_product_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.tx_product_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.tx_product_id_seq OWNER TO postgres;
 
 --
 -- Name: tx_product; Type: TABLE; Schema: public; Owner: postgres
@@ -807,7 +826,7 @@ CREATE SEQUENCE public.user_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.user_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.user_id_seq OWNER TO postgres;
 
 --
 -- Name: user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -828,7 +847,7 @@ CREATE SEQUENCE public.version_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.version_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.version_id_seq OWNER TO postgres;
 
 --
 -- Name: version_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
@@ -932,14 +951,21 @@ ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES I
 -- Name: result_php81; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553', '555', '557', '559', '562', '568', '571', '581', '583', '585', '588', '590', '592', '594', '597', '599', '602', '603');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553', '555', '557', '559', '562', '568', '571', '581', '583', '585', '588', '590', '592', '594', '597', '599', '602', '603', '605', '608', '610');
 
 
 --
 -- Name: result_php82; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php82 FOR VALUES IN ('578', '579', '582', '584', '587', '589', '591', '593', '596', '598', '601', '604');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php82 FOR VALUES IN ('578', '579', '582', '584', '587', '589', '591', '593', '596', '598', '601', '604', '606', '607', '612', '614', '616');
+
+
+--
+-- Name: result_php83; Type: TABLE ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php83 FOR VALUES IN ('609', '611', '613', '615');
 
 
 --
@@ -1417,6 +1443,20 @@ CREATE INDEX result_php82_input_idx ON public.result_php82 USING btree (input);
 
 
 --
+-- Name: result_php83_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "result_php83_exitCode_idx" ON public.result_php83 USING brin ("exitCode");
+
+
+--
+-- Name: result_php83_input_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX result_php83_input_idx ON public.result_php83 USING btree (input);
+
+
+--
 -- Name: result_rfc_exitCode_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1445,7 +1485,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2023-09-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2024-01-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1659,6 +1699,20 @@ ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php82_input_idx;
 
 
 --
+-- Name: result_php83_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultExitCode" ATTACH PARTITION public."result_php83_exitCode_idx";
+
+
+--
+-- Name: result_php83_input_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
+--
+
+ALTER INDEX public."resultInput" ATTACH PARTITION public.result_php83_input_idx;
+
+
+--
 -- Name: result_rfc_exitCode_idx; Type: INDEX ATTACH; Schema: public; Owner: postgres
 --
 
@@ -1707,6 +1761,14 @@ ALTER TABLE ONLY public.assertion
 
 ALTER TABLE ONLY public.assertion
     ADD CONSTRAINT assertion_user_fkey FOREIGN KEY ("user") REFERENCES public."user"(id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
+-- Name: input_src fk_input_src_input; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.input_src
+    ADD CONSTRAINT fk_input_src_input FOREIGN KEY (input) REFERENCES public.input(id);
 
 
 --
