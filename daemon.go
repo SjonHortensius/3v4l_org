@@ -279,6 +279,7 @@ func (this *Result) store() {
 		mutated := 0
 
 		if old.output.id != this.output.id || old.exitCode != this.exitCode {
+//			fmt.Printf("Result: mutating result for input=%s,version=%s from output=%d,exitCode=%d to output=%d,exitCode=%d\n", this.input.short, this.version.name, old.output.id,old.exitCode, this.output.id,this.exitCode)
 			mutated = 1
 		}
 
