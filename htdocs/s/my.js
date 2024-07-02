@@ -271,7 +271,8 @@ var evalOrg = {};
 		else
 			$('textarea[name=code]').value = e.data;
 
-		this.livePreviewCreate();
+		if (window.location.hash == '#live')
+			this.livePreviewCreate();
 
 		// notify caller about script state
 		var state;
