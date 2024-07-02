@@ -211,9 +211,9 @@ class PhpShell_Input extends PhpShell_Entity
 			{
 				// Close previous slot
 				if (isset($slot['max']))
-					array_push($slot['versions'], $slot['min'] .' - '. $abbrMax($slot['max']));
+					$slot['versions'][] = $slot['min'] . ' - ' . $abbrMax($slot['max']);
 				elseif (isset($slot['min']))
-					array_push($slot['versions'], $slot['min']);
+					$slot['versions'][] = $slot['min'];
 
 				$slot['min'] = $name;
 				unset($slot['max']);

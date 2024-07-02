@@ -584,6 +584,11 @@ body:not(.script) input#title
 	width: 98.6%;
 }
 
+body.embedded input#title
+{
+	display: none;
+}
+
 body.index time
 {
 	font-style: italic;

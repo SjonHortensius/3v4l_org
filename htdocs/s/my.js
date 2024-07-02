@@ -36,7 +36,8 @@ var evalOrg = {};
 
 	this.initialize = function()
 	{
-		window.addEventListener('error', this.postError)
+		window.addEventListener('error', this.postError);
+		window.addEventListener('message', this.externalMessage.bind(this));
 
 		this.applyPrefs();
 		this.enableFocus();
@@ -257,6 +258,34 @@ var evalOrg = {};
 		$('#tabs').classList.add('busy');
 
 		window.fs_import_file('preview', buf_addr, buf_len);
+	};
+
+	// this method processes untrusted events from external domains
+	this.externalMessage = function(e)
+	{
+		document.body.classList.add('embedded');
+
+		// we might run before ace is initialized
+		if (this.editor)
+			this.editor.setValue(e.data);
+		else
+			$('textarea[name=code]').value = e.data;
+
+		this.livePreviewCreate();
+
+		// notify caller about script state
+		var state;
+
+		setInterval(function(){
+			var newState = $('#tabs').classList.contains('busy') ? 'busy' : 'done';
+
+			if (newState == state)
+				return;
+
+			e.source.postMessage(newState, e.origin);
+
+			state = newState
+		}, 100);
 	};
 
 	var outputClearTabs = function()

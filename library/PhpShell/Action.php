@@ -15,7 +15,7 @@ class PhpShell_Action extends Basic_Action
 			'blob:', # required by ace on FF < 58
 		],
 		'manifest-src' => ["'self'"],
-		'frame-ancestors' => ["'none'"],
+		'frame-ancestors' => ["https://www.php.net"],
 		'worker-src' => [ # valid sources for web-workers
 			"'self'",
 			'cdn.jsdelivr.net',
@@ -64,7 +64,6 @@ class PhpShell_Action extends Basic_Action
 		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
 		header('Permissions-Policy: fullscreen=(), geolocation=()');
-		header('X-Frame-Options: DENY');
 		header('Referrer-Policy: origin-when-cross-origin');
 
 		// https://bugs.chromium.org/p/chromium/issues/detail?id=686369
