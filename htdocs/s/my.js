@@ -90,8 +90,11 @@ var evalOrg = {};
 		if (e.message === 'Uncaught ')
 			return;
 
+		if (e.filename == 'https://3v4l.org/live/x86emu-wasm.js')
+			return;
+
 		var xhr = new XMLHttpRequest();
-		xhr.open('post', '/javascript-error/' + encodeURIComponent(e.message));
+		xhr.open('post', '/javascript-error/' + encodeURIComponent(e.filename) +':'+ encodeURIComponent(e.lineno) +':'+ encodeURIComponent(e.colno) +"/"+ encodeURIComponent(e.message));
 		xhr.send();
 	};
 
@@ -263,6 +266,10 @@ var evalOrg = {};
 	// this method processes untrusted events from external domains
 	this.externalMessage = function(e)
 	{
+		// chromE - https://github.com/SjonHortensius/3v4l_org/issues/12
+		if (typeof e.data != 'string' || e.data.substring(0, 2) != '<?')
+			return;
+
 		document.body.classList.add('embedded');
 
 		// we might run before ace is initialized
