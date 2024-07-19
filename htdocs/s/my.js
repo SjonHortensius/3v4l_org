@@ -32,7 +32,7 @@ var evalOrg = {};
 		refreshCount = 0,
 		perfAggregates = undefined;
 	this.editor = undefined;
-	this.livePush = undefined;
+	this.php = undefined;
 
 	this.initialize = function()
 	{
@@ -60,21 +60,6 @@ var evalOrg = {};
 				el.remove();
 			});
 		});
-	};
-
-	var loadScript = function(url, f)
-	{
-		var s = document.createElement('script');
-		s.setAttribute('src', url);
-
-		s.onload = function () {
-			if ('function' == typeof f)
-				f();
-
-			document.head.removeChild(this)
-		}.bind(s);
-
-		document.head.appendChild(s);
 	};
 
 	this.postError = function(e) {
@@ -197,14 +182,9 @@ var evalOrg = {};
 				$('input[type=submit]').removeAttribute('disabled');
 
 			if ($('#live_preview'))
-			{
-				if ('number' == typeof this.livePush)
-					clearInterval(this.livePush);
-
-				return this.livePush = setTimeout(this.livePreviewPush.bind(this), 500);
-			}
-
-			if ($('#livePreview').checked)
+				this.livePreviewRun()
+					.then( exitCode => this.livePreviewDone(exitCode) );
+			else if ($('#livePreview').checked)
 				this.livePreviewCreate();
 		}.bind(this));
 	};
@@ -225,42 +205,73 @@ var evalOrg = {};
 
 		$('#tab').appendChild(object2Dom({
 			dl:{
-				dt: {_text: "Output for php 8.1.12"},
+				dt: {_text: "Output for php 8.2.11"},
 				dd: {
 					div: {
-						id: 'live_preview',
-						'data-cfg': $('base').getAttribute('href')+'live/x86.cfg',
+						id: 'live_preview'
 		}	}	}	}));
 
-		_launchVm('init=/sbin/preview');
+		window.liveTiming = new Date().getTime();
 
-		// every 250ms, check if _malloc is defined (vm running) so we can push
-		var check = setInterval(function(){
-			if ('undefined' == typeof _malloc)
-				return;
+		import('https://cdn.jsdelivr.net/npm/php-wasm/PhpWeb.mjs')
+			.then( imported => this.livePreviewInit(imported));
 
-			if ('number' == typeof this.livePush)
-				clearInterval(this.livePush);
-
-			clearInterval(check);
-			this.livePush = setTimeout(this.livePreviewPush.bind(this), 250);
-		}.bind(this), 250);
+		// subsequent updates are handled by editor.on('change')
 	};
 
-	this.livePreviewPush = function(){
-		if (this.editor)
-			var content = this.editor.getValue();
-		else
-			var content = $('textarea[name=code]').value;
+	this.livePreviewInit = function(imported){
+		const { PhpWeb } = imported;
+		this.php = new PhpWeb({ini: `
+max_execution_time = 3
+memory_limit = 64M
+enable_dl = Off
 
-		var buf = new TextEncoder("utf-8").encode(content);
-		var buf_len = buf.length;
-		var buf_addr = _malloc(buf_len);
-		HEAPU8.set(buf, buf_addr);
+; for consistency of older versions
+allow_call_time_pass_reference = Off
+html_errors = Off
+
+; show all errors by default, if we'd lower this in the script we'll miss some parser notices
+error_reporting = -1
+display_errors = On
+display_startup_errors = On
+log_errors = Off
+report_memleaks = On
+
+[Date]
+date.timezone = Europe/Amsterdam`});
+
+		this.php.addEventListener('output', (event) => {
+			if ($('#live_preview').hasAttribute('exited')) {
+				$('#live_preview').textContent = '';
+				$('#live_preview').removeAttribute('exited');
+			}
+
+			$('#live_preview').textContent += event.detail;
+		});
 
 		$('#tabs').classList.add('busy');
 
-		window.fs_import_file('preview', buf_addr, buf_len);
+		this.livePreviewRun()
+			.then( exitCode => this.livePreviewDone(exitCode) );
+	};
+
+	this.livePreviewRun = function(){
+		if (window.liveTiming)
+		{
+			var xhr = new XMLHttpRequest();
+			xhr.open('post', '/live-timing/'+ encodeURIComponent(new Date().getTime() - window.liveTiming));
+			xhr.send();
+			delete window.liveTiming;
+		}
+
+		$('#tabs').classList.add('busy');
+
+		return this.php.run(this.editor.getValue());
+	};
+
+	this.livePreviewDone = function(exitCode){
+		$('#tabs').classList.remove('busy');
+		$('#live_preview').setAttribute('exited', exitCode)
 	};
 
 	// this method processes untrusted events from external domains
@@ -1047,94 +1058,6 @@ var evalOrg = {};
 	this.handleVersions = function()
 	{
 		tableSorter.initialize();
-	};
-
-	// this function is based on jslinux.js - Copyright (c) 2011-2017 Fabrice Bellard
-	var _launchVm = function(cmdline)
-	{
-		/* Module is used by x86emu - update_downloading is a callback */
-		window.Module = {};
-		window.update_downloading = function(flag)
-		{
-			var tabClass = document.getElementById('tabs').classList;
-			var downloading_timer;
-
-			if (flag) {
-				if (tabClass.contains('busy')) {
-					clearTimeout(downloading_timer);
-				} else {
-					tabClass.add('busy');
-				}
-			} else {
-				downloading_timer = setTimeout(function(){ tabClass.remove('busy'); }, 500);
-			}
-		};
-
-		var url = $('#live_preview').dataset.cfg;
-		var mem_size = 128; /* in mb */
-
-		window.liveTiming = new Date().getTime();
-		window.term = new function(w, h){
-			this.cleared = true;
-
-			this.getSize = function(){
-				return [80, 999];
-			};
-			this.write = function(s){
-//console.log("myTerm.write", this.cleared, escape(s));
-				if (window.liveTiming)
-				{
-					var xhr = new XMLHttpRequest();
-					xhr.open('post', '/live-timing/'+ encodeURIComponent(new Date().getTime() - window.liveTiming));
-					xhr.send();
-					delete window.liveTiming;
-				}
-
-				// live output might have been replaced by quick output
-				if (!$('#live_preview'))
-					return;
-
-				if (s == String.fromCharCode(27) + String.fromCharCode(91) + 'H' + String.fromCharCode(27) + String.fromCharCode(91) + 'J')
-				{
-					while ($('#live_preview').firstChild)
-						$('#live_preview').removeChild($('#live_preview').firstChild);
-
-					this.cleared = true;
-					return;
-				} else if (this.cleared && s == '\r\n') //FIXME find out who prints this
-					return this.cleared = false;
-
-				$('#live_preview').appendChild(document.createTextNode(s));
-				$('#tabs').classList.remove('busy');
-			};
-		};
-
-		Module.preRun = function()
-		{
-			/* C functions called from javascript */
-			window.console_write1 = Module.cwrap('console_queue_char', null, ['number']);
-			window.fs_import_file = Module.cwrap('fs_import_file', null, ['string', 'number', 'number']);
-			window.display_key_event = Module.cwrap('display_key_event', null, ['number', 'number']);
-			window.display_mouse_event = Module.cwrap('display_mouse_event', null, ['number', 'number', 'number']);
-			window.display_wheel_event = Module.cwrap('display_wheel_event', null, ['number']);
-			window.net_write_packet = Module.cwrap('net_write_packet', null, ['number', 'number']);
-			window.net_set_carrier = Module.cwrap('net_set_carrier', null, ['number']);
-
-			Module.ccall('vm_start', null, ['string', 'number', 'string', 'string', 'number', 'number', 'number', 'string'], [url, mem_size, cmdline||'', '', 0, 0, 0, '']);
-		};
-
-		if (typeof WebAssembly !== 'object')
-		{
-			/* set the total memory */
-			var alloc_size = mem_size;
-			alloc_size += 16;
-			alloc_size += 32; /* extra space (XXX: reduce it ?) */
-			alloc_size = (alloc_size + 15) & -16; /* align to 16 MB */
-			Module.TOTAL_MEMORY = alloc_size << 20;
-
-			loadScript('/live/x86emu.js');
-		} else
-			loadScript('/live/x86emu-wasm.js');
 	};
 
 	this.handleSponsor = function()

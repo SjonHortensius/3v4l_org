@@ -10,7 +10,7 @@ class PhpShell_Action extends Basic_Action
 	public $cspDirectives = [
 		'script-src' => [
 			"'self'",
-			"'wasm-unsafe-eval'", # for live-preview
+			"'unsafe-eval'", # for live-preview
 			'cdn.jsdelivr.net',
 			'blob:', # required by ace on FF < 58
 		],
@@ -21,7 +21,7 @@ class PhpShell_Action extends Basic_Action
 			'cdn.jsdelivr.net',
 			'blob:', # required by ace
 		],
-		'connect-src' => ["'self'"], # for xhr
+		'connect-src' => ["'self'", "https://cdn.jsdelivr.net/"], # for xhr | php-wasm
 		'base-uri' => ["'self'"],
 		'form-action' => ["'self'"],
 		'img-src' => ["'self'", 'data:',],
