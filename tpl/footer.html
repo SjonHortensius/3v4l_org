@@ -9,12 +9,8 @@
 	{$statistics = Basic::$log->getStatistics();}
 	<b>{print round($statistics['time']*1000, 2);}</b> ms | <b>{statistics['memory']}</b>  KiB | <b>{statistics['queryCount']}</b> Q
 
-	{if (Basic::$config->PRODUCTION_MODE)}
-		<script src="/s/c.js" async></script>
-	{:}
-		<script src="/s/my.js" async></script>
-		<script src="/ext/diff.js" async></script>
-	{/}
+	<script src="/s/my.js" async></script>
+	<script src="/ext/diff.js" async></script>
 
 	{!-- ace version must be updated in htdocs/s/worker-php.js as well --}
 	{!-- curl URL | openssl dgst -sha384 -binary | openssl base64 -A --}
