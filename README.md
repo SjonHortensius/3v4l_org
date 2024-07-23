@@ -6,12 +6,15 @@
 This application runs on top of [Basic_Framework](https://github.com/SjonHortensius/Basic_Framework) which is an MVCish framework - so for any specific action you can jump right into the Action class. After a user submits code (through library/PhpShell/Action/New.php#76) it is stored in the database and the daemon will be notified.  
 
 ## Setup instructions
+
+For local development see [CONTRIBUTING.md](CONTRIBUTING.md)
+
 If you want to run this, follow these steps:
 
 * install postgresql, golang, php-fpm, memcached and nginx
 * compile the daemon, it's path is configured in the `.service` file
 * create two postgresql users, one for the website and one for the daemon
-* load `structure.sql` in a fresh database
+* load `images/postgresql/fixtures/01_structure.sql` in a fresh database
 * update the password for the webiste in `config.ini`
 * specify the dsn for the daemon in `daemon.service`
 * it's probably best to use a separate domain or IP for the webserver, configure nginx to pass all requests to `index.php`

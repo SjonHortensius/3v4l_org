@@ -8,3 +8,4 @@ build/*/
 htdocs/live/files/*
 htdocs/live/*.gz
 htdocs/live/head
+config.ini
