@@ -75,9 +75,6 @@ var evalOrg = {};
 		if (e.message === 'Uncaught ')
 			return;
 
-		if (e.filename == 'https://3v4l.org/live/x86emu-wasm.js')
-			return;
-
 		var xhr = new XMLHttpRequest();
 		xhr.open('post', '/javascript-error/' + encodeURIComponent(e.filename) +':'+ encodeURIComponent(e.lineno) +':'+ encodeURIComponent(e.colno) +"/"+ encodeURIComponent(e.message));
 		xhr.send();
@@ -241,11 +238,6 @@ report_memleaks = On
 date.timezone = Europe/Amsterdam`});
 
 		this.php.addEventListener('output', (event) => {
-			if ($('#live_preview').hasAttribute('exited')) {
-				$('#live_preview').textContent = '';
-				$('#live_preview').removeAttribute('exited');
-			}
-
 			$('#live_preview').textContent += event.detail;
 		});
 
@@ -256,6 +248,9 @@ date.timezone = Europe/Amsterdam`});
 	};
 
 	this.livePreviewRun = function(){
+		if (typeof this.php == "undefined")
+			throw "livePreviewRun called without a runtime present, "+ JSON.stringify(this);
+
 		if (window.liveTiming)
 		{
 			var xhr = new XMLHttpRequest();
@@ -265,13 +260,13 @@ date.timezone = Europe/Amsterdam`});
 		}
 
 		$('#tabs').classList.add('busy');
+		$('#live_preview').textContent = '';
 
 		return this.php.run(this.editor.getValue());
 	};
 
 	this.livePreviewDone = function(exitCode){
 		$('#tabs').classList.remove('busy');
-		$('#live_preview').setAttribute('exited', exitCode)
 	};
 
 	// this method processes untrusted events from external domains
