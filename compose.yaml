@@ -1,0 +1,58 @@
+services:
+  postgresql:
+    build: images/postgresql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: password # TODO: See how to support scram-sha-256 in go
+      POSTGRES_USER_DAEMON: daemon
+      POSTGRES_PASSWORD_DAEMON: password
+      POSTGRES_USER_WEBSITE: website
+      POSTGRES_PASSWORD_WEBSITE: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data # Persist data
+      - ./images/postgresql/fixtures:/docker-entrypoint-initdb.d # Import fixtures
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # The golang daemon that will process incoming php files.
+  # We do not have to use the `daemon.service` file, as we can use the `command` directive to start the daemon.
+  daemon:
+    build:
+      context: .
+      dockerfile: images/golang/Dockerfile
+    depends_on:
+      postgresql:
+        condition: service_healthy # Ensure postgres is ready before starting the daemon
+    tmpfs:
+      - /in
+    command: app --dsn "postgres://daemon:password@postgresql/postgres?sslmode=disable"
+
+  php-fpm:
+    build: images/php-fpm
+    volumes:
+      - ./:/srv/http/phpshell.localhost/phpshell
+      - ./Basic_Framework:/srv/http/.common/Basic_Framework
+    tmpfs:
+      - /srv/http/phpshell.localhost/phpshell/cache
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/srv/http/phpshell.localhost/phpshell
+      - ./images/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./Basic_Framework:/srv/http/.common/Basic_Framework
+
+  memcached:
+    image: memcached:alpine
+
+volumes:
+  postgres:

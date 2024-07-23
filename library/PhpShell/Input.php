@@ -2,6 +2,8 @@
 
 class PhpShell_Input extends PhpShell_Entity
 {
+    private const RFC_VERSION_TRESHOLD = 32;
+
 	protected static $_relations = [
 		'user' => PhpShell_User::class,
 		'source' => PhpShell_Input::class,
@@ -180,9 +182,9 @@ class PhpShell_Input extends PhpShell_Entity
 			->setOrder(['version.order' => true]);
 
 		if ($forRfc)
-			$results = $results->getSubset("version < 32")->setOrder(['version.released' => false]);
+			$results = $results->getSubset("version < " . self::RFC_VERSION_TRESHOLD)->setOrder(['version.released' => false]);
 		else
-			$results = $results->getSubset("version >= 32");
+			$results = $results->getSubset("version >= " . self::RFC_VERSION_TRESHOLD);
 
 		$abbrMax = function($name)
 		{
@@ -281,9 +283,9 @@ class PhpShell_Input extends PhpShell_Entity
 				SUM(\"exitCode\") as exit_sum
 			FROM result
 			INNER JOIN version ON version.id = version
-			WHERE input = ? AND version.id >= 32
+			WHERE input = ? AND version.id >= ?
 			GROUP BY version
-			ORDER BY MAX(version.order) DESC", [$this->id]);
+			ORDER BY MAX(version.order) DESC", [$this->id, self::RFC_VERSION_TRESHOLD]);
 	}
 
 	public function getFunctionCalls(): Basic_EntitySet
