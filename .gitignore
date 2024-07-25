@@ -5,3 +5,7 @@ cache/*
 htdocs/s/c.*
 build/*/
 .idea/
+htdocs/live/files/*
+htdocs/live/*.gz
+htdocs/live/head
+config.ini
