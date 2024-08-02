@@ -101,7 +101,7 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-func (this *Input) prepare(fg bool) {
+func (this *Input) prepare() {
 	this.uniqueOutput = make(map[string]bool)
 	this.penaltyDetail = make(map[string]int)
 
@@ -129,7 +129,7 @@ func (this *Input) prepare(fg bool) {
 		}
 	}
 
-	if !fg || dryRun {
+	if dryRun {
 		return
 	}
 
@@ -154,6 +154,9 @@ func (this *Input) complete() {
 		}
 
 		delete(inputSrc.srcUse, this.short)
+	} else {
+		// when an input is queued multiple times (eg, full run + vld) we don't want the short run to set the state to done prematurely
+		state = "busy"
 	}
 	inputSrc.Unlock()
 
@@ -524,7 +527,7 @@ func checkPendingInputs() {
 		}
 
 		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
-		input.prepare(true)
+		input.prepare()
 
 		for _, v := range versions {
 			// Helpers are only executed on demand
@@ -629,7 +632,7 @@ func batchScheduleNewVersions() {
 
 			batch.Add()
 			go func(i *Input) {
-				i.prepare(false)
+				i.prepare()
 				i.execute(v, ResourceLimit{0, 2500, 32768})
 				i.complete()
 
@@ -668,7 +671,7 @@ func doWork() {
 			panic("doWork: error verifying input: " + err.Error())
 		}
 
-		input.prepare(true)
+		input.prepare()
 		sdNotify(fmt.Sprintf("STATUS=executing %s", input.short))
 
 		for _, v := range versions {
@@ -769,7 +772,7 @@ func main() {
 				panic("daemon: error Scanning: " + err.Error())
 			}
 
-			i.prepare(false)
+			i.prepare()
 			i.execute(v, ResourceLimit{0, 2500, 32768})
 			// we can skip complete since /tmp is already cleared by the daemon
 		}
