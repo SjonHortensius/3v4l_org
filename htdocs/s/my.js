@@ -262,6 +262,7 @@ date.timezone = Europe/Amsterdam`});
 		$('#tabs').classList.add('busy');
 		$('#live_preview').textContent = '';
 
+		this.php.refresh();
 		return this.php.run(this.editor.getValue());
 	};
 
