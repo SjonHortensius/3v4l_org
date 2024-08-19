@@ -208,8 +208,6 @@ var evalOrg = {};
 						id: 'live_preview'
 		}	}	}	}));
 
-		window.liveTiming = new Date().getTime();
-
 		import('https://cdn.jsdelivr.net/npm/php-wasm/PhpWeb.mjs')
 			.then( imported => this.livePreviewInit(imported));
 
@@ -250,15 +248,7 @@ date.timezone = Europe/Amsterdam`});
 
 	this.livePreviewRun = function(){
 		if (typeof this.php == "undefined")
-			throw "livePreviewRun called without a runtime present, "+ JSON.stringify(this);
-
-		if (window.liveTiming)
-		{
-			var xhr = new XMLHttpRequest();
-			xhr.open('post', '/live-timing/'+ encodeURIComponent(new Date().getTime() - window.liveTiming));
-			xhr.send();
-			delete window.liveTiming;
-		}
+			throw "livePreviewRun called without a runtime present, "+ JSON.stringify(this.constructor.name);
 
 		$('#tabs').classList.add('busy');
 		$('#live_preview').textContent = '';
@@ -338,7 +328,7 @@ date.timezone = Europe/Amsterdam`});
 		}, 'input + time');
 	};
 
-	// Triggered on /new errorpage, eg. title too long
+	// Triggered also on /new errorpage, eg. title too long
 	this.handleNew = function()
 	{
 		this.richEditor();
