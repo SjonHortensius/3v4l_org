@@ -178,10 +178,10 @@ ul#tabs li.notify a::after {
 }
 
 
-/*                  Normal Mobile No-js No-js@index
- * textarea[name=code] X  |   V  |  X  |    V
- * <code>              V  |   X  |  V  |    X
- * <code><textarea>    V  |   X  |  X  |    X
+/*   visibility     normal Mobile No-js No-js@index
+ * textarea[name=code]    |   V  |     |    V
+ * <code>              V  |      |  V  |
+ * <code><textarea>    V  |      |     |
  */
 
 code,

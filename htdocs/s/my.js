@@ -126,11 +126,11 @@ var evalOrg = {};
 
 	this.richEditor = function()
 	{
-		if (this.editor)
-			return false;
-
 		var code = $('code');
 		var textarea = $('textarea[name=code]');
+
+		if (this.editor || !code || !textarea)
+			return false;
 
 		textarea.value = code.textContent;
 
@@ -238,7 +238,8 @@ report_memleaks = On
 date.timezone = Europe/Amsterdam`});
 
 		this.php.addEventListener('output', (event) => {
-			$('#live_preview').textContent += event.detail;
+			if ($('#live_preview')) // this should not happen - but it does
+				$('#live_preview').textContent += event.detail;
 		});
 
 		$('#tabs').classList.add('busy');
