@@ -30,7 +30,12 @@ class PhpShell_Action extends Basic_Action
 			"'unsafe-inline'", # for ace-editor & tagcloud
 		]
 	];
-	public $httpPreloads = [];
+	public $httpPreloads = [
+			'/s/my.js' => 'preload',
+			'https://cdn.jsdelivr.net/npm/php-wasm/PhpBase.mjs' => 'modulepreload',
+			'https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs' => 'modulepreload',
+#			'https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs.wasm' => 'modulepreload', # Loading module from “https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs.wasm” was blocked because of a disallowed MIME type (“application/wasm”).
+	];
 	public $aceScripts = [
 		// curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
 		'ace'				=> '/HiYf7uts/FC/PC50yfG3bXnxyMdlMFQpgaXPNOqiTJkQIbiBeth3J86SYJowDdK',
@@ -96,14 +101,13 @@ class PhpShell_Action extends Basic_Action
 
 				return [
 					// match hashes put in tpls by update-online
-					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'style',
-					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.js' )), 0, 8). '.js'  => 'script',
-					$aceBase .'worker-php.js' => 'worker',
+					'/s/c.'. substr(hash('sha256', file_get_contents(APPLICATION_PATH .'/htdocs/s/c.css')), 0, 8). '.css' => 'preload',
+					$aceBase .'worker-php.js' => 'modulepreload',
 				] + $p;
 			}, 3600) + $this->httpPreloads;
 
-			foreach ($preloads as $link => $type)
-				header('Link: <'. $link .'>; rel=preload; as='. $type, false);
+			foreach ($preloads as $link => $rel)
+				header('Link: <'. $link .'>; rel='. $rel .'; as='. (str_ends_with($link, '.css')?'style':'script'), false);
 		}
 
 		// Since we resolve everything to 'script'; prevent random strings in bodyClass
