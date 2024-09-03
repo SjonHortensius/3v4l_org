@@ -1,10 +1,11 @@
 /* sudo -u postgres pg_dump phpshell -s */
 --
+--
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.1
--- Dumped by pg_dump version 16.1
+-- Dumped from database version 16.3
+-- Dumped by pg_dump version 16.3
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -34,7 +35,7 @@ CREATE EXTENSION IF NOT EXISTS pg_repack WITH SCHEMA public;
 
 
 --
--- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner: -
+-- Name: EXTENSION pg_repack; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION pg_repack IS 'Reorganize tables in PostgreSQL databases with minimal locks';
@@ -951,21 +952,21 @@ ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php80 FOR VALUES I
 -- Name: result_php81; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553', '555', '557', '559', '562', '568', '571', '581', '583', '585', '588', '590', '592', '594', '597', '599', '602', '603', '605', '608', '610');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php81 FOR VALUES IN ('536', '538', '541', '544', '546', '548', '550', '553', '555', '557', '559', '562', '568', '571', '581', '583', '585', '588', '590', '592', '594', '597', '599', '602', '603', '605', '608', '610', '621', '627');
 
 
 --
 -- Name: result_php82; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php82 FOR VALUES IN ('578', '579', '582', '584', '587', '589', '591', '593', '596', '598', '601', '604', '606', '607', '612', '614', '616');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php82 FOR VALUES IN ('578', '579', '582', '584', '587', '589', '591', '593', '596', '598', '601', '604', '606', '607', '612', '614', '616', '617', '620', '624', '626', '629', '631', '633');
 
 
 --
 -- Name: result_php83; Type: TABLE ATTACH; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php83 FOR VALUES IN ('609', '611', '613', '615');
+ALTER TABLE ONLY public.result ATTACH PARTITION public.result_php83 FOR VALUES IN ('609', '611', '613', '615', '618', '619', '622', '623', '625', '628', '630', '632');
 
 
 --
@@ -1485,7 +1486,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2024-01-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2024-08-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1832,7 +1833,7 @@ ALTER TABLE ONLY public.queue
 --
 
 ALTER TABLE public.result
-    ADD CONSTRAINT result_input_fkey FOREIGN KEY (input) REFERENCES public.input(id);
+    ADD CONSTRAINT result_input_fkey FOREIGN KEY (input) REFERENCES public.input(id) ON DELETE CASCADE;
 
 
 --

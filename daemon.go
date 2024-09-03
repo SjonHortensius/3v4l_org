@@ -165,7 +165,7 @@ func (this *Input) complete() {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
 
-	if _, err := db.Exec(`UPDATE input SET penalty = LEAST(penalty + $2, 32767), state = $3 WHERE short = $1`, this.short, this.penalty, state); err != nil {
+	if _, err := db.Exec(`UPDATE input SET penalty = LEAST($2, 32767), state = $3 WHERE short = $1`, this.short, this.penalty, state); err != nil {
 		panic(fmt.Sprintf("Input: failed to update: %s | %+v", err.Error(), this))
 	}
 }
@@ -507,7 +507,7 @@ func refreshVersions() {
 func checkPendingInputs() {
 	// we ignore isQuick but this rarely gets executed so that's not a problem
 	rs, err := db.Query(`
-		SELECT id, short, created, "runArchived", state FROM input
+		SELECT id, short, created, penalty, "runArchived", state FROM input
 		WHERE
 			state IN('new', 'busy')
 			AND NOW() - created > '5 minutes'
@@ -522,7 +522,7 @@ func checkPendingInputs() {
 	var state string
 	for rs.Next() {
 		var input Input
-		if err := rs.Scan(&input.id, &input.short, &input.created, &input.runArchived, &state); err != nil {
+		if err := rs.Scan(&input.id, &input.short, &input.created, &input.penalty, &input.runArchived, &state); err != nil {
 			panic("checkPendingInputs: error Scanning: " + err.Error())
 		}
 
@@ -599,7 +599,7 @@ func batchScheduleNewVersions() {
 		fmt.Printf("batchScheduleNewVersions: %s - searching for missing scripts\n", v.name)
 
 		rs, err := db.Query(`
-			SELECT id, short, "runArchived", created
+			SELECT id, short, "runArchived", created, penalty
 			FROM input
 			LEFT JOIN result ON (version = $1 AND input=id)
 			WHERE
@@ -620,7 +620,7 @@ func batchScheduleNewVersions() {
 			found++
 
 			var input Input
-			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created); err != nil {
+			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created, &input.penalty); err != nil {
 				panic("batchScheduleNewVersions: error Scanning: " + err.Error())
 			}
 
@@ -667,7 +667,7 @@ func doWork() {
 			panic("doWork: error Scanning: " + err.Error())
 		}
 
-		if err := db.QueryRow(`SELECT id, created, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.runArchived); err != nil {
+		if err := db.QueryRow(`SELECT id, created, penalty, "runArchived" FROM input WHERE short = $1`, input.short).Scan(&input.id, &input.created, &input.penalty, &input.runArchived); err != nil {
 			panic("doWork: error verifying input: " + err.Error())
 		}
 
