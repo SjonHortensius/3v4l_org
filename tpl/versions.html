@@ -21,7 +21,7 @@
 			<td>{version->name}</td>
 			<td>{version->released}</td>
 			<td>{if ($this->version->eol < date('Y-m-d'))}<b>end-of-life</b> since{:}supported until{/} {version->eol}</td>
-			<td><a href="/#focus={version->name}">focus</a></td>
+			<td><a href="/#v{version->name}">focus</a></td>
 		</tr>
 		{/}
 	</tbody>

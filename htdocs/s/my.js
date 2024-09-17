@@ -531,10 +531,6 @@ date.timezone = Europe/Amsterdam`});
 		if ($('#newForm'))
 			$('#newForm').addEventListener('submit', this.preview.bind(this));
 
-		// b/c
-		if (0 === window.location.hash.indexOf('#focus='))
-			window.location.hash = 'v'+ window.location.hash.substr('#focus='.length);
-
 		if (-1 === window.location.hash.indexOf('#v'))
 			return;
 
