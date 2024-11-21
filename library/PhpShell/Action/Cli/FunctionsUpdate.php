@@ -2,7 +2,7 @@
 
 class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 {
-	const FUNC_PREG = '^(?:static |PHPAPI )?(?:PHP|PHP_NAMED|ZEND)_FUNCTION\((?:php_if_)?';
+	const FUNC_PREG = '^(?:static |PHPAPI )?(?:PHP|PHP_NAMED|ZEND)_FUNCTION\((?:php_if_)?.*\)$';
 	// grep PHP_FALIAS ext/standard/basic_functions.c
 	private static $alias = [
 		'implode' => 'join',
