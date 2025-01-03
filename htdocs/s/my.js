@@ -98,7 +98,9 @@ var evalOrg = {};
 	this.applyKeybindings = function(keybindings)
 	{
 		if (this.editor) {
-			this.editor.setKeyboardHandler(keybindings === 'ace' ? null : 'ace/keyboard/' + keybindings);
+			this.editor.setKeyboardHandler(!keybindings || keybindings === 'ace'
+				? null
+				: 'ace/keyboard/' + keybindings);
 		}
 	};
 
