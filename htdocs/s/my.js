@@ -95,6 +95,15 @@ var evalOrg = {};
 		}
 	};
 
+	this.applyKeybindings = function(keybindings)
+	{
+		if (this.editor) {
+			this.editor.setKeyboardHandler(!keybindings || keybindings === 'ace'
+				? null
+				: 'ace/keyboard/' + keybindings);
+		}
+	};
+
 	this.applyPrefs = function()
 	{
 		var defaul = false;
@@ -115,6 +124,15 @@ var evalOrg = {};
 			this.applyDarkmode(e.target.checked)
 		}.bind(this));
 
+		var keybindings = localStorage.getItem('keybindings');
+		if (keybindings) {
+			this.applyKeybindings(keybindings);
+			$('#keybindings').value = keybindings;
+		}
+		$('#keybindings').addEventListener('change', function (e) {
+			localStorage.setItem('keybindings', e.target.value);
+			this.applyKeybindings(e.target.value);
+		}.bind(this));
 
 		if (localStorage.getItem("livePreview") !== "disable")
 			$('#livePreview').setAttribute('checked', 'checked');
@@ -151,6 +169,8 @@ var evalOrg = {};
 			this.editor.setTheme('ace/theme/chaos');
 		else
 			this.editor.setTheme('ace/theme/chrome');
+
+		this.applyKeybindings(localStorage.getItem("keybindings"));
 
 		this.editor.setShowPrintMargin(false);
 		this.editor.setOption('maxLines', Infinity);

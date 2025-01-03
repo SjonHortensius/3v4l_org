@@ -4,6 +4,12 @@
 		preferences:
 		<input type="checkbox" id="darkMode" /><label for="darkMode">dark mode</label>
 		<input type="checkbox" id="livePreview" /><label for="livePreview">live preview</label>
+		<select id="keybindings">
+			<option value="ace">ace</option>
+			<option value="vim">vim</option>
+			<option value="emacs">emacs</option>
+		</select>
+		<label for="keybindings">key bindings</label>
 	</div>
 
 	{$statistics = Basic::$log->getStatistics();}
