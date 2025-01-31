@@ -274,7 +274,13 @@ date.timezone = Europe/Amsterdam`});
 		$('#live_preview').textContent = '';
 
 		this.php.refresh();
-		return this.php.run(this.editor.getValue());
+
+		if (window.isSecureContext)
+			navigator.locks.request("php.wasm", async (lock) => {
+				await function(){ return this.php.run(this.editor.getValue()) };
+			});
+		else // development
+			return this.php.run(this.editor.getValue());
 	};
 
 	this.livePreviewDone = function(exitCode){
