@@ -612,7 +612,7 @@ body.search svg
 	font-family: Impact;
 }
 
-body.bughunt select
+body.bughunt select[multiple]
 {
 	height: 100px;
 }
