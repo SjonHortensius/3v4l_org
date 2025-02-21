@@ -10,7 +10,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 //			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'required' => true,
 			'values' => [],
-			'options' => ['multiple' => true],
+#			'options' => ['multiple' => true],
 		],
 		'controls' => [
 			'description' => 'Select two versions to compare against. Output from all controls must match, '.

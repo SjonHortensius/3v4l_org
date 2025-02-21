@@ -17,7 +17,7 @@ class PhpShell_SubmitSet extends Basic_EntitySet
 		return $this;
 	}
 
-	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
+	protected function _query(string $fields, ?string $groupBy = null): Basic_DatabaseQuery
 	{
 		if ($fields != '*' || empty($this->_fields))
 			return parent::_query($fields, $groupBy);
@@ -27,7 +27,7 @@ class PhpShell_SubmitSet extends Basic_EntitySet
 		return parent::_query($fields, $groupBy);
 	}
 
-	public function getAggregate(string $fields = "COUNT(*)", string $groupBy = null, array $order = []): Basic_DatabaseQuery
+	public function getAggregate(string $fields = "COUNT(*)", ?string $groupBy = null, array $order = []): Basic_DatabaseQuery
 	{
 		$set = clone $this;
 		$set->_order = $order;

@@ -23,7 +23,7 @@ class PhpShell_InputSet extends Basic_EntitySet
 		return $this;
 	}
 
-	protected function _query(string $fields, string $groupBy = null): Basic_DatabaseQuery
+	protected function _query(string $fields, ?string $groupBy = null): Basic_DatabaseQuery
 	{
 		if ($fields != '*' || empty($this->_fields))
 			return parent::_query($fields, $groupBy);

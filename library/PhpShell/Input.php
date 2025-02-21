@@ -134,7 +134,7 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->save(['operationCount' => count($operations), 'bughuntIgnore' => $this->bughuntIgnore]);
 	}
 
-	public function trigger(PhpShell_Version $version = null): void
+	public function trigger(?PhpShell_Version $version = null): void
 	{
 		if (count(PhpShell_QueuedInput::find("input = ?", [$this->short])) > 0)
 			return;
@@ -152,7 +152,7 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	// intended for 'internal' triggers, such as helpers that produce large output we don't want to store
-	protected function _triggerSilent(PhpShell_Version $version = null): void
+	protected function _triggerSilent(?PhpShell_Version $version = null): void
 	{
 		Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$this->short, $version?->name]);
 		$this->waitUntilNoLonger('busy');
