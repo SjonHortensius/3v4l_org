@@ -223,6 +223,8 @@ html.darkMode body.js code:not(.ace_editor)
 textarea[name=code]
 {
 	display: none;
+	padding: 10px;
+	box-sizing: border-box;
 }
 
 body.mobile textarea,
