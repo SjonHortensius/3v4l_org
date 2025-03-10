@@ -732,12 +732,12 @@ body.stats .bar text
 	color: black;
 }
 
-body.sponsor h2:first-of-type + ul li.active
+body.sponsor li.active
 {
 	background-color: #cbffba;
 }
 
-html.darkMode body.sponsor h2:first-of-type + ul li.active
+html.darkMode body.sponsor li.active
 {
 	background-color: #1d4612;
 }
@@ -753,6 +753,9 @@ body.sponsor li[data-age='5'] { font-size: 10px; }
 body.sponsor li[data-age='6'] { font-size: 9px; }
 body.sponsor li[data-age='7'] { font-size: 8px; }
 body.sponsor li[data-age='8'] { font-size: 7px; }
+body.sponsor li[data-age='9'] { font-size: 7px; }
+body.sponsor li[data-age='10'] { font-size: 7px; }
+body.sponsor li[data-age='11'] { font-size: 7px; }
 
 
 body.sponsor ul
