@@ -554,9 +554,6 @@ date.timezone = Europe/Amsterdam`});
 	this.enableFocus = function() {
 		this.fillVersionSelector();
 
-		if ($('#newForm'))
-			$('#newForm').addEventListener('submit', this.preview.bind(this));
-
 		if (-1 === window.location.hash.indexOf('#v'))
 			return;
 
