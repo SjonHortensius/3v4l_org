@@ -106,10 +106,11 @@ var evalOrg = {};
 
 	this.applyPrefs = function()
 	{
+		// handle dark-mode
 		var defaul = false;
-		if (localStorage.getItem("darkMode") === "enable")
+		if (localStorage.getItem('darkMode') === 'enable')
 			defaul = true;
-		else if (localStorage.getItem("darkMode") === "disable")
+		else if (localStorage.getItem('darkMode') === 'disable')
 			defaul = false;
 		else if (window.matchMedia('(prefers-color-scheme: dark)').matches)
 			defaul = true;
@@ -124,6 +125,7 @@ var evalOrg = {};
 			this.applyDarkmode(e.target.checked)
 		}.bind(this));
 
+		// handle keybindings
 		var keybindings = localStorage.getItem('keybindings');
 		if (keybindings) {
 			this.applyKeybindings(keybindings);
@@ -134,7 +136,8 @@ var evalOrg = {};
 			this.applyKeybindings(e.target.value);
 		}.bind(this));
 
-		if (localStorage.getItem("livePreview") !== "disable")
+		// handle live-preview
+		if (localStorage.getItem('livePreview') !== 'disable')
 			$('#livePreview').setAttribute('checked', 'checked');
 
 		$('#livePreview').addEventListener('change', function (e) {
@@ -170,7 +173,7 @@ var evalOrg = {};
 		else
 			this.editor.setTheme('ace/theme/chrome');
 
-		this.applyKeybindings(localStorage.getItem("keybindings"));
+		this.applyKeybindings(localStorage.getItem('keybindings'));
 
 		this.editor.setShowPrintMargin(false);
 		this.editor.setOption('maxLines', Infinity);
