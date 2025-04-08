@@ -143,6 +143,10 @@ var evalOrg = {};
 		$('#livePreview').addEventListener('change', function (e) {
 			localStorage.setItem('livePreview', e.target.checked ? 'enable' : 'disable');
 		});
+
+		// handle focus version
+		if (localStorage.getItem('focus') != '' && window.location.hash == '')
+			window.location.hash = '#v'+ localStorage.getItem('focus')
 	}
 
 	this.richEditor = function()
@@ -663,9 +667,13 @@ date.timezone = Europe/Amsterdam`});
 
 			focusVersion = $('#version').value;
 			focusIsBranch = $('#version').selectedOptions[0].parentNode.label == 'branches';
+			localStorage.setItem('focus', focusVersion)
 
 			outputHighlightVersion(focusVersion)
-			document.location.hash = '#v'+ focusVersion;
+			if (focusVersion != '')
+				document.location.hash = '#v'+ focusVersion;
+			else
+				document.location.hash = '';
 		});
 
 		$('#newForm').addEventListener('submit', this.preview.bind(this));
