@@ -34,7 +34,8 @@ void _setrlimit(int resource, int max) {
 	}
 }
 
-void _init(void) {
+__attribute__((constructor))
+static void preload_init(void) {
 	org_gettimeofday =	dlsym(RTLD_NEXT, "gettimeofday");
 	org_time =			dlsym(RTLD_NEXT, "time");
 	org_clock_gettime =	dlsym(RTLD_NEXT, "clock_gettime");
