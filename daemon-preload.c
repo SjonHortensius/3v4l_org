@@ -184,6 +184,11 @@ pid_t getpid(void) {
 	return 2;
 }
 
+// noop these
+void syslog(int priority, const char *format, ...) {}
+void openlog(const char *ident, int option, int facility) {}
+void closelog(void) {}
+
 bool forkPrintedMsg = false;
 pid_t fork(void) {
 	if (!forkPrintedMsg) {
