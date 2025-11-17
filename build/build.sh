@@ -27,7 +27,7 @@ if [[ $ISGIT -gt 0 ]]; then
 else
 	[[ ! -f php-$version.tar.bz2 ]] && curl -OsS https://www.php.net/distributions/php-$version.tar.bz2
 	[[ $(du php-$version.tar.bz2|cut -f1) -lt 999 ]] && rm php-$version.tar.bz2
-	[[ ! -f php-$version.tar.bz2 ]] && curl -O# http://museum.php.net/php5/php-$version.tar.bz2
+	[[ ! -f php-$version.tar.bz2 ]] && curl -O# https://museum.php.net/php5/php-$version.tar.bz2
 
 	echo -ne "Extracting...\r"
 	tar xaf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2

@@ -134,7 +134,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 	// return releases but prefix non-existing ones if they are uploaded already
 	protected function _getReleases(int $major): Generator
 	{
-		$json = json_decode(file_get_contents('http://php.net/releases/index.php?json&max=999&version='. $major));
+		$json = json_decode(file_get_contents('https://php.net/releases/index.php?json&max=999&version='. $major));
 
 		foreach ($json as $name => $data)
 		{
