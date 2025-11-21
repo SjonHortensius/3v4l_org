@@ -284,7 +284,7 @@ date.timezone = Europe/Amsterdam`});
 
 		if (window.isSecureContext)
 			navigator.locks.request("php.wasm", async (lock) => {
-				await function(){ return this.php.run(this.editor.getValue()) };
+				await function(){ return this.php.run(this.editor.getValue()) }.bind(this);
 			});
 		else // development
 			return this.php.run(this.editor.getValue());
