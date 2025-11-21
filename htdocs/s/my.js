@@ -282,12 +282,13 @@ date.timezone = Europe/Amsterdam`});
 
 		this.php.refresh();
 
-		if (window.isSecureContext)
+/* fails in chrome
+	if (window.isSecureContext)
 			navigator.locks.request("php.wasm", async (lock) => {
 				await function(){ return this.php.run(this.editor.getValue()) }.bind(this);
 			});
 		else // development
-			return this.php.run(this.editor.getValue());
+*/			return this.php.run(this.editor.getValue());
 	};
 
 	this.livePreviewDone = function(exitCode){
