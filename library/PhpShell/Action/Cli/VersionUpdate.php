@@ -35,6 +35,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 		82 => '2026-12-31',
 		83 => '2027-12-31',
 		84 => '2028-12-31',
+		85 => '2029-12-31',
 	];
 
 	public function run(): void
