@@ -23,6 +23,8 @@ class PhpShell_Action_About extends PhpShell_Action {
 		2021 => ['hits' => 38599592, 'bots' => 19969238, 'submits' =>        473029 + 475795],
 		2022 => ['hits' => 26644798, 'bots' => 13791022, 'submits' =>           494 + 1075201],
 		2023 => ['hits' => 31175138, 'bots' => 12823707, 'submits' =>        139970 + 503927],
+		2024 => ['hits' => 40172704, 'bots' => 17501214, 'submits' =>        215049 + 364877],
+		2025 => ['hits' => 39407728, 'bots' => 15482791, 'submits' =>        158969 + 257327],
 	];
 
 	public function run(): void
