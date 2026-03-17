@@ -60,13 +60,13 @@
 	{foreach (Basic::$userinput->tab->values as $this->link => $this->name)}
 		{if (empty($this->name)) continue;}
 
-		{if (!$this->showTab[ $this->link ])}
+		{if (!($this->showTab[ $this->link ]??false))}
 			<li class="disabled" title="not available"><a id="{link}">
 		{:}
 			{if ($this->link == Basic::$userinput['tab'])}
 				<li itemprop="articleSection" class="active">
 			{:}
-				{if ($this->notifyTab[ $this->link ])}
+				{if ($this->notifyTab[ $this->link ]??false)}
 					<li class="notify">
 				{:}
 					<li>

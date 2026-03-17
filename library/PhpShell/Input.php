@@ -9,6 +9,7 @@ class PhpShell_Input extends PhpShell_Entity
 		'source' => PhpShell_Input::class,
 	];
 	protected static $_numerical = ['operationCount', 'penalty'];
+	protected array $_results;
 
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
@@ -173,19 +174,23 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
+	public function getResults(): array {
+		if (!isset($this->_results)) {
+			$this->_results = [];
+
+			// iterator_to_array in PHP-8.5 throws `Using null as an array offset is deprecated`
+			foreach ($this->getRelated(PhpShell_Result::class)
+				->addJoin(PhpShell_Version::class, "version.id = version")
+				->addJoin(PhpShell_Output::class, "output.id = output")
+				->setOrder(['version.order' => true]) as $result)
+				$this->_results[] = $result;
+		}
+
+		return $this->_results;
+	}
+
 	public function getOutput(bool $forRfc = false): array
 	{
-		$results = $this->getRelated(PhpShell_Result::class)
-			->addJoin(PhpShell_Version::class, "version.id = result.version")
-			->getSubset("NOT version.\"isHelper\"")
-			->addJoin(PhpShell_Output::class, "output.id = result.output")
-			->setOrder(['version.order' => true]);
-
-		if ($forRfc)
-			$results = $results->getSubset("version < " . self::RFC_VERSION_TRESHOLD)->setOrder(['version.released' => false]);
-		else
-			$results = $results->getSubset("version >= " . self::RFC_VERSION_TRESHOLD);
-
 		$abbrMax = function($name)
 		{
 			// strip repeating version in max for non-releases, but keep html intact
@@ -197,19 +202,26 @@ class PhpShell_Input extends PhpShell_Entity
 
 		$outputs = [];
 		/* @var PhpShell_Result $result */
-		foreach ($results as $result)
+		foreach ($this->getResults() as $result)
 		{
+			if ($result->version->isHelper)
+				continue;
+			if ($forRfc && $result->version->id >= self::RFC_VERSION_TRESHOLD)
+				continue;
+			if (!$forRfc && $result->version->id < self::RFC_VERSION_TRESHOLD)
+				continue;
+
 			$html = $result->getHtml();
 
-			$hash = sha1($html);
-			$slot =& $outputs[ $hash ];
+			$idx = $result->output->id .':'. $result->exitCode;
+			$slot =& $outputs[ $idx ];
 
 			$major = substr($result->version->name, 0, 3);
 			$name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
 
 			if (!isset($slot))
 				$slot = ['min' => $name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
-			elseif ($hash != $prevHash || $major !== $prevMajor || $forRfc)
+			elseif ($idx != $prev || $major !== $prevMajor || $forRfc)
 			{
 				// Close previous slot
 				if (isset($slot['max']))
@@ -226,7 +238,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$slot['order'] = max($slot['order'], $result->version->order);
 			$slot['output'] = $html;
 
-			$prevHash = $hash;
+			$prev = $idx;
 			$prevMajor = $major;
 		}
 

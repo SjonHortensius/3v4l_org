@@ -31,9 +31,6 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $showTab = [
 		'output' => true,
 		'perf' => true,
-		'vld' => false,
-		'refs' => false,
-		'rfc' => false,
 	];
 	public $notifyTab = [];
 	public $bodyClass = 'new script';
@@ -105,32 +102,27 @@ class PhpShell_Action_Script extends PhpShell_Action
 			//ignore
 		}
 
-		$this->notifyTab = array_fill_keys(array_keys($this->userinputConfig['tab']['values']), false);
-
-		// Determine if the rfc tab has output that differs from the main output tab
-		$outputPerMajor = array_map('json_decode', iterator_to_array($this->input->getRelated(PhpShell_Result::class)
-			->addJoin(PhpShell_Version::class, "id = version")
-			->getAggregate("output, array_to_json(ARRAY_AGG(DISTINCT SUBSTRING(version.name FOR 3))) versions", "output")->fetchArray("versions", "output")));
-
 		$output = ['main' => [], 'rfc' => []];
-		foreach ($outputPerMajor as $outputId => $majors)
+		foreach ($this->input->getResults() as $result)
 		{
-			if (in_array('rfc', $majors) || in_array('git', $majors))
+			if ($result->version->isHelper)
+				continue;
+
+			if (in_array(substr($result->version->name, 0, 3), ['rfc', 'git']))
 			{
 				$this->showTab['rfc'] = true;
-				$output['rfc'] []= $outputId;
-			}
-			else
-				$output['main'] []= $outputId;
+				$output['rfc'] []= $result->output->id;
+			} else
+				$output['main'] []= $result->output->id;
 		}
 
-		if (count($outputPerMajor) > 1 && count(array_diff($output['rfc'], $output['main'])) > 1)
-			$this->notifyTab['rfc'] = true;
+		if (count(array_diff($output['rfc'], $output['main'])) > 1)
+			$this->notifyTab[ 'rfc'==Basic::$userinput['tab']?'output':'rfc' ] = true;
 
 		$this->showTab['vld'] = isset($this->input->operationCount);
 		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 
-		if (false === $this->showTab[ Basic::$userinput['tab'] ])
+		if (!isset($this->showTab[ Basic::$userinput['tab'] ]) || false === $this->showTab[ Basic::$userinput['tab'] ])
 			throw new PhpShell_Action_Script_TabHasNoContentException("This script has no output for requested tab `%s`", [Basic::$userinput['tab']], 404);
 
 		if ('done' == $this->input->state)
