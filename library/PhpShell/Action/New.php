@@ -92,7 +92,7 @@ class PhpShell_Action_New extends PhpShell_Action
 
 		# abusive '4240f596-5891-4be0-97cd-9d91f0564277' posts
 		if (strlen($title) == 38 && 38 == strspn($title, "'0123456789-abcdef"))
-			throw new PhpShell_TemporaryBlockedException('Your submit was blocked', 403);
+			throw new PhpShell_TemporaryBlockedException('Your submit was blocked', [], 403);
 
 		if (!isset(Basic::$userinput['version']) || Basic::$userinput['version'] == '')
 			;
@@ -170,7 +170,7 @@ class PhpShell_Action_New extends PhpShell_Action
 
 		$this->input = $input;
 		$this->version = $version;
-		$this->result = $this->input->getResult($version)->getSingle();
+		$this->result = $this->input->getResult($version);
 
 		$this->showTemplate('quick');
 	}

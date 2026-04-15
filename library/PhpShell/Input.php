@@ -9,7 +9,7 @@ class PhpShell_Input extends PhpShell_Entity
 		'source' => PhpShell_Input::class,
 	];
 	protected static $_numerical = ['operationCount', 'penalty'];
-	protected array $_results;
+	private array $_results;
 
 	const VLD_MATCH = '~[ 0-9E>]+(?<op>[A-Z_]+) +(?<ext>[0-9A-F]*) +(?<return>[0-9:$]*) +(\'?)(?<operand>.*)\4\n~';
 	// SELECT COUNT(*), function FROM "functionCall" WHERE input IN( SELECT input FROM (SELECT input, COUNT(output) c, COUNT(distinct output) u FROM result WHERE version>32 GROUP BY input) x WHERE c=u) GROUP BY function ORDER BY count DESC LIMIT 99;
@@ -311,18 +311,27 @@ class PhpShell_Input extends PhpShell_Entity
 		return $this->lastResultChange ?? $this->created;
 	}
 
-	public function getResult(PhpShell_Version $version): Basic_EntitySet
+	public function getResult(PhpShell_Version $version): PhpShell_Result
 	{
-		return $this->getRelated(PhpShell_Result::class)
-			->getSubset("version = ?", [$version]);
+		/* @var PhpShell_Result $result */
+		foreach ($this->getResults() as $result)
+			if ($result->version == $version)
+				return $result;
+
+		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);
 	}
 
 	// This is a special case, vld output is not stored so we trigger the run, return the result and delete it immediately
 	public function getVld(): string
 	{
-		$this->_triggerSilent(PhpShell_Version::byName('vld'));
-		$result = $this->getResult(PhpShell_Version::byName('vld'))->getSingle();
-		$output = $result->output->getRaw($this, $result->version);
+		$version = PhpShell_Version::byName('vld');
+		$this->_triggerSilent($version);
+
+		$result = $this->getRelated(PhpShell_Result::class)
+				 ->getSubset("version = ?", [$version])
+				 ->getSingle();
+
+		$output = $result->output->getRaw($this, $version);
 		$this->_updateFunctionCalls($output);
 		$result->delete();
 
