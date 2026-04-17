@@ -22,7 +22,8 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 		$dbh->beginTransaction();
 		$dbh->q("DECLARE inputCursor CURSOR FOR SELECT * FROM input WHERE {$filter} ORDER BY id DESC");
 
-		printf(" ** starting with %.3f K functionCalls (mode: %s) %.3f K inputs **\n", count(PhpShell_FunctionCall::find())/1000, Basic::$userinput['type'], count(PhpShell_Input::find($filter))/1000);
+		function f($n){ return number_format($n, 0, '', ' '); };
+		printf(" ** starting with %s functionCalls (mode: %s) %s inputs **\n", f(count(PhpShell_FunctionCall::find())), Basic::$userinput['type'], f(count(PhpShell_Input::find($filter))));
 
 		$found = 0;
 		do
@@ -55,6 +56,6 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 		}
 		while (true);
 
-		printf("\n** completed with %.3f K functionCalls | %.3f K inputs **\n", count(PhpShell_FunctionCall::find())/1000, count(PhpShell_Input::find($filter))/1000);
+		printf("\n** completed with %s functionCalls | %s K inputs **\n", f(count(PhpShell_FunctionCall::find())), f(count(PhpShell_Input::find($filter))));
 	}
 }
