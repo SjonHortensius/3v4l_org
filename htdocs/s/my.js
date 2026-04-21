@@ -145,7 +145,7 @@ var evalOrg = {};
 		});
 
 		// handle focus version
-		if (localStorage.getItem('focus') != '' && window.location.hash == '')
+		if (localStorage.getItem('focus') != null && localStorage.getItem != '' && window.location.hash == '')
 			window.location.hash = '#v'+ localStorage.getItem('focus')
 	}
 
