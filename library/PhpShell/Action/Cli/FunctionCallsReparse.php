@@ -15,7 +15,7 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 
 	public function run(): void
 	{
-		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" ISNULL" : "true";
+		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" = 0" : "true";
 
 		// cursor must run in tx - but the vld queue insert must run outside of that
 		$dbh = new Basic_Database;

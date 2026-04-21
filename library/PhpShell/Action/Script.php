@@ -119,7 +119,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 		if (count(array_diff($output['rfc'], $output['main'])) > 1)
 			$this->notifyTab[ 'rfc'==Basic::$userinput['tab']?'output':'rfc' ] = true;
 
-		$this->showTab['vld'] = isset($this->input->operationCount);
+		$this->showTab['vld'] = isset($this->input->operationCount) && $this->input->operationCount>0;
 		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 
 		if (!isset($this->showTab[ Basic::$userinput['tab'] ]) || false === $this->showTab[ Basic::$userinput['tab'] ])

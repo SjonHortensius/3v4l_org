@@ -327,9 +327,18 @@ class PhpShell_Input extends PhpShell_Entity
 		$version = PhpShell_Version::byName('vld');
 		$this->_triggerSilent($version);
 
-		$result = $this->getRelated(PhpShell_Result::class)
-				 ->getSubset("version = ?", [$version])
-				 ->getSingle();
+		try
+		{
+			$result = $this->getRelated(PhpShell_Result::class)
+					 ->getSubset("version = ?", [$version])
+					 ->getSingle();
+		}
+		catch (Basic_EntitySet_NoSingleResultException $e)
+		{
+			// prevent forever trying to parse VLD output if it fails
+			$this->save(['operationCount' => 0, 'bughuntIgnore' => true]);
+			throw $e;
+		}
 
 		$output = $result->output->getRaw($this, $version);
 		$this->_updateFunctionCalls($output);

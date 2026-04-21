@@ -606,7 +606,7 @@ func batchScheduleNewVersions() {
 				input IS NULL
 				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
-				AND NOT "operationCount" IS NULL
+				AND "operationCount" > 0
 				AND NOT "bughuntIgnore";`,
 			v.id, v.eol.Format("2006-01-02"))
 		if err != nil {
