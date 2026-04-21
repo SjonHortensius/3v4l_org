@@ -265,7 +265,7 @@ class PhpShell_Input extends PhpShell_Entity
 			return;
 
 		$hits = Basic::$cache->increment('Hits:'. $this->short .':'. (date('w')), 1, 1, 3*24*60*60) +
-				Basic::$cache->get('Hits:'. $this->short .':'.((date('w')+5)%6), function(){ return 0; });
+				Basic::$cache->get('Hits:'. $this->short .':'.((date('w')+6)%7), function(){ return 0; });
 
 		$popular = Basic::$cache->get('Hits:popular', function(){ return []; });
 
@@ -281,7 +281,7 @@ class PhpShell_Input extends PhpShell_Entity
 		arsort($popular);
 		$popular = array_slice($popular, 0, PhpShell_Action_Index::ACTIVE_SCRIPTS, true);
 
-		Basic::$cache->set('Hits:popular', $popular);
+		Basic::$cache->set('Hits:popular', $popular, 8*60*60);
 	}
 
 	public function getPerf(): Basic_DatabaseQuery
