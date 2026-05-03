@@ -32,7 +32,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public static function clean(string $code): string
 	{
-		$code = trim(str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code));
+		$code = trim(str_replace(["\r\n", "\r", "\xE2\x80\x8B"], ["\n", "\n", ""], $code), " \n\r\t\v\0");
 
 		# add trailing newline for heredoc. If done globally, all script-hashes would change
 		if (preg_match('~[0-9a-zA-Z_];$~', $code))
