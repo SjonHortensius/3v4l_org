@@ -5,37 +5,37 @@
 #   strip usr/bin/hhvm; mv usr/bin/hhvm /srv/http/3v4l.org/bin/hhvm-$v
 
 set -e
-cd $(dirname $0)"/in/"
+CDPATH='' cd "$(dirname "$0")/in/"
 
 ISGIT=0
 [[ "$1" == "--branch" ]] && { ISGIT=1; shift; }
 # FIXME - allow passing both an org (php) and a branch
 version=$1
 
-[[ -d ../root/$version/ ]] && rm -R ../root/php-src-$version/ ../root/php-$version/
+[[ -d ../root/$version/ ]] && rm -R ../root/php-src-"$version"/ ../root/php-"$version"/
 
 echo -ne "Downloading...\r"
 
 if [[ $ISGIT -gt 0 ]]; then
-	rm -fv $version.tar.bz2
-	curl -LO# https://github.com/php/php-src/archive/$version.tar.gz || { echo not a valid branch name: $version >&2; exit 1; }
+	rm -fv "$version".tar.bz2
+	curl -LO# https://github.com/php/php-src/archive/"$version".tar.gz || { echo not a valid branch name: "$version" >&2; exit 1; }
 
 	echo -ne "Extracting...\r"
-	tar xaf $version.tar.gz -C ../root/ || rm -v $version.tar.gz
+	tar xaf "$version".tar.gz -C ../root/ || rm -v "$version".tar.gz
 
 	ROOT=php-src-$version
 else
-	[[ ! -f php-$version.tar.bz2 ]] && curl -OsS https://www.php.net/distributions/php-$version.tar.bz2
-	[[ $(du php-$version.tar.bz2|cut -f1) -lt 999 ]] && rm php-$version.tar.bz2
-	[[ ! -f php-$version.tar.bz2 ]] && curl -O# https://museum.php.net/php5/php-$version.tar.bz2
+	[[ ! -f php-$version.tar.bz2 ]] && curl -OsS https://www.php.net/distributions/php-"$version".tar.bz2
+	[[ $(du php-"$version".tar.bz2|cut -f1) -lt 999 ]] && rm php-"$version".tar.bz2
+	[[ ! -f php-$version.tar.bz2 ]] && curl -O# https://museum.php.net/php5/php-"$version".tar.bz2
 
 	echo -ne "Extracting...\r"
-	tar xaf php-$version.tar.bz2 -C ../root/ || rm -v php-$version.tar.bz2
+	tar xaf php-"$version".tar.bz2 -C ../root/ || rm -v php-"$version".tar.bz2
 
 	ROOT=php-$version
 fi
 
-cd ../root/$ROOT/
+cd ../root/"${ROOT:?}"/
 [[ $ISGIT -gt 0 ]] && ./buildconf
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-intl --enable-bcmath --enable-calendar --enable-mbstring --with-zlib --with-gettext --disable-cgi --with-gmp --with-mcrypt"
 confFlags="--prefix=/usr --exec-prefix=/usr --without-pear --enable-mbstring --with-zlib --disable-cgi"
@@ -56,19 +56,20 @@ for ext in intl bcmath; do confFlags="$confFlags --enable-$ext=shared"; done
 for ext in curl gmp iconv; do confFlags="$confFlags --with-$ext=shared"; done
 
 echo -ne "Configuring...\r"
-./configure $confFlags &>build.log || { rm -R */; tail build.log; exit 1; }
+# shellcheck disable=SC2086 # for configure-flags: $confFlags word-split intentionally
+./configure $confFlags &>build.log || { rm -R -- */; tail build.log; exit 1; }
 
 echo -ne "Making...     \r"
 # remove directories but leave logs
-make -j10 &>build.log || { rm -R */; tail build.log; exit 1; }
+make -j10 &>build.log || { rm -R -- */; tail build.log; exit 1; }
 
 # verify correct build
 ./sapi/cli/php -i >/dev/null
 
 strip sapi/cli/php modules/*.so # && upx -qq ./sapi/cli/php
-mv -v sapi/cli/php ../../out/php-$version
-mkdir -p ../../out/exts/$version/modules && mv modules/*.so ../../out/exts/$version/modules/
+mv -v sapi/cli/php ../../out/php-"$version"
+mkdir -p ../../out/exts/"$version"/modules && mv modules/*.so ../../out/exts/"$version"/modules/
 cd ../..
-rm -R root/$ROOT/
+rm -R root/"$ROOT"/
 
 echo -e "Done...       \r"
