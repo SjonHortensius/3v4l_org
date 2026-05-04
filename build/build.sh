@@ -21,7 +21,7 @@ if [[ $ISGIT -gt 0 ]]; then
 	curl -LO# https://github.com/php/php-src/archive/$version.tar.gz || { echo not a valid branch name: $version >&2; exit 1; }
 
 	echo -ne "Extracting...\r"
-	tar xaf $version.tar.gz -C ../root/ || rm -v php-$version.tar.gz
+	tar xaf $version.tar.gz -C ../root/ || rm -v $version.tar.gz
 
 	ROOT=php-src-$version
 else
