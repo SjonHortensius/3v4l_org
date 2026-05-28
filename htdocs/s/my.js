@@ -227,40 +227,45 @@ var evalOrg = {};
 			}
 		}));
 
+		const PHP_VERSION = '8.4';
 		$('#tab').appendChild(object2Dom({
 			dl:{
-				dt: {_text: "Output for php 8.2.11"},
+				dt: {_text: "Output for php " + PHP_VERSION},
 				dd: {
 					div: {
 						id: 'live_preview'
 		}	}	}	}));
 
 		import('https://cdn.jsdelivr.net/npm/php-wasm/PhpWeb.mjs')
-			.then( imported => this.livePreviewInit(imported));
+			.then( imported => this.livePreviewInit(imported, PHP_VERSION));
 
 		// subsequent updates are handled by editor.on('change')
 	};
 
-	this.livePreviewInit = function(imported){
+	this.livePreviewInit = async function(imported, version){
 		const { PhpWeb } = imported;
-		this.php = new PhpWeb({ini: `
-max_execution_time = 3
-memory_limit = 64M
-enable_dl = Off
-
-; for consistency of older versions
-allow_call_time_pass_reference = Off
-html_errors = Off
-
-; show all errors by default, if we'd lower this in the script we'll miss some parser notices
-error_reporting = -1
-display_errors = On
-display_startup_errors = On
-log_errors = Off
-report_memleaks = On
-
-[Date]
-date.timezone = Europe/Amsterdam`});
+		this.php = new PhpWeb({
+			version,
+			ini: [
+				'max_execution_time = 3',
+				'memory_limit = 64M',
+				'enable_dl = Off',
+				// for consistency of older versions
+				'allow_call_time_pass_reference = Off',
+				'html_errors = Off',
+				// show all errors by default, if we'd lower this in the script we'll miss some parser notices
+				'error_reporting = -1',
+				'display_errors = On',
+				'display_startup_errors = On',
+				'log_errors = Off',
+				'report_memleaks = On',
+				// Date
+				'date.timezone = Europe/Amsterdam',
+			].join('\n'),
+			sharedLibs: [
+				await import(`https://cdn.jsdelivr.net/npm/php-wasm-mbstring/${version}.mjs`),
+			]
+		});
 
 		this.php.addEventListener('output', (event) => {
 			if ($('#live_preview')) // this should not happen - but it does
