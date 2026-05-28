@@ -236,7 +236,7 @@ var evalOrg = {};
 						id: 'live_preview'
 		}	}	}	}));
 
-		import('https://cdn.jsdelivr.net/npm/php-wasm/PhpWeb.mjs')
+		import('https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/PhpWeb.mjs')
 			.then( imported => this.livePreviewInit(imported, PHP_VERSION));
 
 		// subsequent updates are handled by editor.on('change')
@@ -263,7 +263,7 @@ var evalOrg = {};
 				'date.timezone = Europe/Amsterdam',
 			].join('\n'),
 			sharedLibs: [
-				await import(`https://cdn.jsdelivr.net/npm/php-wasm-mbstring/${version}.mjs`),
+				await import(`https://cdn.jsdelivr.net/npm/php-wasm-mbstring@0.1.0/${version}.mjs`),
 			]
 		});
 
