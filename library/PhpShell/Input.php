@@ -2,7 +2,7 @@
 
 class PhpShell_Input extends PhpShell_Entity
 {
-    private const RFC_VERSION_TRESHOLD = 32;
+	private const RFC_VERSION_TRESHOLD = 32;
 
 	protected static $_relations = [
 		'user' => PhpShell_User::class,
@@ -94,7 +94,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 			if ($match['op'] == 'INIT_FCALL')
 				$function = $match['operand'];
-			// we threat all calls within a namespace as global for better matching
+			// we treat all calls within a namespace as global for better matching
 			elseif ($match['op'] == 'INIT_NS_FCALL_BY_NAME')
 				$function = substr($match['operand'], 3+strrpos($match['operand'], '%5C'));
 			else
@@ -150,13 +150,6 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->waitUntilNoLonger('new');
 
 		usleep(100 * 1000);
-	}
-
-	// intended for 'internal' triggers, such as helpers that produce large output we don't want to store
-	protected function _triggerSilent(?PhpShell_Version $version = null): void
-	{
-		Basic::$database->q("INSERT INTO queue VALUES (?, ?)", [$this->short, $version?->name]);
-		$this->waitUntilNoLonger('busy');
 	}
 
 	public function waitUntilNoLonger($state): void
@@ -321,28 +314,27 @@ class PhpShell_Input extends PhpShell_Entity
 		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);
 	}
 
-	// This is a special case, vld output is not stored so we trigger the run, return the result and delete it immediately
 	public function getVld(): string
 	{
-		$version = PhpShell_Version::byName('vld');
-		$this->_triggerSilent($version);
+		$s = Basic::$database->q("SELECT pg_notify('daemon', ?)", ['vld:'. $this->short]);
 
-		try
+		$i = 0;
+		do
 		{
-			$result = $this->getRelated(PhpShell_Result::class)
-					 ->getSubset("version = ?", [$version])
-					 ->getSingle();
+			usleep(100 * 1000);
+			$output = Basic::$database->q("DELETE FROM helper_output WHERE input = ? AND helper = ? RETURNING output", [$this->id, 'vld'])->fetchColumn();
 		}
-		catch (Basic_EntitySet_NoSingleResultException $e)
+		while (++$i < 15 && empty($output));
+
+		if ($output == false)
 		{
 			// prevent forever trying to parse VLD output if it fails
 			$this->save(['operationCount' => 0, 'bughuntIgnore' => true]);
-			throw $e;
+			return "";
 		}
 
-		$output = $result->output->getRaw($this, $version);
+		$output = stream_get_contents($output, -1, 0);
 		$this->_updateFunctionCalls($output);
-		$result->delete();
 
 		return $output;
 	}

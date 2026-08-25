@@ -2083,6 +2083,17 @@ GRANT SELECT,INSERT,UPDATE ON TABLE public."user" TO website;
 GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
 
 
+CREATE UNLOGGED TABLE public.helper_output (
+    input integer NOT NULL,
+    helper character varying(8) NOT NULL,
+    output bytea NOT NULL
+);
+
+ALTER TABLE public.helper_output OWNER TO postgres;
+
+ALTER TABLE ONLY public.helper_output
+    ADD CONSTRAINT helper_output_input_fkey FOREIGN KEY (input) REFERENCES public.input(id);
+
 --
 -- PostgreSQL database dump complete
 --

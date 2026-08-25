@@ -26,7 +26,6 @@ type Version struct {
 	id       int
 	name     string
 	command  string
-	isHelper bool
 	released time.Time
 	order    int
 	eol      time.Time
@@ -101,10 +100,7 @@ func (this *Input) penalize(r string, p int) {
 	}
 }
 
-func (this *Input) prepare() {
-	this.uniqueOutput = make(map[string]bool)
-	this.penaltyDetail = make(map[string]int)
-
+func (this *Input) prepareSource() {
 	inputSrc.Lock()
 	inputSrc.srcUse[this.short]++
 	if 1 == inputSrc.srcUse[this.short] {
@@ -129,6 +125,14 @@ func (this *Input) prepare() {
 		}
 	}
 
+	this.penaltyDetail = make(map[string]int)
+}
+
+func (this *Input) prepare() {
+	this.uniqueOutput = make(map[string]bool)
+
+	this.prepareSource()
+
 	if dryRun {
 		return
 	}
@@ -140,12 +144,7 @@ func (this *Input) prepare() {
 	}
 }
 
-func (this *Input) complete() {
-	state := "done"
-	if this.penalty > 256 {
-		state = "abusive"
-	}
-
+func (this *Input) removeSource() {
 	inputSrc.Lock()
 	inputSrc.srcUse[this.short]--
 	if 0 == inputSrc.srcUse[this.short] {
@@ -154,13 +153,20 @@ func (this *Input) complete() {
 		}
 
 		delete(inputSrc.srcUse, this.short)
-	} else {
-		// when an input is queued multiple times (eg, full run + vld) we don't want the short run to set the state to done prematurely
-		state = "busy"
 	}
 	inputSrc.Unlock()
 
 	stats.Increase("inputs", 1)
+}
+
+func (this *Input) complete() {
+	state := "done"
+	if this.penalty > 256 {
+		state = "abusive"
+	}
+
+	this.removeSource()
+
 	if this.penalty > 128 {
 		fmt.Printf("[%s] state = %s | penalty = %d | %v\n", this.short, state, this.penalty, this.penaltyDetail)
 	}
@@ -200,57 +206,14 @@ func newOutput(raw string, i *Input, v Version) Output {
 
 		i.Unlock()
 
-		if !v.isHelper {
-			i.penalize("Excessive total output", len(o.raw)/2048)
-		}
+		i.penalize("Excessive total output", len(o.raw)/2048)
 	} else {
 		i.Unlock()
 	}
 
+
+
 	return o
-}
-
-func newResult(i *Input, v Version, raw string, s *os.ProcessState) Result {
-	if dryRun {
-		fmt.Printf("\033[1mnewResult: input=%s | version=%s | output:\033[0m %s\n", i.short, v.name, raw)
-		return Result{}
-	}
-
-	waitStatus := s.Sys().(syscall.WaitStatus)
-	usage := s.SysUsage().(*syscall.Rusage)
-
-	var exitCode int
-	if waitStatus.Exited() {
-		exitCode = waitStatus.ExitStatus()
-	} else {
-		exitCode = 128 + int(waitStatus.Signal())
-	}
-
-	r := Result{
-		input:      i,
-		output:     newOutput(raw, i, v),
-		version:    v,
-		exitCode:   exitCode,
-		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
-		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
-		maxMemory:  usage.Maxrss,
-	}
-
-	i.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
-
-	switch v.name {
-	case "vld":
-		if exitCode == 0 {
-			r.store()
-		} else {
-			r.delete()
-		}
-	default:
-		r.store()
-	}
-
-	stats.Increase("results", 1)
-	return r
 }
 
 func (this *Result) store() {
@@ -316,8 +279,11 @@ func (this *Result) delete() {
 	}
 }
 
-func (this *Input) execute(v Version, l ResourceLimit) Result {
-	cmdArgs := strings.Split(v.command, " ")
+func (this *Input) execute(cmdArgs []string, l ResourceLimit) (string, *os.ProcessState) {
+	discardStdout := cmdArgs[len(cmdArgs)-1] == "2>/dev/null"
+	if discardStdout {
+		cmdArgs = cmdArgs[:len(cmdArgs)-1]
+	}
 
 	cmdArgs = append(cmdArgs, inPath+this.short)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -356,21 +322,16 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 	stderr, _ := cmd.StderrPipe()
 	cmdR := io.MultiReader(stdout, stderr)
 
-	if v.name == "vld" {
+	if discardStdout {
 		cmdR = stderr
 	}
 
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "While starting: %s\n", err)
-		return Result{}
+		return "", nil
 	}
 
 	go func(c *exec.Cmd, r io.Reader) {
-		limit := l.output
-		if v.isHelper {
-			limit = 256 * 1024
-		}
-
 		output := make([]byte, 0)
 		buffer := make([]byte, 1024)
 		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
@@ -381,7 +342,7 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 
 			buffer = buffer[:n]
 
-			if len(output) < limit {
+			if len(output) < l.output {
 				output = append(output, buffer...)
 				continue
 			}
@@ -392,13 +353,11 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		}
 
 		// Make sure all output is exactly the same length
-		if len(output) > limit {
-			output = output[:limit]
+		if len(output) > l.output {
+			output = output[:l.output]
 		}
 
-		if !v.isHelper {
-			this.penalize("Excessive output", len(output)/10240)
-		}
+		this.penalize("Excessive output", len(output)/10240)
 
 		procOut <- string(output)
 	}(cmd, cmdR)
@@ -442,7 +401,60 @@ func (this *Input) execute(v Version, l ResourceLimit) Result {
 		fmt.Fprintf(os.Stderr, "cleanTmpDirectory - %s\n", err)
 	}
 
-	return newResult(this, v, output, state)
+	return output, state
+}
+
+func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
+	if dryRun {
+		fmt.Printf("\033[1mstoreResult: input=%s | version=%s | output:\033[0m %s\n", this.short, v.name, raw)
+		return
+	}
+
+	waitStatus := s.Sys().(syscall.WaitStatus)
+	usage := s.SysUsage().(*syscall.Rusage)
+
+	var exitCode int
+	if waitStatus.Exited() {
+		exitCode = waitStatus.ExitStatus()
+	} else {
+		exitCode = 128 + int(waitStatus.Signal())
+	}
+
+	r := Result{
+		input:      this,
+		output:     newOutput(raw, this, v),
+		version:    v,
+		exitCode:   exitCode,
+		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
+		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
+		maxMemory:  usage.Maxrss,
+	}
+
+	this.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
+	r.store()
+
+	stats.Increase("results", 1)
+
+	return
+}
+
+func (this *Input) storeVldOutput(raw string, s *os.ProcessState) {
+	if dryRun {
+		fmt.Printf("\033[1mstoreVldHelperOutput: input=%s\033[0m %s\n", this.short, raw)
+		return
+	}
+
+	waitStatus := s.Sys().(syscall.WaitStatus)
+	if !waitStatus.Exited() || waitStatus.ExitStatus() != 0 {
+		fmt.Fprintf(os.Stderr, "storeVldOutput input=%s; helper exited with status %d\n", this.short, waitStatus.ExitStatus())
+		return
+	}
+
+	if _, err := db.Exec(`INSERT INTO helper_output VALUES ($1, $2, $3)`, this.id, "vld", raw); err != nil {
+		panic("Input: failed to store helper_output: " + err.Error())
+	}
+
+	return
 }
 
 func cleanTmpDirectory() error {
@@ -483,7 +495,7 @@ func refreshVersions() {
 	var newVersions []Version
 
 	rs, err := db.Query(`
-		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, "isHelper"
+		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command
 		FROM version
 		ORDER BY "order" DESC`)
 
@@ -494,7 +506,7 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.isHelper); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command); err != nil {
 			panic("daemon: error Scanning: " + err.Error())
 		}
 
@@ -530,13 +542,9 @@ func checkPendingInputs() {
 		input.prepare()
 
 		for _, v := range versions {
-			// Helpers are only executed on demand
-			if v.isHelper {
-				continue
-			}
-
 			if input.runArchived || v.eol.After(input.created) {
-				input.execute(v, l)
+				o, s := input.execute(strings.Split(v.command, " "), l)
+				input.storeResult(v, o, s)
 			}
 
 			if input.penalty > 512 {
@@ -633,7 +641,8 @@ func batchScheduleNewVersions() {
 			batch.Add()
 			go func(i *Input) {
 				i.prepare()
-				i.execute(v, ResourceLimit{0, 2500, 32768})
+				o, s := i.execute(strings.Split(v.command, " "), ResourceLimit{0, 2500, 32768})
+				i.storeResult(v, o, s)
 				i.complete()
 
 				batch.Done()
@@ -675,13 +684,9 @@ func doWork() {
 		sdNotify(fmt.Sprintf("STATUS=executing %s", input.short))
 
 		for _, v := range versions {
-			// Helpers are only executed on demand
-			if v.isHelper && version.String != v.name {
-				continue
-			}
-
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
-				input.execute(v, rMax)
+				o, s := input.execute(strings.Split(v.command, " "), rMax)
+				input.storeResult(v, o, s)
 			}
 
 			if input.penalty > 512 {
@@ -698,6 +703,22 @@ func doWork() {
 		sdNotify(fmt.Sprintf("STATUS=completed %s", input.short))
 		input.complete()
 	}
+}
+
+func doVldHelper(short string) {
+	input := &Input{short: short}
+
+	if err := db.QueryRow(`SELECT id, created FROM input WHERE short = $1`, short).Scan(&input.id, &input.created); err != nil {
+		panic("doVldHelper: error verifying input: `"+short+"`: " + err.Error())
+	}
+
+	sdNotify(fmt.Sprintf("STATUS=executing helper for %s", input.short))
+
+	input.prepareSource()
+	defer input.removeSource()
+
+	o, s := input.execute([]string{"/bin/php-8.5.0", "-dextension=vld-0.19.1.so", "-dvld.active=1", "-dvld.execute=0", "2>/dev/null"}, ResourceLimit{0, 2500, 256 * 1024})
+	input.storeVldOutput(o, s)
 }
 
 var (
@@ -759,7 +780,7 @@ func main() {
 		// run a predefined set of scripts so we don't trash someones homedir
 		fmt.Printf("running tests\n")
 
-		v := Version{0, "local php binary", "/usr/bin/php -n -q", false, time.Now(), 0, time.Now()}
+		v := Version{0, "local php binary", "/usr/bin/php -n -q", time.Now(), 0, time.Now()}
 
 		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO')`)
 		if err != nil {
@@ -773,7 +794,7 @@ func main() {
 			}
 
 			i.prepare()
-			i.execute(v, ResourceLimit{0, 2500, 32768})
+			i.execute(strings.Split(v.command, " "), ResourceLimit{0, 2500, 32768})
 			// we can skip complete since /tmp is already cleared by the daemon
 		}
 
@@ -824,6 +845,10 @@ LOOP:
 				go batchScheduleNewVersions()
 			case "queue":
 				go doWork()
+			default:
+				if strings.HasPrefix(n.Extra, "vld:") {
+					go doVldHelper(n.Extra[4:])
+				}
 			}
 
 		case <-doShutdown:
