@@ -15,7 +15,6 @@ class PhpShell_Action extends Basic_Action
 			'blob:', # required by ace on FF < 58
 		],
 		'manifest-src' => ["'self'"],
-		'frame-ancestors' => ["https://www.php.net"],
 		'worker-src' => [ # valid sources for web-workers
 			"'self'",
 			'cdn.jsdelivr.net',
@@ -66,7 +65,6 @@ class PhpShell_Action extends Basic_Action
 		}
 
 		header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
-		header('X-Xss-Protection: 1; mode=block');
 		header('X-Content-Type-Options: nosniff');
 		header('Permissions-Policy: fullscreen=(), geolocation=()');
 		header('Referrer-Policy: origin-when-cross-origin');
