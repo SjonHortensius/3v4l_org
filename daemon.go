@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -54,7 +55,6 @@ type Result struct {
 	output     Output
 	version    Version
 	exitCode   int
-	created    time.Time
 	userTime   float64
 	systemTime float64
 	maxMemory  int64
@@ -73,8 +73,10 @@ type SizedWaitGroup struct {
 }
 
 type Stats struct {
-	sync.RWMutex
-	c map[string]int
+	inputs  atomic.Int64
+	outputs atomic.Int64
+	results atomic.Int64
+	penalty atomic.Int64
 }
 
 func newSizedWaitGroup(limit int) SizedWaitGroup {
@@ -83,10 +85,24 @@ func newSizedWaitGroup(limit int) SizedWaitGroup {
 func (s *SizedWaitGroup) Add()  { s.current <- true; s.WaitGroup.Add(1) }
 func (s *SizedWaitGroup) Done() { <-s.current; s.WaitGroup.Done() }
 
-func (this *Stats) Increase(t string, i int) {
-	this.Lock()
-	this.c[t] += i
-	this.Unlock()
+func (this *Stats) Increase(field string, n int) {
+	switch field {
+	case "inputs":
+		this.inputs.Add(int64(n))
+	case "outputs":
+		this.outputs.Add(int64(n))
+	case "results":
+		this.results.Add(int64(n))
+	case "penalty":
+		this.penalty.Add(int64(n))
+	}
+}
+
+func (s *Stats) ResetReturn() string {
+	defer func(){ s.inputs.Store(0); s.outputs.Store(0); s.results.Store(0); s.penalty.Store(0) }()
+
+	return fmt.Sprintf("inputs=%d outputs=%d results=%d penalty=%d",
+		s.inputs.Load(), s.outputs.Load(), s.results.Load(), s.penalty.Load())
 }
 
 func (this *Input) penalize(r string, p int) {
@@ -120,9 +136,10 @@ func (this *Input) prepareSource() {
 	inputSrc.Unlock()
 
 	if this.lastSubmit.IsZero() {
-		if err := db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"`, this.id).Scan(&this.lastSubmit); err != nil {
-			db.QueryRow(`SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1`, this.id).Scan(&this.lastSubmit)
-		}
+		db.QueryRow(`SELECT COALESCE(
+				(SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1 AND NOT "isQuick"),
+				(SELECT MAX(COALESCE(updated, created)) FROM submit WHERE input = $1)
+			)`, this.id).Scan(&this.lastSubmit)
 	}
 
 	this.penaltyDetail = make(map[string]int)
@@ -177,41 +194,31 @@ func (this *Input) complete() {
 }
 
 func newOutput(raw string, i *Input, v Version) Output {
-	raw = strings.Replace(raw, "\x06", "\\\x06", -1)
-	raw = strings.Replace(raw, "\x07", "\\\x07", -1)
-	raw = strings.Replace(raw, v.name, "\x06", -1)
-	raw = strings.Replace(raw, i.short, "\x07", -1)
+	raw = strings.ReplaceAll(raw, "\x06", "\\\x06")
+	raw = strings.ReplaceAll(raw, "\x07", "\\\x07")
+	raw = strings.ReplaceAll(raw, v.name, "\x06")
+	raw = strings.ReplaceAll(raw, i.short, "\x07")
 
-	h := sha1.New()
-	io.WriteString(h, raw)
+	h := sha1.Sum([]byte(raw))
+	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:])}
 
-	o := Output{0, raw, base64.StdEncoding.EncodeToString(h.Sum(nil))}
-
-	if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-		if _, err := db.Exec(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING`, o.hash, o.raw); err != nil {
-			panic("Output: failed to store: " + err.Error())
-		}
-
-		// LastInsertId doesn't work
-		if err := db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id); err != nil {
-			panic("Output: failed to retrieve after storing: " + err.Error())
-		}
-
+	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING RETURNING id`, o.hash, o.raw).Scan(&o.id); err == sql.ErrNoRows {
+		// ON CONFLICT does not RETURN id so fetch that
+		db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id)
+	} else if err != nil {
+		panic("Output: failed to store: " + err.Error())
+	} else {
 		stats.Increase("outputs", 1)
 	}
 
 	i.Lock()
-	if false == i.uniqueOutput[o.hash] {
+	if !i.uniqueOutput[o.hash] {
 		i.uniqueOutput[o.hash] = true
-
 		i.Unlock()
-
 		i.penalize("Excessive total output", len(o.raw)/2048)
 	} else {
 		i.Unlock()
 	}
-
-
 
 	return o
 }
@@ -245,7 +252,6 @@ func (this *Result) store() {
 		mutated := 0
 
 		if old.output.id != this.output.id || old.exitCode != this.exitCode {
-//			fmt.Printf("Result: mutating result for input=%s,version=%s from output=%d,exitCode=%d to output=%d,exitCode=%d\n", this.input.short, this.version.name, old.output.id,old.exitCode, this.output.id,this.exitCode)
 			mutated = 1
 		}
 
@@ -332,34 +338,24 @@ func (this *Input) execute(cmdArgs []string, l ResourceLimit) (string, *os.Proce
 	}
 
 	go func(c *exec.Cmd, r io.Reader) {
-		output := make([]byte, 0)
-		buffer := make([]byte, 1024)
-		for n, err := r.Read(buffer); err != io.EOF; n, err = r.Read(buffer) {
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "While reading output: %s\n", err)
-				break
-			}
+		limited := &io.LimitedReader{R: r, N: int64(l.output + 1)}
+		data, err := io.ReadAll(limited)
 
-			buffer = buffer[:n]
-
-			if len(output) < l.output {
-				output = append(output, buffer...)
-				continue
-			}
-
-			if err := cmd.Process.Kill(); err != nil && err.Error() != "os: process already finished" && err.Error() != "no such process" {
-				this.penalize("Didn't stop: "+err.Error(), 256)
-			}
+		if err != nil && err != io.EOF {
+			fmt.Fprintf(os.Stderr, "While reading output: %s\n", err)
 		}
 
-		// Make sure all output is exactly the same length
-		if len(output) > l.output {
-			output = output[:l.output]
+		if limited.N == 0 {
+			cmd.Process.Kill()
 		}
 
-		this.penalize("Excessive output", len(output)/10240)
+		if len(data) > l.output {
+			data = data[:l.output]
+		}
 
-		procOut <- string(output)
+		this.penalize("Excessive output", len(data)/10240)
+
+		procOut <- string(data)
 	}(cmd, cmdR)
 
 	// We want ProcessState after successful exit too
@@ -467,25 +463,16 @@ func cleanTmpDirectory() error {
 			// we have CAP_FOWNER - use it to give the script runner write access
 			os.Chmod(p, 0007)
 		}
-
 		return nil
 	})
 
-	d, err := os.Open("/tmp")
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-
-	l, err := d.Readdirnames(-1)
+	entries, err := os.ReadDir("/tmp")
 	if err != nil {
 		return err
 	}
 
-	for _, n := range l {
-		if err = os.RemoveAll("/tmp/"+ n); err != nil {
-			return err
-		}
+	for _, e := range entries {
+		os.RemoveAll(filepath.Join("/tmp", e.Name()))
 	}
 
 	return nil
@@ -522,7 +509,7 @@ func checkPendingInputs() {
 		SELECT id, short, created, penalty, "runArchived", state FROM input
 		WHERE
 			state IN('new', 'busy')
-			AND NOW() - created > '5 minutes'
+			AND created < NOW() - INTERVAL '5 minutes'
 		ORDER BY created DESC`)
 
 	if err != nil {
@@ -709,7 +696,7 @@ func doVldHelper(short string) {
 	input := &Input{short: short}
 
 	if err := db.QueryRow(`SELECT id, created FROM input WHERE short = $1`, short).Scan(&input.id, &input.created); err != nil {
-		panic("doVldHelper: error verifying input: `"+short+"`: " + err.Error())
+		panic("doVldHelper: error verifying input: `" + short + "`: " + err.Error())
 	}
 
 	sdNotify(fmt.Sprintf("STATUS=executing helper for %s", input.short))
@@ -769,7 +756,6 @@ func init() {
 		panic("init: failed to ping db: " + err.Error())
 	}
 
-	stats = Stats{c: make(map[string]int)}
 	inputSrc.srcUse = make(map[string]int)
 
 	refreshVersions()
@@ -833,10 +819,7 @@ LOOP:
 			go checkPendingInputs()
 
 		case <-doPrintStats.C:
-			stats.Lock()
-			sdNotify(fmt.Sprintf("STATUS=%v", stats.c))
-			stats.c = make(map[string]int)
-			stats.Unlock()
+			sdNotify(fmt.Sprintf("STATUS=%s", stats.ResetReturn()))
 
 		case n := <-l.Notify:
 			switch n.Extra {
