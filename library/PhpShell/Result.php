@@ -5,7 +5,8 @@ class PhpShell_Result extends PhpShell_Entity
 	protected static $_relations = [
 		'input' => PhpShell_Input::class,
 		'output' => PhpShell_Output::class,
-		'version' => PhpShell_Version::class,
+		'minVersion' => PhpShell_Version::class,
+		'maxVersion' => PhpShell_Version::class,
 	];
 	protected static $_numerical = ['maxMemory', 'run'];
 	protected static $_exitCodes = [
@@ -14,9 +15,9 @@ class PhpShell_Result extends PhpShell_Entity
 		255 => 'Generic Error',
 	];
 
-	public function getHtml(): string
+	public function getHtml(PhpShell_Version $version): string
 	{
-		$html = htmlspecialchars($this->output->getRaw($this->input, $this->version), ENT_SUBSTITUTE);
+		$html = htmlspecialchars($this->output->getRaw($this->input, $version), ENT_SUBSTITUTE);
 
 		if ($this->exitCode > 0)
 		{
@@ -35,4 +36,10 @@ class PhpShell_Result extends PhpShell_Entity
 		$this->output->removeCached();
 		$this->removeCached();
 	}
+
+	public static function getTable(): string
+	{
+		return 'result_new';
+	}
+
 }
