@@ -168,7 +168,7 @@ var evalOrg = {};
 			return;
 
 		// Use a shim to keep ff happy
-		ace.config.set('workerPath', '/s/');
+		ace.config.set('workerPath', '/ext/ajaxorg-ace/1.23.0/');
 		ace.require('ace/ext/language_tools');
 		this.editor = ace.edit(code);
 

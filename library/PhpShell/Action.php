@@ -20,7 +20,7 @@ class PhpShell_Action extends Basic_Action
 			'cdn.jsdelivr.net',
 			'blob:', # required by ace
 		],
-		'connect-src' => ["'self'", "https://cdn.jsdelivr.net/"], # for xhr | php-wasm
+		'connect-src' => ["'self'", 'data:', "https://cdn.jsdelivr.net/"], # for xhr | php-wasm
 		'base-uri' => ["'self'"],
 		'form-action' => ["'self'"],
 		'img-src' => ["'self'", 'data:',],

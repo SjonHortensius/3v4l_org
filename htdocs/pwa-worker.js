@@ -4,10 +4,11 @@ const filesToCache = [
   '/',
   '/s/c.css',
   '/s/c.js',
-  'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ace.js',
-  'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/ext-language_tools.js',
-  'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/mode-php.js',
-  'https://cdn.jsdelivr.net/gh/ajaxorg/ace-builds@1.4/src-min-noconflict/theme-chrome.js',
+  '/ext/ajaxorg-ace/1.23.0/ace.js',
+  '/ext/ajaxorg-ace/1.23.0/ext-language_tools.js',
+  '/ext/ajaxorg-ace/1.23.0/mode-php.js',
+  '/ext/ajaxorg-ace/1.23.0/theme-chrome.js',
+  '/ext/ajaxorg-ace/1.23.0/theme-chaos.js',
   '/ext/glyphicons-halflings.png',
 ];
 
