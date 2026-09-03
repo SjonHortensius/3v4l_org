@@ -42,7 +42,7 @@ class PhpShell_Action_New extends PhpShell_Action
 	{
 		$list = Basic::$cache->lockedGet('quickVersionList', function() {
 			# exclude all versions that aren't always stored by the daemon
-			$v = PhpShell_Version::find("released IS NOT NULL", [], ['"isHelper"' => true, 'version.order' => false]);
+			$v = PhpShell_Version::find("released IS NOT NULL", [], ['version.order' => false]);
 
 			return iterator_to_array($v->getSimpleList('name', 'name'));
 		}, 150);
