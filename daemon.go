@@ -48,13 +48,13 @@ type Output struct {
 	id   int
 	raw  string
 	hash string
+	exitCode   int
 }
 
 type Result struct {
 	input      *Input
 	output     Output
 	version    Version
-	exitCode   int
 	userTime   float64
 	systemTime float64
 	maxMemory  int64
@@ -193,18 +193,18 @@ func (this *Input) complete() {
 	}
 }
 
-func newOutput(raw string, i *Input, v Version) Output {
+func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 	raw = strings.ReplaceAll(raw, "\x06", "\\\x06")
 	raw = strings.ReplaceAll(raw, "\x07", "\\\x07")
 	raw = strings.ReplaceAll(raw, v.name, "\x06")
 	raw = strings.ReplaceAll(raw, i.short, "\x07")
 
 	h := sha1.Sum([]byte(raw))
-	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:])}
+	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:]), exitCode}
 
-	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING RETURNING id`, o.hash, o.raw).Scan(&o.id); err == sql.ErrNoRows {
+	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2, $3) ON CONFLICT (hash, "exitCode") DO NOTHING RETURNING id`, o.hash, o.raw, o.exitCode).Scan(&o.id); err == sql.ErrNoRows {
 		// ON CONFLICT does not RETURN id so fetch that
-		db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id)
+		db.QueryRow(`SELECT id FROM output WHERE hash = $1 AND "exitCode" = $2`, o.hash, o.exitCode).Scan(&o.id)
 	} else if err != nil {
 		panic("Output: failed to store: " + err.Error())
 	} else {
@@ -233,8 +233,8 @@ func (this *Result) store() {
 	}
 
 	if err := tx.QueryRow(
-		`SELECT output, "exitCode" FROM result WHERE input = $1 AND version = $2 FOR UPDATE`,
-		this.input.id, this.version.id).Scan(&old.output.id, &old.exitCode); err == sql.ErrNoRows {
+		`SELECT output FROM result WHERE input = $1 AND version = $2 FOR UPDATE`,
+		this.input.id, this.version.id).Scan(&old.output.id); err == sql.ErrNoRows {
 
 		// Instead of locking the whole results table, use the `input` as lock target, this allows concurrent calls but only on other inputs
 		if _, err := tx.Exec(`SELECT * FROM input WHERE id = $1 FOR UPDATE`, this.input.id); err != nil {
@@ -244,29 +244,28 @@ func (this *Result) store() {
 		}
 
 		if _, err := tx.Exec(`INSERT INTO result VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			this.input.id, this.version.id, this.output.id, this.exitCode,
+			this.input.id, this.version.id, this.output.id,
 			this.userTime, this.systemTime, this.maxMemory); err != nil {
 			fmt.Printf("Result: failed to create: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
 		}
 	} else if err == nil {
 		mutated := 0
 
-		if old.output.id != this.output.id || old.exitCode != this.exitCode {
+		if old.output.id != this.output.id {
 			mutated = 1
 		}
 
 		if _, err := tx.Exec(`
 			UPDATE result
 			SET
-				output = $3, "exitCode" = $4,
-				"userTime" =   ((runs * "userTime"  + $5) / (result.runs+1)),
-				"systemTime" = ((runs * "systemTime"+ $6) / (result.runs+1)),
-				"maxMemory" =  ((runs * "maxMemory" + $7) / (result.runs+1)),
-				runs = result.runs + 1, mutations = result.mutations + $8
+				output = $3,
+				"userTime" =   ((runs * "userTime"  + $4) / (result.runs+1)),
+				"systemTime" = ((runs * "systemTime"+ $5) / (result.runs+1)),
+				"maxMemory" =  ((runs * "maxMemory" + $6) / (result.runs+1)),
+				runs = result.runs + 1, mutations = result.mutations + $7
 			WHERE
 				input = $1 AND version = $2`,
-			this.input.id, this.version.id,
-			this.output.id, this.exitCode,
+			this.input.id, this.version.id, this.output.id,
 			this.userTime, this.systemTime, this.maxMemory, mutated); err != nil {
 			fmt.Printf("Result: failed to update: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
 		}
@@ -418,9 +417,8 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 
 	r := Result{
 		input:      this,
-		output:     newOutput(raw, this, v),
+		output:     newOutput(raw, exitCode, this, v),
 		version:    v,
-		exitCode:   exitCode,
 		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
 		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
 		maxMemory:  usage.Maxrss,

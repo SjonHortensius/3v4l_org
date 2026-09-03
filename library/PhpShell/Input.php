@@ -206,7 +206,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$html = $result->getHtml();
 
-			$idx = $result->output->id .':'. $result->exitCode;
+			$idx = $result->output->id;
 			$slot =& $outputs[ $idx ];
 
 			$major = substr($result->version->name, 0, 3);
@@ -284,8 +284,7 @@ class PhpShell_Input extends PhpShell_Entity
 				ROUND(AVG(\"systemTime\")::numeric, 3) as system,
 				ROUND(AVG(\"userTime\")::numeric, 3) as user,
 				ROUND(AVG(\"maxMemory\")/1024, 2) as memory,
-				MAX(version.name) as version,
-				SUM(\"exitCode\") as exit_sum
+				MAX(version.name) as version
 			FROM result
 			INNER JOIN version ON version.id = version
 			WHERE input = ? AND version.id >= ?
