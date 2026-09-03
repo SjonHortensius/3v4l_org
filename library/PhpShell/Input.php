@@ -173,7 +173,7 @@ class PhpShell_Input extends PhpShell_Entity
 		Basic::$database->query('
 			INSERT INTO result_new (input, output, "exitCode", "minVersion", "maxVersion", "avgUserTime", "avgMaxMemory", runs, stable)
 			WITH island_groups AS (
-				SELECT r.input, r.output::integer AS output, r."exitCode", v."order", v.id AS version_id, r."userTime", r."maxMemory", r.runs,
+				SELECT r.input, r.output::integer AS output, r."exitCode", v."order", r."userTime", r."maxMemory", r.runs, r.mutations
 					ROW_NUMBER() OVER (PARTITION BY r.input ORDER BY v."order")
 					 - ROW_NUMBER() OVER (PARTITION BY r.input, r.output, r."exitCode" ORDER BY v."order") AS island_id
 				FROM result r
@@ -181,18 +181,21 @@ class PhpShell_Input extends PhpShell_Entity
 				WHERE '.$filter.'
 			),
 			aggregated AS (
-				SELECT input, output, "exitCode", MIN(version_id) AS minVersion, MAX(version_id) AS maxVersion, SUM("userTime" * runs)::real / NULLIF(SUM(runs), 0) AS avgUserTime,
-					(SUM("maxMemory"::bigint * runs) / NULLIF(SUM(runs), 0))::integer AS avgMaxMemory, SUM(runs) AS runs, BOOL_AND(runs > 0) AS stable
+				SELECT input, output, "exitCode", MIN("order") AS "minOrder", MAX("order") AS "maxOrder", SUM("userTime" * runs)::real / NULLIF(SUM(runs), 0) AS avgUserTime,
+					(SUM("maxMemory"::bigint * runs) / NULLIF(SUM(runs), 0))::integer AS avgMaxMemory, SUM(runs) AS runs, BOOL_AND(mutations = 0) AS stable
 				FROM island_groups
 				GROUP BY input, output, "exitCode", island_id
 			)
-			SELECT input, output, "exitCode", minVersion::smallint, maxVersion::smallint, avgUserTime, avgMaxMemory, LEAST(runs, 32767)::smallint, COALESCE(stable, TRUE) FROM aggregated;
+			SELECT input, output, "exitCode", "minOrder", "maxOrder", avgUserTime, avgMaxMemory, LEAST(runs, 32767), COALESCE(stable, TRUE) FROM aggregated;
 		');
 
-		//DELETE FROM result $filter
+		Basic::$database->query("DELETE FROM result r WHERE $filter");
 	}
 
 	public function getResults(): array {
+		if (count($this->getRelated(PhpShell_Result::class)) == 0)
+			$this->_migrateResults();
+
 		if (!isset($this->_results)) {
 			$this->_results = [];
 
@@ -223,12 +226,12 @@ class PhpShell_Input extends PhpShell_Entity
 
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result) {
-			if ($forRfc && $result->minVersion->id >= self::RFC_VERSION_TRESHOLD)
+/*			if ($forRfc && $result->minVersion->id >= self::RFC_VERSION_TRESHOLD)
 				continue;
 			if (!$forRfc && $result->minVersion->id < self::RFC_VERSION_TRESHOLD)
 				continue;
-
-			$versions = array_filter($allVersions, fn($v) => $v->id >= $result->minVersion->id && $v->id <= $result->maxVersion->id);
+*/
+			$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
 
 			$prevMajor = null;
 			$groupKey = null;
@@ -256,6 +259,7 @@ class PhpShell_Input extends PhpShell_Entity
 
 			if ($groupKey !== null)
 				$slots[$groupKey][$segHtml] = $segMax ? $segMin . ' - ' . $abbrMax($segMax) : $segMin;
+		Basic::debug($result, $versions, $slots);
 		}
 
 		$final = [];
@@ -323,7 +327,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result)
-			if ($result->version == $version)
+			if ($result->minVersion >= $version && $result->maxVersion < $version)
 				return $result;
 
 		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);
