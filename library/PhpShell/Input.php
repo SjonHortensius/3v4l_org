@@ -170,13 +170,18 @@ class PhpShell_Input extends PhpShell_Entity
 	protected function _migrateResults(): void {
 		Basic::$database->q('
 			INSERT INTO result_new (input, output, "exitCode", "minVersion", "maxVersion", "avgUserTime", "avgMaxMemory", runs, stable)
-			WITH island_groups AS (
-				SELECT r.input, r.output::integer AS output, r."exitCode", v."order", r."userTime", r."maxMemory", r.runs, r.mutations,
-					ROW_NUMBER() OVER (PARTITION BY r.input ORDER BY v."order")
-					 - ROW_NUMBER() OVER (PARTITION BY r.input, r.output, r."exitCode" ORDER BY v."order") AS island_id
+			WITH dedup AS (
+				SELECT DISTINCT ON (r.input, r.version)
+					r.input, r.output::integer AS output, r."exitCode", v."order", r."userTime", r."maxMemory", r.runs, r.mutations
 				FROM result r
 				JOIN version v ON v.id = r.version
 				WHERE r.input = ?
+				ORDER BY r.input, r.version, r.ctid
+			), island_groups AS (
+				SELECT input, output, "exitCode", "order", "userTime", "maxMemory", runs, mutations,
+					ROW_NUMBER() OVER (PARTITION BY input ORDER BY "order")
+					 - ROW_NUMBER() OVER (PARTITION BY input, output, "exitCode" ORDER BY "order") AS island_id
+				FROM dedup
 			),
 			aggregated AS (
 				SELECT input, output, "exitCode", MIN("order") AS minVersion, MAX("order") AS maxVersion, SUM("userTime" * runs)::real / NULLIF(SUM(runs), 0) AS avgUserTime,
@@ -184,7 +189,8 @@ class PhpShell_Input extends PhpShell_Entity
 				FROM island_groups
 				GROUP BY input, output, "exitCode", island_id
 			)
-			SELECT input, output, "exitCode", minVersion, maxVersion, avgUserTime, avgMaxMemory, LEAST(runs, 32767)::smallint, COALESCE(stable, TRUE) FROM aggregated;
+			SELECT input, output, "exitCode", minVersion, maxVersion, avgUserTime, avgMaxMemory, LEAST(runs, 32767)::smallint, COALESCE(stable, TRUE) FROM aggregated
+			ON CONFLICT (input, output, "exitCode", "minVersion") DO NOTHING;
 		', [$this->id]);
 
 		Basic::$database->q("DELETE FROM result WHERE input = ?", [$this->id]);
