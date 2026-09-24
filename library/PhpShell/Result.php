@@ -19,10 +19,10 @@ class PhpShell_Result extends PhpShell_Entity
 	{
 		$html = htmlspecialchars($this->output->getRaw($this->input, $version), ENT_SUBSTITUTE);
 
-		if ($this->exitCode > 0)
+		if ($this->output->exitCode > 0)
 		{
-			$title = isset(self::$_exitCodes[ $this->exitCode ]) ? ' title="'. self::$_exitCodes[ $this->exitCode ] .'"' : '';
-			$html .= '<br/><i>Process exited with code <b'. $title .'>'. $this->exitCode .'</b>.</i>';
+			$title = isset(self::$_exitCodes[ $this->exitCode ]) ? ' title="'. self::$_exitCodes[ $this->output->exitCode ] .'"' : '';
+			$html .= '<br/><i>Process exited with code <b'. $title .'>'. $this->output->exitCode .'</b>.</i>';
 		}
 
 		return $html;

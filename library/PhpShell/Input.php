@@ -237,14 +237,10 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
 
-			$prevMajor = null;
-			$groupKey = null;
-			$segMin = $segMax = $segHtml = '';
-
 			foreach ($versions as $v) {
 				$major = substr($v->name, 0, 3);
 				$html = $result->getHtml($v);
-				$idx = $result->output->id .':'. $result->exitCode;
+				$idx = $result->output->id;
 
 				if ($idx !== $groupKey || $major !== $prevMajor) {
 					if ($groupKey !== null)
@@ -306,8 +302,7 @@ class PhpShell_Input extends PhpShell_Entity
 				ROUND(AVG(\"systemTime\")::numeric, 3) as system,
 				ROUND(AVG(\"userTime\")::numeric, 3) as user,
 				ROUND(AVG(\"maxMemory\")/1024, 2) as memory,
-				MAX(version.name) as version,
-				SUM(\"exitCode\") as exit_sum
+				MAX(version.name) as version
 			FROM result
 			INNER JOIN version ON version.id = version
 			WHERE input = ? AND version.id >= ?

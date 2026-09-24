@@ -48,25 +48,25 @@ type Input struct {
 }
 
 type Output struct {
-	id   int
-	raw  string
-	hash string
+	id       int
+	raw      string
+	hash     string
+	exitCode int
 }
 
 type Result struct {
-	input      *Input
-	output     Output
-	version    Version
-	exitCode   int
-	userTime   float64
-	maxMemory  int64
-	runs		int
+	input     *Input
+	output    Output
+	version   Version
+	userTime  float64
+	maxMemory int64
+	runs      int
 }
 
 type ResultRange struct {
-	minVersion, maxVersion, output, exitCode, runs int
-	userTime, maxMemory                            float64
-	stable                                         bool
+	minVersion, maxVersion, output, runs int
+	userTime, maxMemory                  float64
+	stable                               bool
 }
 
 type ResourceLimit struct {
@@ -108,7 +108,7 @@ func (this *Stats) Increase(field string, n int) {
 }
 
 func (s *Stats) ResetReturn() string {
-	defer func(){ s.inputs.Store(0); s.outputs.Store(0); s.results.Store(0); s.penalty.Store(0) }()
+	defer func() { s.inputs.Store(0); s.outputs.Store(0); s.results.Store(0); s.penalty.Store(0) }()
 
 	return fmt.Sprintf("inputs=%d outputs=%d results=%d penalty=%d",
 		s.inputs.Load(), s.outputs.Load(), s.results.Load(), s.penalty.Load())
@@ -209,18 +209,18 @@ func (this *Input) complete() {
 	}
 }
 
-func newOutput(raw string, i *Input, v Version) Output {
+func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 	raw = strings.ReplaceAll(raw, "\x06", "\\\x06")
 	raw = strings.ReplaceAll(raw, "\x07", "\\\x07")
 	raw = strings.ReplaceAll(raw, v.name, "\x06")
 	raw = strings.ReplaceAll(raw, i.short, "\x07")
 
 	h := sha1.Sum([]byte(raw))
-	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:])}
+	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:]), exitCode}
 
-	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2) ON CONFLICT (hash) DO NOTHING RETURNING id`, o.hash, o.raw).Scan(&o.id); err == sql.ErrNoRows {
+	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2, $3) ON CONFLICT (hash, "exitCode") DO NOTHING RETURNING id`, o.hash, o.raw, o.exitCode).Scan(&o.id); err == sql.ErrNoRows {
 		// ON CONFLICT does not RETURN id so fetch that
-		db.QueryRow(`SELECT id FROM output WHERE hash = $1`, o.hash).Scan(&o.id)
+		db.QueryRow(`SELECT id FROM output WHERE hash = $1 AND "exitCode" = $2`, o.hash, o.exitCode).Scan(&o.id)
 	} else if err != nil {
 		panic("Output: failed to store: " + err.Error())
 	} else {
@@ -373,8 +373,8 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 
 	userTime := float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0
 	this.pendingResults = append(this.pendingResults, Result{
-		input: this, output: newOutput(raw, this, v), version: v,
-		exitCode: exitCode, userTime: userTime, maxMemory: usage.Maxrss, runs: 1,
+		input: this, output: newOutput(raw, exitCode, this, v), version: v,
+		userTime: userTime, maxMemory: usage.Maxrss, runs: 1,
 	})
 
 	stats.Increase("results", 1)
@@ -420,14 +420,14 @@ func (this *Input) rebuildResults() {
 			if !ok {
 				continue // gap in order sequence
 			}
-			merged[v.id] = Result{output: Output{id: out}, version: v, exitCode: ec, userTime: ut, maxMemory: int64(mm), runs: r}
+			merged[v.id] = Result{output: Output{id: out, exitCode: ec}, version: v, userTime: ut, maxMemory: int64(mm), runs: r}
 		}
 	}
 	rows.Close()
 	versionsByOrderLock.RUnlock()
 
 	for _, r := range this.pendingResults {
-		if old, ok := merged[r.version.id]; ok && old.output.id == r.output.id && old.exitCode == r.exitCode {
+		if old, ok := merged[r.version.id]; ok && old.output.id == r.output.id {
 			t := float64(old.runs)
 			old.userTime = (old.userTime*t + r.userTime) / (t + 1)
 			old.maxMemory = int64((float64(old.maxMemory)*t + float64(r.maxMemory)) / (t + 1))
@@ -485,11 +485,11 @@ func (this *Input) writeRanges(rows []ResultRange) {
 	}
 
 	for _, r := range rows {
-		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-			this.id, r.output, r.exitCode, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable); err != nil {
-				fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
-				return
-			}
+		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			this.id, r.output, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable); err != nil {
+			fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
+			return
+		}
 	}
 	tx.Commit()
 }
@@ -499,7 +499,7 @@ func groupIslands(results []Result) []ResultRange {
 
 	var rows []ResultRange
 	for _, r := range results {
-		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id && rows[i].exitCode == r.exitCode {
+		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id {
 			rows[i].maxVersion = r.version.order
 			rows[i].runs = max(rows[i].runs, r.runs)
 			totalRuns := float64(rows[i].runs)
@@ -507,7 +507,7 @@ func groupIslands(results []Result) []ResultRange {
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
 			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
 		} else {
-			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.exitCode, r.runs, r.userTime, float64(r.maxMemory), true})
+			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), true})
 		}
 	}
 
@@ -776,18 +776,18 @@ func doVldHelper(short string) {
 }
 
 var (
-	dbDsn           string
-	db              *sql.DB
-	batch           SizedWaitGroup
-	batchSnv        bool
-	stats           Stats
-	versions        []Version
-	versionsByOrder map[int]Version
-	versionsByOrderLock	sync.RWMutex
-	dryRun          bool
-	inPath          string
-	sdSocket        *net.UnixConn
-	inputSrc        struct {
+	dbDsn               string
+	db                  *sql.DB
+	batch               SizedWaitGroup
+	batchSnv            bool
+	stats               Stats
+	versions            []Version
+	versionsByOrder     map[int]Version
+	versionsByOrderLock sync.RWMutex
+	dryRun              bool
+	inPath              string
+	sdSocket            *net.UnixConn
+	inputSrc            struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
