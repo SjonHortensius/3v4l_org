@@ -410,8 +410,11 @@ func (this *Input) rebuildResults() {
 	for rows.Next() {
 		var out, ec, minV, maxV, r int
 		var ut, mm float64
-		rows.Scan(&out, &ec, &minV, &maxV, &ut, &mm, &r)
-		lo, hi := versionsById[minV].order, versionsById[maxV].order
+		if err := rows.Scan(&out, &ec, &minV, &maxV, &ut, &mm, &r); err != nil {
+			fmt.Fprintf(os.Stderr, "rebuildResults: scan failed: %s\n", err)
+			continue
+		}
+		lo, hi := minV, maxV
 		for o := lo; o <= hi; o++ {
 			v, ok := versionsByOrder[o]
 			if !ok {
@@ -475,7 +478,7 @@ func (this *Input) writeRanges(rows []ResultRange) {
 
 	for _, r := range rows {
 		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-			this.id, r.output, r.exitCode, r.minVersion, r.maxVersion, r.userTime, r.maxMemory, r.runs, r.stable); err != nil {
+			this.id, r.output, r.exitCode, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable); err != nil {
 				fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
 				return
 			}
@@ -489,14 +492,14 @@ func groupIslands(results []Result) []ResultRange {
 	var rows []ResultRange
 	for _, r := range results {
 		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id && rows[i].exitCode == r.exitCode {
-			rows[i].maxVersion = r.version.id
+			rows[i].maxVersion = r.version.order
 			rows[i].runs += r.runs
 			totalRuns := float64(rows[i].runs)
 			prevRuns := float64(r.runs)
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
 			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
 		} else {
-			rows = append(rows, ResultRange{r.version.id, r.version.id, r.output.id, r.exitCode, r.runs, r.userTime, float64(r.maxMemory), true})
+			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.exitCode, r.runs, r.userTime, float64(r.maxMemory), true})
 		}
 	}
 
@@ -554,10 +557,8 @@ func refreshVersions() {
 	defer versionsByOrderLock.Unlock()
 
 	versions = newVersions
-	versionsById = make(map[int]Version, len(newVersions))
 	versionsByOrder = make(map[int]Version, len(newVersions))
 	for _, v := range newVersions {
-		versionsById[v.id] = v
 		versionsByOrder[v.order] = v
 	}
 }
@@ -658,16 +659,14 @@ func batchScheduleNewVersions() {
 			WHERE
 				NOT EXISTS (
 					SELECT 1 FROM result_new r
-					JOIN version vmin ON vmin.id = r."minVersion"
-					JOIN version vmax ON vmax.id = r."maxVersion"
-					JOIN version v ON v.id = $1
-					WHERE r.input = input.id AND v."order" BETWEEN vmin."order" AND vmax."order"
+					WHERE r.input = input.id
+					  AND $1 BETWEEN r."minVersion" AND r."maxVersion"
 				)
 				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
 				AND "operationCount" > 0
 				AND NOT "bughuntIgnore";`,
-			v.id, v.eol.Format("2006-01-02"))
+			v.order, v.eol.Format("2006-01-02"))
 		if err != nil {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
@@ -775,7 +774,6 @@ var (
 	batchSnv        bool
 	stats           Stats
 	versions        []Version
-	versionsById    map[int]Version
 	versionsByOrder map[int]Version
 	versionsByOrderLock	sync.RWMutex
 	dryRun          bool
