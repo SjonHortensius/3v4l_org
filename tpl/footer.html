@@ -18,7 +18,6 @@
 	<script src="/s/my.js" async></script>
 	<script src="/ext/diff.js" async></script>
 
-	{!-- ace version must be updated in htdocs/s/worker-php.js as well --}
 	{!-- curl URL | openssl dgst -sha384 -binary | openssl base64 -A --}
 	{foreach ($this->aceScripts as $this->src => $this->sha384)}
 		<script src="/ext/ajaxorg-ace/1.23.0/{src}.js" integrity="sha384-{sha384}" crossorigin="anonymous"></script>

@@ -91,7 +91,7 @@ class PhpShell_Action extends Basic_Action
 		{
 			$preloads = Basic::$cache->lockedGet(__CLASS__.'::staticPreloads', function(){
 				// dynamically fetch correct version
-				$aceBase = str_replace('worker-php.js', '', explode("'", file_get_contents(APPLICATION_PATH .'/htdocs/s/worker-php.js'))[1]);
+				preg_match("|ace.config.set\('workerPath', '([^']+)'\);|", file_get_contents(APPLICATION_PATH .'/htdocs/s/my.js'), $matches); $aceBase = $matches[1];
 
 				$p = [];
 				foreach ($this->aceScripts as $name => $hash)
