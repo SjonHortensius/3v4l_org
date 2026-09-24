@@ -427,7 +427,15 @@ func (this *Input) rebuildResults() {
 	versionsByOrderLock.RUnlock()
 
 	for _, r := range this.pendingResults {
-		merged[r.version.id] = r
+		if old, ok := merged[r.version.id]; ok && old.output.id == r.output.id && old.exitCode == r.exitCode {
+			t := float64(old.runs)
+			old.userTime = (old.userTime*t + r.userTime) / (t + 1)
+			old.maxMemory = int64((float64(old.maxMemory)*t + float64(r.maxMemory)) / (t + 1))
+			old.runs++
+			merged[r.version.id] = old
+		} else {
+			merged[r.version.id] = r
+		}
 	}
 
 	all := make([]Result, 0, len(merged))
@@ -493,7 +501,7 @@ func groupIslands(results []Result) []ResultRange {
 	for _, r := range results {
 		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id && rows[i].exitCode == r.exitCode {
 			rows[i].maxVersion = r.version.order
-			rows[i].runs += r.runs
+			rows[i].runs = max(rows[i].runs, r.runs)
 			totalRuns := float64(rows[i].runs)
 			prevRuns := float64(r.runs)
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
