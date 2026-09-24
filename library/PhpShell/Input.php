@@ -2,7 +2,7 @@
 
 class PhpShell_Input extends PhpShell_Entity
 {
-	private const RFC_VERSION_TRESHOLD = 32;
+	private const RFC_VERSION_TRESHOLD = 9000;
 
 	protected static $_relations = [
 		'user' => PhpShell_User::class,
@@ -167,15 +167,44 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
+	protected function _migrateResults(): void {
+		Basic::$database->q('
+			INSERT INTO result_new (input, output, "exitCode", "minVersion", "maxVersion", "avgUserTime", "avgMaxMemory", runs, stable)
+			WITH dedup AS (
+				SELECT DISTINCT ON (r.input, r.version)
+					r.input, r.output::integer AS output, r."exitCode", v."order", r."userTime", r."maxMemory", r.runs, r.mutations
+				FROM result r
+				JOIN version v ON v.id = r.version
+				WHERE r.input = ?
+				ORDER BY r.input, r.version, r.ctid
+			), island_groups AS (
+				SELECT input, output, "exitCode", "order", "userTime", "maxMemory", runs, mutations,
+					ROW_NUMBER() OVER (PARTITION BY input ORDER BY "order")
+					 - ROW_NUMBER() OVER (PARTITION BY input, output, "exitCode" ORDER BY "order") AS island_id
+				FROM dedup
+			),
+			aggregated AS (
+				SELECT input, output, "exitCode", MIN("order") AS minVersion, MAX("order") AS maxVersion, SUM("userTime" * runs)::real / NULLIF(SUM(runs), 0) AS avgUserTime,
+					(SUM("maxMemory"::bigint * runs) / NULLIF(SUM(runs), 0))::integer AS avgMaxMemory, SUM(runs) AS runs, BOOL_AND(mutations = 0) AS stable
+				FROM island_groups
+				GROUP BY input, output, "exitCode", island_id
+			)
+			SELECT input, output, "exitCode", minVersion, maxVersion, avgUserTime, avgMaxMemory, LEAST(runs, 32767)::smallint, COALESCE(stable, TRUE) FROM aggregated
+			ON CONFLICT (input, output, "exitCode", "minVersion") DO NOTHING;
+		', [$this->id]);
+
+		Basic::$database->q("DELETE FROM result WHERE input = ?", [$this->id]);
+	}
+
 	public function getResults(): array {
+		if (count($this->getRelated(PhpShell_Result::class)) == 0)
+			$this->_migrateResults();
+
 		if (!isset($this->_results)) {
 			$this->_results = [];
 
 			// iterator_to_array in PHP-8.5 throws `Using null as an array offset is deprecated`
-			foreach ($this->getRelated(PhpShell_Result::class)
-				->addJoin(PhpShell_Version::class, "version.id = version")
-				->addJoin(PhpShell_Output::class, "output.id = output")
-				->setOrder(['version.order' => true]) as $result)
+			foreach ($this->getRelated(PhpShell_Result::class)->addJoin(PhpShell_Output::class, "output.id = output") as $result)
 				$this->_results[] = $result;
 		}
 
@@ -193,63 +222,56 @@ class PhpShell_Input extends PhpShell_Entity
 				return $name;
 		};
 
-		$outputs = [];
+		$allVersions = iterator_to_array(PhpShell_Version::find()->getSimpleList(null));
+		usort($allVersions, fn($a, $b) => $a->order - $b->order);
+
+		$build = fn($v) => '<span title="released ' . htmlspecialchars($v->released) . '">' . htmlspecialchars($v->name) . '</span>';
+		$slots = [];
+
 		/* @var PhpShell_Result $result */
-		foreach ($this->getResults() as $result)
-		{
-			if ($result->version->isHelper)
+		foreach ($this->getResults() as $result) {
+			if ($forRfc && $result->minVersion->order < self::RFC_VERSION_TRESHOLD)
 				continue;
-			if ($forRfc && $result->version->id >= self::RFC_VERSION_TRESHOLD)
-				continue;
-			if (!$forRfc && $result->version->id < self::RFC_VERSION_TRESHOLD)
+			if (!$forRfc && $result->minVersion->order > self::RFC_VERSION_TRESHOLD)
 				continue;
 
-			$html = $result->getHtml();
+			$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
 
-			$idx = $result->output->id .':'. $result->exitCode;
-			$slot =& $outputs[ $idx ];
+			$prevMajor = null;
+			$groupKey = null;
+			$segMin = $segMax = $segHtml = '';
 
-			$major = substr($result->version->name, 0, 3);
-			$name = '<span title="released '. $result->version->released. '">'.$result->version->name.'</span>';
+			foreach ($versions as $v) {
+				$major = substr($v->name, 0, 3);
+				$html = $result->getHtml($v);
+				$idx = $result->output->id .':'. $result->exitCode;
 
-			if (!isset($slot))
-				$slot = ['min' => $name, 'versions' => [], 'order' => 0, 'isAsserted' => $result->isAsserted];
-			elseif ($idx != $prev || $major !== $prevMajor || $forRfc)
-			{
-				// Close previous slot
-				if (isset($slot['max']))
-					$slot['versions'][] = $slot['min'] . ' - ' . $abbrMax($slot['max']);
-				elseif (isset($slot['min']))
-					$slot['versions'][] = $slot['min'];
+				if ($idx !== $groupKey || $major !== $prevMajor) {
+					if ($groupKey !== null)
+						$slots[$groupKey][$segHtml][] = $segMax ? $segMin . ' - ' . $abbrMax($segMax) : $segMin;
 
-				$slot['min'] = $name;
-				unset($slot['max']);
+					$groupKey = $idx;
+					$segMin = $build($v);
+					$segHtml = $html;
+					$segMax = '';
+				} else {
+					$segMax = $build($v);
+				}
+
+				$prevMajor = $major;
 			}
-			else
-				$slot['max'] = $name;
 
-			$slot['order'] = max($slot['order'], $result->version->order);
-			$slot['output'] = $html;
-
-			$prev = $idx;
-			$prevMajor = $major;
+			if ($groupKey !== null)
+				$slots[$groupKey][$segHtml][] = $segMax ? $segMin . ' - ' . $abbrMax($segMax) : $segMin;
 		}
 
-		usort($outputs, function($a, $b){ return $b['order'] - $a['order']; });
-
-		$versions = [];
-		foreach ($outputs as $output)
-		{
-			// Process unclosed slots
-			if (isset($output['max']))
-				array_push($output['versions'], $output['min'] .' - '. $abbrMax($output['max']));
-			elseif (isset($output['min']))
-				array_push($output['versions'], $output['min']);
-
-			$versions[ implode(', ', $output['versions']) ] = $output;
+		$final = [];
+		foreach ($slots as $group) {
+			foreach ($group as $html => $verStr)
+				$final[implode(', ', $verStr)] = $html;
 		}
 
-		return $versions;
+		return $final;
 	}
 
 	public function logHit(): void
@@ -308,7 +330,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result)
-			if ($result->version == $version)
+			if ($result->minVersion >= $version && $result->maxVersion <= $version)
 				return $result;
 
 		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);

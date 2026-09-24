@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,14 +35,16 @@ type Version struct {
 
 type Input struct {
 	sync.Mutex
-	id            int
-	short         string
-	uniqueOutput  map[string]bool
-	penalty       int
-	penaltyDetail map[string]int
-	created       time.Time
-	runArchived   bool
-	lastSubmit    time.Time
+	id             int
+	short          string
+	uniqueOutput   map[string]bool
+	penalty        int
+	penaltyDetail  map[string]int
+	created        time.Time
+	runArchived    bool
+	lastSubmit     time.Time
+	pendingResults []Result
+	rebuild        bool // skip fast-path, merge existing data from db
 }
 
 type Output struct {
@@ -56,8 +59,14 @@ type Result struct {
 	version    Version
 	exitCode   int
 	userTime   float64
-	systemTime float64
 	maxMemory  int64
+	runs		int
+}
+
+type ResultRange struct {
+	minVersion, maxVersion, output, exitCode, runs int
+	userTime, maxMemory                            float64
+	stable                                         bool
 }
 
 type ResourceLimit struct {
@@ -177,6 +186,13 @@ func (this *Input) removeSource() {
 }
 
 func (this *Input) complete() {
+	if this.rebuild {
+		this.rebuildResults()
+		this.rebuild = false
+	} else {
+		this.storeResults()
+	}
+
 	state := "done"
 	if this.penalty > 256 {
 		state = "abusive"
@@ -212,77 +228,14 @@ func newOutput(raw string, i *Input, v Version) Output {
 	}
 
 	i.Lock()
+	defer i.Unlock()
+
 	if !i.uniqueOutput[o.hash] {
 		i.uniqueOutput[o.hash] = true
-		i.Unlock()
 		i.penalize("Excessive total output", len(o.raw)/2048)
-	} else {
-		i.Unlock()
 	}
 
 	return o
-}
-
-func (this *Result) store() {
-	old := &Result{}
-	tx, err := db.Begin()
-	if err != nil {
-		fmt.Printf("Result: failed to start tx: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-
-		return
-	}
-
-	if err := tx.QueryRow(
-		`SELECT output, "exitCode" FROM result WHERE input = $1 AND version = $2 FOR UPDATE`,
-		this.input.id, this.version.id).Scan(&old.output.id, &old.exitCode); err == sql.ErrNoRows {
-
-		// Instead of locking the whole results table, use the `input` as lock target, this allows concurrent calls but only on other inputs
-		if _, err := tx.Exec(`SELECT * FROM input WHERE id = $1 FOR UPDATE`, this.input.id); err != nil {
-			fmt.Printf("Result: failed to lock input: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-
-			return
-		}
-
-		if _, err := tx.Exec(`INSERT INTO result VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-			this.input.id, this.version.id, this.output.id, this.exitCode,
-			this.userTime, this.systemTime, this.maxMemory); err != nil {
-			fmt.Printf("Result: failed to create: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-		}
-	} else if err == nil {
-		mutated := 0
-
-		if old.output.id != this.output.id || old.exitCode != this.exitCode {
-			mutated = 1
-		}
-
-		if _, err := tx.Exec(`
-			UPDATE result
-			SET
-				output = $3, "exitCode" = $4,
-				"userTime" =   ((runs * "userTime"  + $5) / (result.runs+1)),
-				"systemTime" = ((runs * "systemTime"+ $6) / (result.runs+1)),
-				"maxMemory" =  ((runs * "maxMemory" + $7) / (result.runs+1)),
-				runs = result.runs + 1, mutations = result.mutations + $8
-			WHERE
-				input = $1 AND version = $2`,
-			this.input.id, this.version.id,
-			this.output.id, this.exitCode,
-			this.userTime, this.systemTime, this.maxMemory, mutated); err != nil {
-			fmt.Printf("Result: failed to update: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-		}
-	} else if err != nil {
-		fmt.Printf("Result: failed to select-for-update: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		fmt.Printf("Result: failed to commit: input=%s,version=%s,output=%d: %s\n", this.input.short, this.version.name, this.output.id, err)
-	}
-}
-
-func (this *Result) delete() {
-	if _, err := db.Exec(`DELETE FROM result WHERE input=$1 AND version=$2`, this.input.id, this.version.id); err != nil {
-		fmt.Printf("Result: failed to delete: input=%s,version=%s: %s\n", this.input.short, this.version.name, err)
-	}
 }
 
 func (this *Input) execute(cmdArgs []string, l ResourceLimit) (string, *os.ProcessState) {
@@ -346,7 +299,7 @@ func (this *Input) execute(cmdArgs []string, l ResourceLimit) (string, *os.Proce
 		}
 
 		if limited.N == 0 {
-			cmd.Process.Kill()
+			c.Process.Kill()
 		}
 
 		if len(data) > l.output {
@@ -416,22 +369,74 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 		exitCode = 128 + int(waitStatus.Signal())
 	}
 
-	r := Result{
-		input:      this,
-		output:     newOutput(raw, this, v),
-		version:    v,
-		exitCode:   exitCode,
-		userTime:   float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0,
-		systemTime: float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1000000.0,
-		maxMemory:  usage.Maxrss,
-	}
-
 	this.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
-	r.store()
+
+	userTime := float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0
+	this.pendingResults = append(this.pendingResults, Result{
+		input: this, output: newOutput(raw, this, v), version: v,
+		exitCode: exitCode, userTime: userTime, maxMemory: usage.Maxrss, runs: 1,
+	})
 
 	stats.Increase("results", 1)
 
 	return
+}
+
+func (this *Input) storeResults() {
+	if dryRun || len(this.pendingResults) == 0 {
+		return
+	}
+
+	this.writeRanges(groupIslands(this.pendingResults))
+	this.pendingResults = nil
+}
+
+func (this *Input) rebuildResults() {
+	if dryRun || len(this.pendingResults) == 0 {
+		return
+	}
+
+	merged := map[int]Result{}
+
+	rows, err := db.Query(`SELECT output,"exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs FROM result_new WHERE input=$1`, this.id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "rebuildResults: failed to select %s\n", err)
+		this.pendingResults = nil
+		return
+	}
+
+	versionsByOrderLock.RLock()
+
+	for rows.Next() {
+		var out, ec, minV, maxV, r int
+		var ut, mm float64
+		if err := rows.Scan(&out, &ec, &minV, &maxV, &ut, &mm, &r); err != nil {
+			fmt.Fprintf(os.Stderr, "rebuildResults: scan failed: %s\n", err)
+			continue
+		}
+		lo, hi := minV, maxV
+		for o := lo; o <= hi; o++ {
+			v, ok := versionsByOrder[o]
+			if !ok {
+				continue // gap in order sequence
+			}
+			merged[v.id] = Result{output: Output{id: out}, version: v, exitCode: ec, userTime: ut, maxMemory: int64(mm), runs: r}
+		}
+	}
+	rows.Close()
+	versionsByOrderLock.RUnlock()
+
+	for _, r := range this.pendingResults {
+		merged[r.version.id] = r
+	}
+
+	all := make([]Result, 0, len(merged))
+	for _, r := range merged {
+		all = append(all, r)
+	}
+
+	this.writeRanges(groupIslands(all))
+	this.pendingResults = nil
 }
 
 func (this *Input) storeVldOutput(raw string, s *os.ProcessState) {
@@ -451,6 +456,54 @@ func (this *Input) storeVldOutput(raw string, s *os.ProcessState) {
 	}
 
 	return
+}
+
+func (this *Input) writeRanges(rows []ResultRange) {
+	tx, err := db.Begin()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "writeRanges: failed to start transaction: %s\n", err)
+		return
+	}
+	defer tx.Rollback()
+
+	// Instead of locking the whole results table, use the `input` as lock target, this allows concurrent calls but only on other inputs
+	if _, err := tx.Exec(`SELECT 1 FROM input WHERE id=$1 FOR UPDATE`, this.id); err != nil {
+		fmt.Fprintf(os.Stderr, "writeRanges: failed to lock: %s\n", err)
+		return
+	}
+	if _, err := tx.Exec(`DELETE FROM result_new WHERE input=$1`, this.id); err != nil {
+		fmt.Fprintf(os.Stderr, "writeRanges: failed to delete: %s\n", err)
+		return
+	}
+
+	for _, r := range rows {
+		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			this.id, r.output, r.exitCode, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable); err != nil {
+				fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
+				return
+			}
+	}
+	tx.Commit()
+}
+
+func groupIslands(results []Result) []ResultRange {
+	sort.Slice(results, func(i, j int) bool { return results[i].version.order < results[j].version.order })
+
+	var rows []ResultRange
+	for _, r := range results {
+		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id && rows[i].exitCode == r.exitCode {
+			rows[i].maxVersion = r.version.order
+			rows[i].runs += r.runs
+			totalRuns := float64(rows[i].runs)
+			prevRuns := float64(r.runs)
+			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
+			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
+		} else {
+			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.exitCode, r.runs, r.userTime, float64(r.maxMemory), true})
+		}
+	}
+
+	return rows
 }
 
 func cleanTmpDirectory() error {
@@ -500,7 +553,14 @@ func refreshVersions() {
 		newVersions = append(newVersions, v)
 	}
 
+	versionsByOrderLock.Lock()
+	defer versionsByOrderLock.Unlock()
+
 	versions = newVersions
+	versionsByOrder = make(map[int]Version, len(newVersions))
+	for _, v := range newVersions {
+		versionsByOrder[v.order] = v
+	}
 }
 
 func checkPendingInputs() {
@@ -596,14 +656,17 @@ func batchScheduleNewVersions() {
 		rs, err := db.Query(`
 			SELECT id, short, "runArchived", created, penalty
 			FROM input
-			LEFT JOIN result ON (version = $1 AND input=id)
 			WHERE
-				input IS NULL
+				NOT EXISTS (
+					SELECT 1 FROM result_new r
+					WHERE r.input = input.id
+					  AND $1 BETWEEN r."minVersion" AND r."maxVersion"
+				)
 				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
 				AND "operationCount" > 0
 				AND NOT "bughuntIgnore";`,
-			v.id, v.eol.Format("2006-01-02"))
+			v.order, v.eol.Format("2006-01-02"))
 		if err != nil {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
@@ -615,6 +678,7 @@ func batchScheduleNewVersions() {
 			found++
 
 			var input Input
+			input.rebuild = true
 			if err := rs.Scan(&input.id, &input.short, &input.runArchived, &input.created, &input.penalty); err != nil {
 				panic("batchScheduleNewVersions: error Scanning: " + err.Error())
 			}
@@ -669,6 +733,7 @@ func doWork() {
 
 		input.prepare()
 		sdNotify(fmt.Sprintf("STATUS=executing %s", input.short))
+		input.rebuild = version.Valid
 
 		for _, v := range versions {
 			if (version.Valid && version.String == v.name) || (!version.Valid && (input.runArchived || v.eol.After(input.created))) {
@@ -678,12 +743,6 @@ func doWork() {
 
 			if input.penalty > 512 {
 				break
-			}
-		}
-
-		if !input.runArchived && !version.Valid {
-			if _, err := db.Exec(`DELETE FROM result WHERE input = $1 AND version IN (SELECT id FROM version WHERE eol < $2)`, input.id, input.created); err != nil {
-				fmt.Printf("doWork: failed to clean: input=%d,eol=%s: %s\n", input.id, input.created, err)
 			}
 		}
 
@@ -709,16 +768,18 @@ func doVldHelper(short string) {
 }
 
 var (
-	dbDsn    string
-	db       *sql.DB
-	batch    SizedWaitGroup
-	batchSnv bool
-	stats    Stats
-	versions []Version
-	dryRun   bool
-	inPath   string
-	sdSocket *net.UnixConn
-	inputSrc struct {
+	dbDsn           string
+	db              *sql.DB
+	batch           SizedWaitGroup
+	batchSnv        bool
+	stats           Stats
+	versions        []Version
+	versionsByOrder map[int]Version
+	versionsByOrderLock	sync.RWMutex
+	dryRun          bool
+	inPath          string
+	sdSocket        *net.UnixConn
+	inputSrc        struct {
 		sync.Mutex
 		srcUse map[string]int
 	}

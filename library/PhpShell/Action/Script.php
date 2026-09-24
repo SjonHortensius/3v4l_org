@@ -30,7 +30,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 	public $input;
 	public $showTab = [
 		'output' => true,
-		'perf' => true,
+		'perf' => false,
 	];
 	public $notifyTab = [];
 	public $bodyClass = 'new script';
@@ -103,11 +103,9 @@ class PhpShell_Action_Script extends PhpShell_Action
 		}
 
 		$output = ['main' => [], 'rfc' => []];
+/*FIXME
 		foreach ($this->input->getResults() as $result)
 		{
-			if ($result->version->isHelper)
-				continue;
-
 			if (in_array(substr($result->version->name, 0, 3), ['rfc', 'git']))
 			{
 				$this->showTab['rfc'] = true;
@@ -118,7 +116,7 @@ class PhpShell_Action_Script extends PhpShell_Action
 
 		if (count(array_diff($output['rfc'], $output['main'])) > 1)
 			$this->notifyTab[ 'rfc'==Basic::$userinput['tab']?'output':'rfc' ] = true;
-
+*/
 		$this->showTab['vld'] = isset($this->input->operationCount) && $this->input->operationCount>0;
 		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 

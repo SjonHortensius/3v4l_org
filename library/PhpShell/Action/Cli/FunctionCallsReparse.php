@@ -7,7 +7,8 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 			'source' => ['superglobal' => 'REQUEST', 'key' => 1],
 			'values' => [
 				'full' => 'rescan all existing vld outputs',
-				'quick'=> 'scan only scripts that were unparsed until now',
+				'normal'=> 'scan only scripts that were unparsed until now',
+				'quick'=> 'scan only scripts that were missed',
 			],
 			'default' => 'full'
 		],
@@ -15,7 +16,11 @@ class PhpShell_Action_Cli_FunctionCallsReparse extends PhpShell_Action_Cli
 
 	public function run(): void
 	{
-		$filter = Basic::$userinput['type'] == 'quick' ? "\"operationCount\" = 0" : "true";
+		$filter = match(Basic::$userinput['type']) {
+			'full' => "true",
+			'normal' => "\"operationCount\" = 0",
+			'quick' => "\"operationCount\" IS NULL"
+		};
 
 		// cursor must run in tx - but the vld queue insert must run outside of that
 		$dbh = new Basic_Database;
