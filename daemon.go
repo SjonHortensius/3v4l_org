@@ -228,11 +228,13 @@ func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 	}
 
 	i.Lock()
-	defer i.Unlock()
 
 	if !i.uniqueOutput[o.hash] {
 		i.uniqueOutput[o.hash] = true
+		i.Unlock()
 		i.penalize("Excessive total output", len(o.raw)/2048)
+	} else {
+		i.Unlock()
 	}
 
 	return o
@@ -449,7 +451,7 @@ func (this *Input) rebuildResults() {
 
 func (this *Input) storeVldOutput(raw string, s *os.ProcessState) {
 	if dryRun {
-		fmt.Printf("\033[1mstoreVldHelperOutput: input=%s\033[0m %s\n", this.short, raw)
+		fmt.Printf("\033[1mstoreVldOutput: input=%s\033[0m %s\n", this.short, raw)
 		return
 	}
 
