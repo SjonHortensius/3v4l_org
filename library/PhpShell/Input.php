@@ -237,6 +237,10 @@ class PhpShell_Input extends PhpShell_Entity
 
 			$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
 
+			$prevMajor = null;
+			$groupKey = null;
+			$segMin = $segMax = $segHtml = '';
+
 			foreach ($versions as $v) {
 				$major = substr($v->name, 0, 3);
 				$html = $result->getHtml($v);
@@ -325,7 +329,7 @@ class PhpShell_Input extends PhpShell_Entity
 	{
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result)
-			if ($result->minVersion >= $version && $result->maxVersion <= $version)
+			if ($result->minVersion->order <= $version->order && $result->maxVersion->order >= $version->order)
 				return $result;
 
 		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);
