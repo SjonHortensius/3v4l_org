@@ -1,9 +1,8 @@
-/* sudo -u postgres pg_dump phpshell -s */
 --
 -- PostgreSQL database dump
 --
 
-\restrict JpE6RKBrb4BM5yPRF7j50hFqaBcKPte6CMa3KjDlNnD7I2lUraQgdKCGVbhuImu
+\restrict asdf
 
 -- Dumped from database version 18.6
 -- Dumped by pg_dump version 18.6
@@ -325,95 +324,17 @@ ALTER SEQUENCE public.references_id_seq OWNER TO postgres;
 CREATE TABLE public.result_new (
     input integer NOT NULL,
     output integer NOT NULL,
-    "exitCode" smallint NOT NULL,
     "minVersion" smallint NOT NULL,
     "maxVersion" smallint NOT NULL,
     "avgUserTime" real NOT NULL,
     "avgMaxMemory" integer NOT NULL,
     runs smallint DEFAULT 1 NOT NULL,
-    stable boolean DEFAULT true NOT NULL
+    stable boolean DEFAULT true NOT NULL,
+    created timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
 ALTER TABLE public.result_new OWNER TO postgres;
-
---
--- Name: version; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.version (
-    name character varying(24) NOT NULL,
-    released date DEFAULT now(),
-    "order" integer NOT NULL,
-    command character varying(254) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
-    "isHelper" boolean DEFAULT false NOT NULL,
-    id smallint NOT NULL,
-    eol date
-);
-
-
-ALTER TABLE public.version OWNER TO postgres;
-
---
--- Name: version_forBughunt; Type: VIEW; Schema: public; Owner: postgres
---
-
-CREATE VIEW public."version_forBughunt" AS
- SELECT name,
-    released,
-    "order",
-    command,
-    "isHelper",
-    id,
-    eol
-   FROM public.version
-  WHERE ((now() - (released)::timestamp with time zone) < '2 mons'::interval);
-
-
-ALTER VIEW public."version_forBughunt" OWNER TO postgres;
-
---
--- Name: result_bughunt; Type: MATERIALIZED VIEW; Schema: public; Owner: postgres
---
-
-CREATE MATERIALIZED VIEW public.result_bughunt AS
- WITH r AS (
-         SELECT rn.input,
-            rn.output,
-            rn."exitCode",
-            rn."minVersion",
-            rn."maxVersion",
-            rn."avgUserTime",
-            rn."avgMaxMemory",
-            rn.runs,
-            rn.stable
-           FROM public.result_new rn
-          WHERE (EXISTS ( SELECT 1
-                   FROM public."version_forBughunt" vb
-                  WHERE ((vb."order" >= rn."minVersion") AND (vb."order" <= rn."maxVersion"))))
-        )
- SELECT input,
-    output,
-    "exitCode",
-    "minVersion",
-    "maxVersion",
-    "avgUserTime",
-    "avgMaxMemory",
-    runs,
-    stable
-   FROM r
-  WHERE (input IN ( SELECT r2.input
-           FROM (r r2
-             JOIN public.input i ON ((i.id = r2.input)))
-          WHERE (NOT i."bughuntIgnore")
-          GROUP BY r2.input
-         HAVING (count(DISTINCT r2.output) > 1)))
-  WITH NO DATA;
-ALTER TABLE ONLY public.result_bughunt ALTER COLUMN input SET STATISTICS 800;
-ALTER TABLE ONLY public.result_bughunt ALTER COLUMN "minVersion" SET STATISTICS 800;
-
-
-ALTER MATERIALIZED VIEW public.result_bughunt OWNER TO postgres;
 
 --
 -- Name: submit; Type: TABLE; Schema: public; Owner: postgres
@@ -548,6 +469,41 @@ ALTER SEQUENCE public.user_id_seq OWNED BY public."user".id;
 
 
 --
+-- Name: version; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.version (
+    name character varying(24) NOT NULL,
+    released date DEFAULT now(),
+    "order" integer NOT NULL,
+    command character varying(254) DEFAULT '/bin/php-XXX -c /etc -q'::character varying NOT NULL,
+    "isHelper" boolean DEFAULT false NOT NULL,
+    id smallint NOT NULL,
+    eol date
+);
+
+
+ALTER TABLE public.version OWNER TO postgres;
+
+--
+-- Name: version_forBughunt; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public."version_forBughunt" AS
+ SELECT name,
+    released,
+    "order",
+    command,
+    "isHelper",
+    id,
+    eol
+   FROM public.version
+  WHERE ((now() - (released)::timestamp with time zone) < '2 mons'::interval);
+
+
+ALTER VIEW public."version_forBughunt" OWNER TO postgres;
+
+--
 -- Name: version_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -667,11 +623,11 @@ ALTER TABLE public.input_src CLUSTER ON input_src_pkey;
 
 
 --
--- Name: output output_hash; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: output output_hash_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.output
-    ADD CONSTRAINT output_hash UNIQUE (hash);
+    ADD CONSTRAINT output_hash_key UNIQUE (hash, "exitCode");
 
 
 --
@@ -687,7 +643,7 @@ ALTER TABLE ONLY public.output
 --
 
 ALTER TABLE ONLY public.result_new
-    ADD CONSTRAINT result_new_pkey PRIMARY KEY (input, output, "exitCode", "minVersion");
+    ADD CONSTRAINT result_new_pkey PRIMARY KEY (input, output, "minVersion");
 
 
 --
@@ -814,7 +770,7 @@ ALTER TABLE public.submit CLUSTER ON "submitLast";
 -- Name: submitRecent; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2026-08-01 00:00:00'::timestamp without time zone);
+CREATE INDEX "submitRecent" ON public.submit USING btree (ip) WHERE (created > '2026-09-01 00:00:00'::timestamp without time zone);
 
 
 --
@@ -1125,21 +1081,6 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE public.result_new TO website;
 
 
 --
--- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public.version TO website;
-GRANT SELECT ON TABLE public.version TO daemon;
-
-
---
--- Name: TABLE "version_forBughunt"; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT SELECT ON TABLE public."version_forBughunt" TO PUBLIC;
-
-
---
 -- Name: TABLE submit; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -1183,7 +1124,22 @@ GRANT SELECT ON SEQUENCE public.user_id_seq TO website;
 
 
 --
+-- Name: TABLE version; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public.version TO website;
+GRANT SELECT ON TABLE public.version TO daemon;
+
+
+--
+-- Name: TABLE "version_forBughunt"; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT ON TABLE public."version_forBughunt" TO PUBLIC;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict JpE6RKBrb4BM5yPRF7j50hFqaBcKPte6CMa3KjDlNnD7I2lUraQgdKCGVbhuImu
+\unrestrict asdf

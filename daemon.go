@@ -61,12 +61,14 @@ type Result struct {
 	userTime  float64
 	maxMemory int64
 	runs      int
+	created   time.Time
 }
 
 type ResultRange struct {
 	minVersion, maxVersion, output, runs int
 	userTime, maxMemory                  float64
 	stable                               bool
+	created                              time.Time
 }
 
 type ResourceLimit struct {
@@ -376,7 +378,7 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 	userTime := float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0
 	this.pendingResults = append(this.pendingResults, Result{
 		input: this, output: newOutput(raw, exitCode, this, v), version: v,
-		userTime: userTime, maxMemory: usage.Maxrss, runs: 1,
+		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: time.Now(),
 	})
 
 	stats.Increase("results", 1)
@@ -400,7 +402,7 @@ func (this *Input) rebuildResults() {
 
 	merged := map[int]Result{}
 
-	rows, err := db.Query(`SELECT output,o."exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs FROM result_new JOIN output o ON (o.id = output) WHERE input=$1`, this.id)
+	rows, err := db.Query(`SELECT output,o."exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,created FROM result_new JOIN output o ON (o.id = output) WHERE input=$1`, this.id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "rebuildResults: failed to select %s\n", err)
 		this.pendingResults = nil
@@ -412,7 +414,8 @@ func (this *Input) rebuildResults() {
 	for rows.Next() {
 		var out, ec, minV, maxV, r int
 		var ut, mm float64
-		if err := rows.Scan(&out, &ec, &minV, &maxV, &ut, &mm, &r); err != nil {
+		var cr time.Time
+		if err := rows.Scan(&out, &ec, &minV, &maxV, &ut, &mm, &r, &cr); err != nil {
 			fmt.Fprintf(os.Stderr, "rebuildResults: scan failed: %s\n", err)
 			continue
 		}
@@ -422,7 +425,7 @@ func (this *Input) rebuildResults() {
 			if !ok {
 				continue // gap in order sequence
 			}
-			merged[v.id] = Result{output: Output{id: out, exitCode: ec}, version: v, userTime: ut, maxMemory: int64(mm), runs: r}
+			merged[v.id] = Result{output: Output{id: out, exitCode: ec}, version: v, userTime: ut, maxMemory: int64(mm), runs: r, created: cr}
 		}
 	}
 	rows.Close()
@@ -487,8 +490,8 @@ func (this *Input) writeRanges(rows []ResultRange) {
 	}
 
 	for _, r := range rows {
-		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-			this.id, r.output, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable); err != nil {
+		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable,created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			this.id, r.output, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable, r.created); err != nil {
 			fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
 			return
 		}
@@ -504,12 +507,15 @@ func groupIslands(results []Result) []ResultRange {
 		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id {
 			rows[i].maxVersion = r.version.order
 			rows[i].runs = max(rows[i].runs, r.runs)
+			if r.created.Before(rows[i].created) {
+				rows[i].created = r.created
+			}
 			totalRuns := float64(rows[i].runs)
 			prevRuns := float64(r.runs)
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
 			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
 		} else {
-			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), true})
+			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), true, r.created})
 		}
 	}
 
@@ -671,12 +677,13 @@ func batchScheduleNewVersions() {
 					SELECT 1 FROM result_new r
 					WHERE r.input = input.id
 					  AND $1 BETWEEN r."minVersion" AND r."maxVersion"
+					  AND r.created >= $3::timestamptz
 				)
 				AND ("runArchived" OR created < $2::date)
 				AND state = 'done'
 				AND "operationCount" > 0
 				AND NOT "bughuntIgnore";`,
-			v.order, v.eol.Format("2006-01-02"))
+			v.order, v.eol.Format("2006-01-02"), v.released)
 		if err != nil {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
