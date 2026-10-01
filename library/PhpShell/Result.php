@@ -21,7 +21,7 @@ class PhpShell_Result extends PhpShell_Entity
 
 		if ($this->output->exitCode > 0)
 		{
-			$title = isset(self::$_exitCodes[ $this->exitCode ]) ? ' title="'. self::$_exitCodes[ $this->output->exitCode ] .'"' : '';
+			$title = isset(self::$_exitCodes[ $this->output->exitCode ]) ? ' title="'. self::$_exitCodes[ $this->output->exitCode ] .'"' : '';
 			$html .= '<br/><i>Process exited with code <b'. $title .'>'. $this->output->exitCode .'</b>.</i>';
 		}
 

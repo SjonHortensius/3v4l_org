@@ -218,7 +218,7 @@ func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 	h := sha1.Sum([]byte(raw))
 	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:]), exitCode}
 
-	if err := db.QueryRow(`INSERT INTO output VALUES ($1, $2, $3) ON CONFLICT (hash, "exitCode") DO NOTHING RETURNING id`, o.hash, o.raw, o.exitCode).Scan(&o.id); err == sql.ErrNoRows {
+	if err := db.QueryRow(`INSERT INTO output (hash, raw, "exitCode") VALUES ($1, $2, $3) ON CONFLICT (hash, "exitCode") DO NOTHING RETURNING id`, o.hash, o.raw, o.exitCode).Scan(&o.id); err == sql.ErrNoRows {
 		// ON CONFLICT does not RETURN id so fetch that
 		db.QueryRow(`SELECT id FROM output WHERE hash = $1 AND "exitCode" = $2`, o.hash, o.exitCode).Scan(&o.id)
 	} else if err != nil {
@@ -400,7 +400,7 @@ func (this *Input) rebuildResults() {
 
 	merged := map[int]Result{}
 
-	rows, err := db.Query(`SELECT output,"exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs FROM result_new WHERE input=$1`, this.id)
+	rows, err := db.Query(`SELECT output,o."exitCode","minVersion","maxVersion","avgUserTime","avgMaxMemory",runs FROM result_new JOIN output o ON (o.id = output) WHERE input=$1`, this.id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "rebuildResults: failed to select %s\n", err)
 		this.pendingResults = nil

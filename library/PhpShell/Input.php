@@ -197,9 +197,6 @@ class PhpShell_Input extends PhpShell_Entity
 	}
 
 	public function getResults(): array {
-		if (count($this->getRelated(PhpShell_Result::class)) == 0)
-			$this->_migrateResults();
-
 		if (!isset($this->_results)) {
 			$this->_results = [];
 

@@ -62,7 +62,7 @@ class PhpShell_Action_Cli_FunctionsUpdate extends PhpShell_Action_Cli
 		}
 
 		$preg = escapeshellarg(self::FUNC_PREG);
-		foreach (explode("\n", `grep -nrP $preg --include=*.c ext/ main/ Zend/`) as $line)
+		foreach (explode("\n", shell_exec('grep -nrP $preg --include=*.c ext/ main/ Zend/')) as $line)
 		{
 			try
 			{
