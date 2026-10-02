@@ -378,7 +378,7 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 	userTime := float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0
 	this.pendingResults = append(this.pendingResults, Result{
 		input: this, output: newOutput(raw, exitCode, this, v), version: v,
-		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: time.Now(),
+		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: v.released,
 	})
 
 	stats.Increase("results", 1)
@@ -437,6 +437,7 @@ func (this *Input) rebuildResults() {
 			old.userTime = (old.userTime*t + r.userTime) / (t + 1)
 			old.maxMemory = int64((float64(old.maxMemory)*t + float64(r.maxMemory)) / (t + 1))
 			old.runs++
+			old.created = r.created   // fresh execution refreshes the date
 			merged[r.version.id] = old
 		} else {
 			merged[r.version.id] = r
@@ -507,7 +508,7 @@ func groupIslands(results []Result) []ResultRange {
 		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id {
 			rows[i].maxVersion = r.version.order
 			rows[i].runs = max(rows[i].runs, r.runs)
-			if r.created.Before(rows[i].created) {
+			if r.created.After(rows[i].created) {
 				rows[i].created = r.created
 			}
 			totalRuns := float64(rows[i].runs)
