@@ -381,6 +381,11 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: v.released,
 	})
 
+	if !this.rebuild {
+		// incremental flush so the user sees progress
+		this.storeResults()
+	}
+
 	stats.Increase("results", 1)
 
 	return
@@ -392,7 +397,6 @@ func (this *Input) storeResults() {
 	}
 
 	this.writeRanges(groupIslands(this.pendingResults))
-	this.pendingResults = nil
 }
 
 func (this *Input) rebuildResults() {
