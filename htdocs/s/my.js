@@ -27,6 +27,29 @@ var evalOrg = {};
 {
 	"use strict";
 
+	// Some environments block localStorage entirely (blocked cookies, private mode on
+	// some browsers) - even *accessing* it throws a SecurityError, which would abort
+	// initialize(). Shadow window.localStorage with an in-memory stand-in so all the
+	// existing `localStorage.` call sites keep working in those environments.
+	try
+	{
+		localStorage.setItem('___probe', '1');
+		localStorage.removeItem('___probe');
+	}
+	catch (e)
+	{
+		var _memStorage = {};
+
+		Object.defineProperty(window, 'localStorage', {
+			value: {
+				getItem: function(k){ return k in _memStorage ? _memStorage[k] : null; },
+				setItem: function(k, v){ _memStorage[k] = String(v); },
+				removeItem: function(k){ delete _memStorage[k]; }
+			},
+			configurable: true
+		});
+	}
+
 	var self = this,
 		refreshTimer,
 		refreshCount = 0,
@@ -74,6 +97,10 @@ var evalOrg = {};
 		// Yandex through HeadlessChrome, but not reproducible
 		if (e.message === 'Uncaught ')
 			return;
+
+		// ResizeObserver feedback noise - not actionable
+		if (/ResizeObserver/.test(e.message))
+		    return;
 
 		var xhr = new XMLHttpRequest();
 		xhr.open('post', '/javascript-error/' + encodeURIComponent(e.filename) +':'+ encodeURIComponent(e.lineno) +':'+ encodeURIComponent(e.colno) +"/"+ encodeURIComponent(e.message));
@@ -205,10 +232,10 @@ var evalOrg = {};
 			if (!$('#tabs.abusive'))
 				$('input[type=submit]').removeAttribute('disabled');
 
-			if ($('#live_preview'))
+			if (this.php && $('#live_preview'))
 				this.livePreviewRun()
 					.then( exitCode => this.livePreviewDone(exitCode) );
-			else if ($('#livePreview').checked)
+			else if (!this.php && $('#livePreview').checked)
 				this.livePreviewCreate();
 		}.bind(this));
 	};
@@ -279,8 +306,8 @@ var evalOrg = {};
 	};
 
 	this.livePreviewRun = function(){
-		if (typeof this.php == "undefined")
-			throw "livePreviewRun called without a runtime present, "+ JSON.stringify(this.constructor.name);
+		if (!this.php)
+			return Promise.reject(new Error("livePreviewRun called without a runtime present"));
 
 		$('#tabs').classList.add('busy');
 		$('#live_preview').textContent = '';
@@ -425,11 +452,13 @@ var evalOrg = {};
 
 	var outputAddExpander = function()
 	{
-		if (document.body.classList.contains('touch') || $('#expand'))
+		var tab = $('div#tab');
+
+		if (!tab || document.body.classList.contains('touch') || $('#expand'))
 			return;
 
 		var hasOverflow = false;
-		$$('dd').forEach(function(dd){
+		$$('#tab dd').forEach(function(dd){
 			hasOverflow = hasOverflow || dd.scrollHeight>dd.clientHeight;
 			hasOverflow = hasOverflow || dd.scrollWidth>dd.clientWidth;
 		});
@@ -437,7 +466,7 @@ var evalOrg = {};
 		if (!hasOverflow)
 			return;
 
-		$('div#tab').insertBefore(object2Dom({
+		tab.insertBefore(object2Dom({
 			a: {
 				id: 'expand',
 				title: 'expand output',
@@ -445,7 +474,7 @@ var evalOrg = {};
 					'class': 'icon-resize-full expand'
 				}
 			}
-		}), $('div#tab').firstChild);
+		}), tab.firstChild);
 
 		$('#expand').addEventListener('click', outputExpand);
 	};
@@ -459,7 +488,7 @@ var evalOrg = {};
 
 	var outputAddDiff = function()
 	{
-		if ($('#diff') || $$('#tab dd').length < 2)
+		if (!$('#tab') || $('#diff') || $$('#tab dd').length < 2)
 			return;
 
 		$('div#tab').insertBefore(object2Dom({
@@ -534,7 +563,7 @@ var evalOrg = {};
 
 	var outputAsHtml = function()
 	{
-		if ($('#asHtml'))
+		if (!$('#tab') || $('#asHtml'))
 			return;
 
 		$('div#tab').insertBefore(object2Dom({
@@ -603,6 +632,9 @@ var evalOrg = {};
 				{
 					var rangeMin = matches[i][1], rangeMax = matches[i][2];
 //					console.log(vPrefix, vRelease, rangeMin.substr(vPrefix.length), rangeMax.substr(vPrefix.length));
+
+					if (!rangeMin || !rangeMax)
+						continue;
 
 					if (
 						rangeMin.startsWith(vPrefix) && Number(rangeMin.substr(vPrefix.length)) <= vRelease &&
