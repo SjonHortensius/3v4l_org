@@ -63,6 +63,7 @@ type Result struct {
 	maxMemory int64
 	runs      int
 	created   time.Time
+	stable    bool
 }
 
 type ResultRange struct {
@@ -431,7 +432,7 @@ func (this *Input) rebuildResults() {
 			if !ok {
 				continue // gap in order sequence
 			}
-			merged[v.id] = Result{output: Output{id: out, exitCode: ec}, version: v, userTime: ut, maxMemory: int64(mm), runs: r, created: cr}
+			merged[v.id] = Result{output: Output{id: out, exitCode: ec}, version: v, userTime: ut, maxMemory: int64(mm), runs: r, created: cr, stable: true}
 		}
 	}
 	rows.Close()
@@ -446,6 +447,8 @@ func (this *Input) rebuildResults() {
 			old.created = r.created // fresh execution refreshes the date
 			merged[r.version.id] = old
 		} else {
+			// Output mismatch or new version: forced unstable
+			r.stable = false
 			merged[r.version.id] = r
 		}
 	}
@@ -491,12 +494,36 @@ func (this *Input) writeRanges(rows []ResultRange) {
 		fmt.Fprintf(os.Stderr, "writeRanges: failed to lock: %s\n", err)
 		return
 	}
+
+	existingStable := make(map[int]bool)
+	func() {
+		rs, err := tx.Query(`SELECT output, stable FROM result_new WHERE input=$1`, this.id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "writeRanges: failed to read existing stable: %s\n", err)
+			return
+		}
+
+		defer rs.Close()
+		for rs.Next() {
+			var o int
+			var st bool
+			if err := rs.Scan(&o, &st); err != nil {
+				fmt.Fprintf(os.Stderr, "writeRanges: scan failed: %s\n", err)
+				return
+			}
+			existingStable[o] = st
+		}
+	}()
+
 	if _, err := tx.Exec(`DELETE FROM result_new WHERE input=$1`, this.id); err != nil {
 		fmt.Fprintf(os.Stderr, "writeRanges: failed to delete: %s\n", err)
 		return
 	}
 
 	for _, r := range rows {
+		if prev, ok := existingStable[r.output]; ok {
+			r.stable = prev && r.stable
+		}
 		if _, err := tx.Exec(`INSERT INTO result_new (input,output,"minVersion","maxVersion","avgUserTime","avgMaxMemory",runs,stable,created) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
 			this.id, r.output, r.minVersion, r.maxVersion, r.userTime, int(r.maxMemory), r.runs, r.stable, r.created); err != nil {
 			fmt.Fprintf(os.Stderr, "writeRanges: failed to insert: %s\n", err)
@@ -517,12 +544,13 @@ func groupIslands(results []Result) []ResultRange {
 			if r.created.After(rows[i].created) {
 				rows[i].created = r.created
 			}
+			rows[i].stable = rows[i].stable && r.stable
 			totalRuns := float64(rows[i].runs)
 			prevRuns := float64(r.runs)
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
 			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
 		} else {
-			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), true, r.created})
+			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), r.stable, r.created})
 		}
 	}
 
