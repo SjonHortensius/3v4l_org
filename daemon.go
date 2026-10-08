@@ -44,6 +44,7 @@ type Input struct {
 	runArchived    bool
 	lastSubmit     time.Time
 	pendingResults []Result
+	lastFlush      time.Time
 	rebuild        bool // skip fast-path, merge existing data from db
 }
 
@@ -381,9 +382,10 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: v.released,
 	})
 
-	if !this.rebuild {
+	if !this.rebuild && time.Since(this.lastFlush) >= 250*time.Millisecond {
 		// incremental flush so the user sees progress
 		this.storeResults()
+		this.lastFlush = time.Now()
 	}
 
 	stats.Increase("results", 1)
@@ -441,7 +443,7 @@ func (this *Input) rebuildResults() {
 			old.userTime = (old.userTime*t + r.userTime) / (t + 1)
 			old.maxMemory = int64((float64(old.maxMemory)*t + float64(r.maxMemory)) / (t + 1))
 			old.runs++
-			old.created = r.created   // fresh execution refreshes the date
+			old.created = r.created // fresh execution refreshes the date
 			merged[r.version.id] = old
 		} else {
 			merged[r.version.id] = r
@@ -465,7 +467,7 @@ func (this *Input) storeVldOutput(raw string, s *os.ProcessState) {
 
 	waitStatus := s.Sys().(syscall.WaitStatus)
 	if !waitStatus.Exited() || waitStatus.ExitStatus() != 0 {
-		fmt.Fprintf(os.Stderr, "storeVldOutput input=%s; helper exited with status %d\n", this.short, waitStatus.ExitStatus())
+		fmt.Fprintf(os.Stderr, "storeVldOutput input=%s; exited with status %d\n", this.short, waitStatus.ExitStatus())
 		return
 	}
 
@@ -585,42 +587,20 @@ func refreshVersions() {
 }
 
 func checkPendingInputs() {
-	// we ignore isQuick but this rarely gets executed so that's not a problem
-	rs, err := db.Query(`
-		SELECT id, short, created, penalty, "runArchived", state FROM input
+	rs, err := db.Exec(`
+		INSERT INTO queue
+		SELECT short FROM input
 		WHERE
 			state IN('new', 'busy')
 			AND created < NOW() - INTERVAL '5 minutes'
-		ORDER BY created DESC`)
+			AND NOT EXISTS (SELECT 1 FROM queue WHERE short = input.short)`)
 
 	if err != nil {
-		panic("checkPendingInputs: could not SELECT: " + err.Error())
+		panic("checkPendingInputs: could not INSERT: " + err.Error())
 	}
 
-	l := ResourceLimit{0, 2500, 32768}
-
-	var state string
-	for rs.Next() {
-		var input Input
-		if err := rs.Scan(&input.id, &input.short, &input.created, &input.penalty, &input.runArchived, &state); err != nil {
-			panic("checkPendingInputs: error Scanning: " + err.Error())
-		}
-
-		fmt.Printf("checkPendingInputs - scheduling [%s] %s\n", state, input.short)
-		input.prepare()
-
-		for _, v := range versions {
-			if input.runArchived || v.eol.After(input.created) {
-				o, s := input.execute(strings.Split(v.command, " "), l)
-				input.storeResult(v, o, s)
-			}
-
-			if input.penalty > 512 {
-				break
-			}
-		}
-
-		input.complete()
+	if c, err := rs.RowsAffected(); err == nil && c > 0 {
+		fmt.Printf("checkPendingInputs - queued %d inputs\n", c)
 	}
 }
 

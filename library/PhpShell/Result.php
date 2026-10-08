@@ -28,15 +28,6 @@ class PhpShell_Result extends PhpShell_Entity
 		return $html;
 	}
 
-	public function delete(): void
-	{
-		$this->_checkPermissions('delete');
-		Basic::$database->q("DELETE FROM \"result\" WHERE input = ? AND version= ?", [$this->input, $this->version]);
-
-		$this->output->removeCached();
-		$this->removeCached();
-	}
-
 	public static function getTable(): string
 	{
 		return 'result_new';
