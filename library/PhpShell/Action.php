@@ -31,9 +31,19 @@ class PhpShell_Action extends Basic_Action
 	];
 	public $httpPreloads = [
 			'/s/my.js' => 'preload',
-			'https://cdn.jsdelivr.net/npm/php-wasm/PhpBase.mjs' => 'modulepreload',
-			'https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs' => 'modulepreload',
-#			'https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs.wasm' => 'modulepreload', # Loading module from “https://cdn.jsdelivr.net/npm/php-wasm/php-web.mjs.wasm” was blocked because of a disallowed MIME type (“application/wasm”).
+			'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/PhpWeb.mjs' => 'modulepreload',
+            // Load the biggest file earlier (only this wasm is out of order)
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/e31ec3faf3e2323a2b4a448342b50307765b8217.wasm' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/PhpBase.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/webTransactions.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/OutputBuffer.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/_Event.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/fsOps.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/resolveDependencies.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm@0.1.0/php8.4-web.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm-mbstring@0.1.0/8.4.mjs' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm-mbstring@0.1.0/php8.4-mbstring.so' => 'modulepreload',
+            'https://cdn.jsdelivr.net/npm/php-wasm-mbstring@0.1.0/libonig.so' => 'modulepreload',
 	];
 	public $aceScripts = [
 		// curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
