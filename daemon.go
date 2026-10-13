@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/sha1"
 	"database/sql"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"github.com/lib/pq"
@@ -51,7 +50,7 @@ type Input struct {
 type Output struct {
 	id       int
 	raw      string
-	hash     string
+	hash     []byte
 	exitCode int
 }
 
@@ -220,7 +219,7 @@ func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 	raw = strings.ReplaceAll(raw, i.short, "\x07")
 
 	h := sha1.Sum([]byte(raw))
-	o := Output{0, raw, base64.StdEncoding.EncodeToString(h[:]), exitCode}
+	o := Output{0, raw, h[:], exitCode}
 
 	if err := db.QueryRow(`INSERT INTO output (hash, raw, "exitCode") VALUES ($1, $2, $3) ON CONFLICT (hash, "exitCode") DO NOTHING RETURNING id`, o.hash, o.raw, o.exitCode).Scan(&o.id); err == sql.ErrNoRows {
 		// ON CONFLICT does not RETURN id so fetch that
@@ -233,8 +232,8 @@ func newOutput(raw string, exitCode int, i *Input, v Version) Output {
 
 	i.Lock()
 
-	if !i.uniqueOutput[o.hash] {
-		i.uniqueOutput[o.hash] = true
+	if !i.uniqueOutput[string(o.hash)] {
+		i.uniqueOutput[string(o.hash)] = true
 		i.Unlock()
 		i.penalize("Excessive total output", len(o.raw)/2048)
 	} else {
