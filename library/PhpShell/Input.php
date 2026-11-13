@@ -201,7 +201,7 @@ class PhpShell_Input extends PhpShell_Entity
 			$this->_results = [];
 
 			// iterator_to_array in PHP-8.5 throws `Using null as an array offset is deprecated`
-			foreach ($this->getRelated(PhpShell_Result::class)->addJoin(PhpShell_Output::class, "output.id = output") as $result)
+			foreach ($this->getRelated(PhpShell_Result::class)->addJoin(PhpShell_Output::class, "output.id = output")->setOrder(['"minVersion"' => false]) as $result)
 				$this->_results[] = $result;
 		}
 
