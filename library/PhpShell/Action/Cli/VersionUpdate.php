@@ -103,29 +103,6 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 					array_push($minorIds, ++$nextVersionId);
 				}
 
-				// Verify existing partitions
-				if (0 == $vRelease || isset($pendingInsert))
-				{
-					$minorIds = array_merge($minorIds, $this->_getIdsForMinor($vMajor, $vMinor));
-					asort($minorIds);
-
-					$current = Basic::$database->q("
-						SELECT pg_get_expr(pt.relpartbound, pt.oid, true)
-						FROM pg_class base_tb
-						JOIN pg_inherits i ON i.inhparent = base_tb.oid
-						JOIN pg_class pt ON pt.oid = i.inhrelid
-						WHERE base_tb.oid = 'public.result'::regclass AND pt.relname = ?
-					", ['result_php'.$vMajor.$vMinor])->fetchColumn();
-
-					#FIXME when adding multiple minors don't include previously added version in $expect
-					$expect = "FOR VALUES IN ('". implode("', '", $minorIds) ."')";
-					if ($current != false && $current != $expect)
-					{
-						printf("ALTER TABLE RESULT DETACH PARTITION result_php$vMajor$vMinor;/*$current*/\n");
-						printf("ALTER TABLE RESULT ATTACH PARTITION result_php$vMajor$vMinor   $expect;\n");
-					}
-				}
-
 				if (isset($pendingInsert))
 					echo "COMMIT;\n";
 			}
