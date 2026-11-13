@@ -225,14 +225,17 @@ class PhpShell_Input extends PhpShell_Entity
 		$build = fn($v) => '<span title="released ' . htmlspecialchars($v->released) . '">' . htmlspecialchars($v->name) . '</span>';
 		$slots = [];
 
-		/* @var PhpShell_Result $result */
-		foreach ($this->getResults() as $result) {
-			if ($forRfc && $result->minVersion->order < self::RFC_VERSION_TRESHOLD)
-				continue;
-			if (!$forRfc && $result->minVersion->order > self::RFC_VERSION_TRESHOLD)
-				continue;
+		if ($forRfc)
+			$rs = $this->getRelated(PhpShell_ResultTransient::class);
+		else
+			$rs = $this->getResults();
 
-			$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
+		/* @var PhpShell_Result $result */
+		foreach ($rs as $result) {
+			if ($forRfc)
+				$versions = [$result->version];
+			else
+				$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
 
 			$prevMajor = null;
 			$groupKey = null;
@@ -324,6 +327,9 @@ class PhpShell_Input extends PhpShell_Entity
 
 	public function getResult(PhpShell_Version $version): PhpShell_Result
 	{
+		if ($version->transient)
+			return $this->getRelated(PhpShell_ResultTransient::class)->getSubset("version = ?", [$version])->getSingle();
+
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result)
 			if ($result->minVersion->order <= $version->order && $result->maxVersion->order >= $version->order)

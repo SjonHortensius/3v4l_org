@@ -32,5 +32,4 @@ class PhpShell_Result extends PhpShell_Entity
 	{
 		return 'result_new';
 	}
-
 }

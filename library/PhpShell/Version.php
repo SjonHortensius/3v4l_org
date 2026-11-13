@@ -54,7 +54,6 @@ class PhpShell_Version extends PhpShell_Entity
 				unset($r->id); // prevent using id while migrating
 				self::$_cache[static::class][$id] = $r;
 			}
-
 		}
 
 		if (isset(self::$_cache[ static::class ][ $id ]) && false == self::$_cache[ static::class ][ $id ])

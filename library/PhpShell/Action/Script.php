@@ -102,21 +102,14 @@ class PhpShell_Action_Script extends PhpShell_Action
 			//ignore
 		}
 
-		$output = ['main' => [], 'rfc' => []];
-/*FIXME
-		foreach ($this->input->getResults() as $result)
-		{
-			if (in_array(substr($result->version->name, 0, 3), ['rfc', 'git']))
-			{
-				$this->showTab['rfc'] = true;
-				$output['rfc'] []= $result->output->id;
-			} else
-				$output['main'] []= $result->output->id;
-		}
+		$output = [
+			'main' => array_map(fn($result) => $result->output->id, $this->input->getResults()),
+			'rfc'  => iterator_to_array($this->input->getRelated(PhpShell_ResultTransient::class)->getSimpleList('output', null))
+		];
 
-		if (count(array_diff($output['rfc'], $output['main'])) > 1)
-			$this->notifyTab[ 'rfc'==Basic::$userinput['tab']?'output':'rfc' ] = true;
-*/
+		$this->showTab['rfc'] = !empty($output['rfc']);
+		$this->notifyTab[ 'rfc'==Basic::$userinput['tab']?'output':'rfc' ] = !empty(array_diff($output['rfc'], $output['main']));
+
 		$this->showTab['vld'] = isset($this->input->operationCount) && $this->input->operationCount>0;
 		$this->showTab['refs'] = $this->showTab['vld'] && count($this->input->getRelated(PhpShell_FunctionCall::class)) > 0;
 

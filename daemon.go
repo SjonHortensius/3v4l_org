@@ -30,6 +30,7 @@ type Version struct {
 	released time.Time
 	order    int
 	eol      time.Time
+	transient bool
 }
 
 type Input struct {
@@ -377,10 +378,16 @@ func (this *Input) storeResult(v Version, raw string, s *os.ProcessState) {
 	this.penalize("Total runtime", int(usage.Utime.Sec)+int(usage.Stime.Sec))
 
 	userTime := float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1000000.0
-	this.pendingResults = append(this.pendingResults, Result{
+	r := Result{
 		input: this, output: newOutput(raw, exitCode, this, v), version: v,
 		userTime: userTime, maxMemory: usage.Maxrss, runs: 1, created: v.released,
-	})
+	}
+
+	if v.transient {
+		this.storeTransient(r)
+	} else {
+		this.pendingResults = append(this.pendingResults, r)
+	}
 
 	if !this.rebuild && time.Since(this.lastFlush) >= 250*time.Millisecond {
 		// incremental flush so the user sees progress
@@ -399,6 +406,25 @@ func (this *Input) storeResults() {
 	}
 
 	this.writeRanges(groupIslands(this.pendingResults))
+}
+
+func (this *Input) storeTransient(r Result) {
+	if dryRun {
+		fmt.Printf("\033[1mstoreTransientResult: input=%s | version=%s\033[0m\n", this.short, r.version.name)
+		return
+	}
+
+	if _, err := db.Exec(`
+		INSERT INTO result_transient (input, "version", output, "userTime", "maxMemory", runs, stable, created)
+		VALUES ($1, $2, $3, $4, $5, 1, true, $6)
+		ON CONFLICT (input, "version") DO UPDATE SET
+			output = EXCLUDED.output,
+			"userTime" = EXCLUDED."userTime",
+			"maxMemory" = EXCLUDED."maxMemory",
+			created = EXCLUDED.created`,
+		this.id, r.version.order, r.output.id, r.userTime, int(r.maxMemory), r.created); err != nil {
+		fmt.Fprintf(os.Stderr, "storeTransientResult: failed for %s/%s: %s\n", this.short, r.version.name, err)
+	}
 }
 
 func (this *Input) rebuildResults() {
@@ -494,12 +520,12 @@ func (this *Input) writeRanges(rows []ResultRange) {
 		return
 	}
 
-	existingStable := make(map[int]bool)
-	func() {
+	existingStable := func() map[int]bool {
+		e := make(map[int]bool)
 		rs, err := tx.Query(`SELECT output, stable FROM result_new WHERE input=$1`, this.id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "writeRanges: failed to read existing stable: %s\n", err)
-			return
+			return e
 		}
 
 		defer rs.Close()
@@ -508,10 +534,12 @@ func (this *Input) writeRanges(rows []ResultRange) {
 			var st bool
 			if err := rs.Scan(&o, &st); err != nil {
 				fmt.Fprintf(os.Stderr, "writeRanges: scan failed: %s\n", err)
-				return
+				return e
 			}
-			existingStable[o] = st
+			e[o] = st
 		}
+
+		return e
 	}()
 
 	if _, err := tx.Exec(`DELETE FROM result_new WHERE input=$1`, this.id); err != nil {
@@ -585,7 +613,7 @@ func refreshVersions() {
 	var newVersions []Version
 
 	rs, err := db.Query(`
-		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command
+		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, transient
 		FROM version
 		ORDER BY "order" DESC`)
 
@@ -596,7 +624,7 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.transient); err != nil {
 			panic("daemon: error Scanning: " + err.Error())
 		}
 
@@ -856,7 +884,7 @@ func main() {
 		// run a predefined set of scripts so we don't trash someones homedir
 		fmt.Printf("running tests\n")
 
-		v := Version{0, "local php binary", "/usr/bin/php -n -q", time.Now(), 0, time.Now()}
+		v := Version{0, "local php binary", "/usr/bin/php -n -q", time.Now(), 0, time.Now(), false}
 
 		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO')`)
 		if err != nil {
