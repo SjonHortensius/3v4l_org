@@ -2,7 +2,6 @@
 
 class PhpShell_Action_New extends PhpShell_Action
 {
-	public $formSubmit = 'eval();';
 	public $userinputConfig = [
 		'title' => [
 			'valueType' => 'scalar',

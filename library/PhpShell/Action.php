@@ -4,6 +4,7 @@ class PhpShell_Action extends Basic_Action
 {
 	public $encoding = 'UTF-8';
 	public $title = 'Test code in 500+ PHP versions';
+	public $formSubmit = 'eval();';
 	public $user;
 	public $bodyClass;
 	public $adminMessage;
