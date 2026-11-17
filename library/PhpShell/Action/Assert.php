@@ -27,7 +27,7 @@ class PhpShell_Action_Assert extends PhpShell_Action
 			throw new PhpShell_LoginRequiredException('This page requires you to login', [], 404);
 
 		$input = PhpShell_Input::find("short = ?", [Basic::$userinput['script']])->getSingle();
-		$version = PhpShell_Version::find("name = ? AND NOT \"isHelper\"", [Basic::$userinput['version']])->getSingle();
+		$version = PhpShell_Version::find("name = ? AND NOT transient", [Basic::$userinput['version']])->getSingle();
 
 		if (Basic::$userinput['hash'] != PhpShell_Assertion::getSubmitHash($input, $version->name));
 			throw new PhpShell_Action_Assert_InvalidHashException('The submitted hash is incorrect');

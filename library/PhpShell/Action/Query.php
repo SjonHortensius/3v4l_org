@@ -13,7 +13,7 @@ SELECT name "version", ROUND(AVG("systemTime")::numeric, 2) sys, ROUND(AVG("user
 FROM input
 JOIN result r ON (r.input = input.id)
 JOIN version v ON (v.id=r.version)
-WHERE input.id IN (SELECT id FROM input ORDER BY RANDOM() LIMIT 250) AND NOT v."isHelper"
+WHERE input.id IN (SELECT id FROM input ORDER BY RANDOM() LIMIT 250) AND NOT v.transient
 GROUP BY v.name
 ORDER BY AVG("userTime")+AVG("systemTime") DESC;
 EOQ

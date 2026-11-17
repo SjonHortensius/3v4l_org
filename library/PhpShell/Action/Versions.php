@@ -6,7 +6,7 @@ class PhpShell_Action_Versions extends PhpShell_Action
 
 	public function run(): void
 	{
-		$this->versions = PhpShell_Version::find("NOT \"isHelper\"", [], ['id' => false]);
+		$this->versions = PhpShell_Version::find("NOT transient", [], ['id' => false]);
 
 		parent::run();
 	}
