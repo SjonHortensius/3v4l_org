@@ -24,12 +24,11 @@ import (
 )
 
 type Version struct {
-	id       int
-	name     string
-	command  string
-	released time.Time
-	order    int
-	eol      time.Time
+	id        int
+	name      string
+	command   string
+	released  time.Time
+	eol       time.Time
 	transient bool
 }
 
@@ -422,7 +421,7 @@ func (this *Input) storeTransient(r Result) {
 			"userTime" = EXCLUDED."userTime",
 			"maxMemory" = EXCLUDED."maxMemory",
 			created = EXCLUDED.created`,
-		this.id, r.version.order, r.output.id, r.userTime, int(r.maxMemory), r.created); err != nil {
+		this.id, r.version.id, r.output.id, r.userTime, int(r.maxMemory), r.created); err != nil {
 		fmt.Fprintf(os.Stderr, "storeTransientResult: failed for %s/%s: %s\n", this.short, r.version.name, err)
 	}
 }
@@ -441,8 +440,6 @@ func (this *Input) rebuildResults() {
 		return
 	}
 
-	versionsByOrderLock.RLock()
-
 	for rows.Next() {
 		var out, ec, minV, maxV, r int
 		var ut, mm float64
@@ -453,7 +450,7 @@ func (this *Input) rebuildResults() {
 		}
 		lo, hi := minV, maxV
 		for o := lo; o <= hi; o++ {
-			v, ok := versionsByOrder[o]
+			v, ok := versionsById[o]
 			if !ok {
 				continue // gap in order sequence
 			}
@@ -461,7 +458,6 @@ func (this *Input) rebuildResults() {
 		}
 	}
 	rows.Close()
-	versionsByOrderLock.RUnlock()
 
 	for _, r := range this.pendingResults {
 		if old, ok := merged[r.version.id]; ok && old.output.id == r.output.id {
@@ -557,16 +553,19 @@ func (this *Input) writeRanges(rows []ResultRange) {
 			return
 		}
 	}
-	tx.Commit()
+
+	if err := tx.Commit(); err != nil {
+		fmt.Fprintf(os.Stderr, "writeRanges: commit failed (input=%d): %s\n", this.id, err)
+	}
 }
 
 func groupIslands(results []Result) []ResultRange {
-	sort.Slice(results, func(i, j int) bool { return results[i].version.order < results[j].version.order })
+	sort.Slice(results, func(i, j int) bool { return results[i].version.id < results[j].version.id })
 
 	var rows []ResultRange
 	for _, r := range results {
 		if i := len(rows) - 1; i >= 0 && rows[i].output == r.output.id {
-			rows[i].maxVersion = r.version.order
+			rows[i].maxVersion = r.version.id
 			rows[i].runs = max(rows[i].runs, r.runs)
 			if r.created.After(rows[i].created) {
 				rows[i].created = r.created
@@ -577,7 +576,7 @@ func groupIslands(results []Result) []ResultRange {
 			rows[i].userTime = (rows[i].userTime*(totalRuns-prevRuns) + r.userTime*prevRuns) / totalRuns
 			rows[i].maxMemory = (rows[i].maxMemory*(totalRuns-prevRuns) + float64(r.maxMemory)*prevRuns) / totalRuns
 		} else {
-			rows = append(rows, ResultRange{r.version.order, r.version.order, r.output.id, r.runs, r.userTime, float64(r.maxMemory), r.stable, r.created})
+			rows = append(rows, ResultRange{r.version.id, r.version.id, r.output.id, r.runs, r.userTime, float64(r.maxMemory), r.stable, r.created})
 		}
 	}
 
@@ -611,11 +610,12 @@ func cleanTmpDirectory() error {
 
 func refreshVersions() {
 	var newVersions []Version
+	newVersionById := make(map[int]Version)
 
 	rs, err := db.Query(`
-		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), COALESCE("order", 0), command, transient
+		SELECT id, name, COALESCE(released, '1900-01-01'), COALESCE(eol, '2999-12-31'), command, transient
 		FROM version
-		ORDER BY "order" DESC`)
+		ORDER BY id DESC`)
 
 	if err != nil {
 		panic("daemon: could not SELECT: " + err.Error())
@@ -624,21 +624,17 @@ func refreshVersions() {
 	for rs.Next() {
 		v := Version{}
 
-		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.order, &v.command, &v.transient); err != nil {
+		if err := rs.Scan(&v.id, &v.name, &v.released, &v.eol, &v.command, &v.transient); err != nil {
 			panic("daemon: error Scanning: " + err.Error())
 		}
 
 		newVersions = append(newVersions, v)
+		newVersionById[v.id] = v
 	}
 
-	versionsByOrderLock.Lock()
-	defer versionsByOrderLock.Unlock()
-
+	// atomic swap
 	versions = newVersions
-	versionsByOrder = make(map[int]Version, len(newVersions))
-	for _, v := range newVersions {
-		versionsByOrder[v.order] = v
-	}
+	versionsById = newVersionById
 }
 
 func checkPendingInputs() {
@@ -723,7 +719,7 @@ func batchScheduleNewVersions() {
 				AND state = 'done'
 				AND "operationCount" > 0
 				AND NOT "bughuntIgnore";`,
-			v.order, v.eol.Format("2006-01-02"), v.released)
+			v.id, v.eol.Format("2006-01-02"), v.released)
 		if err != nil {
 			panic("batchScheduleNewVersions: could not SELECT: " + err.Error())
 		}
@@ -825,18 +821,17 @@ func doVldHelper(short string) {
 }
 
 var (
-	dbDsn               string
-	db                  *sql.DB
-	batch               SizedWaitGroup
-	batchSnv            bool
-	stats               Stats
-	versions            []Version
-	versionsByOrder     map[int]Version
-	versionsByOrderLock sync.RWMutex
-	dryRun              bool
-	inPath              string
-	sdSocket            *net.UnixConn
-	inputSrc            struct {
+	dbDsn        string
+	db           *sql.DB
+	batch        SizedWaitGroup
+	batchSnv     bool
+	stats        Stats
+	versions     []Version
+	versionsById map[int]Version
+	dryRun       bool
+	inPath       string
+	sdSocket     *net.UnixConn
+	inputSrc     struct {
 		sync.Mutex
 		srcUse map[string]int
 	}
@@ -884,7 +879,7 @@ func main() {
 		// run a predefined set of scripts so we don't trash someones homedir
 		fmt.Printf("running tests\n")
 
-		v := Version{0, "local php binary", "/usr/bin/php -n -q", time.Now(), 0, time.Now(), false}
+		v := Version{0, "local php binary", "/usr/bin/php -n -q", time.Now(), time.Now(), false}
 
 		rs, err := db.Query(`SELECT id, short, "runArchived", created FROM input WHERE short IN ('J7G8C','7rZMO')`)
 		if err != nil {

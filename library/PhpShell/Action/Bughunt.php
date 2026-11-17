@@ -34,7 +34,7 @@ class PhpShell_Action_Bughunt extends PhpShell_Action
 	public function init(): void
 	{
 		$versions = iterator_to_array(PhpShell_Version::find("id IN (SELECT id FROM \"version_forBughunt\")", [])
-			->setOrder(['version.order' => false])
+			->setOrder(['version.id' => false])
 			->getSimpleList('name', 'name'));
 
 		Basic::$userinput->versions->values = $versions;

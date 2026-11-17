@@ -49,7 +49,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 				unset($pendingInsert);
 
 				[$vMajor, $vMinor, $vRelease] = explode('.', $name);
-				$order = sprintf('%1d%1d%02d', $vMajor, $vMinor, $vRelease);
+				$id = sprintf('%1d%1d%02d', $vMajor, $vMinor, $vRelease);
 
 				if ($vMajor == 4 && $vMinor < 3)
 					continue;
@@ -76,8 +76,8 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 					if ($version->released != $released)
 						printf("UPDATE version SET released = '%s' WHERE name = '%s' AND released = '%s';\n", $released, $name, $version->released);
 
-					if ($version->order != $order)
-						printf("UPDATE version SET \"order\" = %d WHERE name = '%s' AND \"order\" = %d;\n", $order, $name, $version->order);
+					if ($version->id != $id)
+						printf("UPDATE version SET id = %d WHERE name = '%s' AND id = %d;\n", $id, $name, $version->id);
 
 					if ($version->command != $command)
 						printf("UPDATE version SET command = '%s' WHERE name = '%s' AND command = '%s';\n", $command, $name, $version->command);
@@ -93,7 +93,7 @@ class PhpShell_Action_Cli_VersionUpdate extends PhpShell_Action_Cli
 						continue;
 					}
 
-					$pendingInsert = "INSERT INTO version VALUES('$name', '$released', $order, '$command', false, nextval('version_id_seq'), '$eol');";
+					$pendingInsert = "INSERT INTO version VALUES('$name', '$released', $id, '$command', false, nextval('version_id_seq'), '$eol');";
 				}
 
 				$minorIds = [];

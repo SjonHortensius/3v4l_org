@@ -167,35 +167,6 @@ class PhpShell_Input extends PhpShell_Entity
 		$this->state = $input->state;
 	}
 
-	protected function _migrateResults(): void {
-		Basic::$database->q('
-			INSERT INTO result_new (input, output, "exitCode", "minVersion", "maxVersion", "avgUserTime", "avgMaxMemory", runs, stable)
-			WITH dedup AS (
-				SELECT DISTINCT ON (r.input, r.version)
-					r.input, r.output::integer AS output, r."exitCode", v."order", r."userTime", r."maxMemory", r.runs, r.mutations
-				FROM result r
-				JOIN version v ON v.id = r.version
-				WHERE r.input = ?
-				ORDER BY r.input, r.version, r.ctid
-			), island_groups AS (
-				SELECT input, output, "exitCode", "order", "userTime", "maxMemory", runs, mutations,
-					ROW_NUMBER() OVER (PARTITION BY input ORDER BY "order")
-					 - ROW_NUMBER() OVER (PARTITION BY input, output, "exitCode" ORDER BY "order") AS island_id
-				FROM dedup
-			),
-			aggregated AS (
-				SELECT input, output, "exitCode", MIN("order") AS minVersion, MAX("order") AS maxVersion, SUM("userTime" * runs)::real / NULLIF(SUM(runs), 0) AS avgUserTime,
-					(SUM("maxMemory"::bigint * runs) / NULLIF(SUM(runs), 0))::integer AS avgMaxMemory, SUM(runs) AS runs, BOOL_AND(mutations = 0) AS stable
-				FROM island_groups
-				GROUP BY input, output, "exitCode", island_id
-			)
-			SELECT input, output, "exitCode", minVersion, maxVersion, avgUserTime, avgMaxMemory, LEAST(runs, 32767)::smallint, COALESCE(stable, TRUE) FROM aggregated
-			ON CONFLICT (input, output, "exitCode", "minVersion") DO NOTHING;
-		', [$this->id]);
-
-		Basic::$database->q("DELETE FROM result WHERE input = ?", [$this->id]);
-	}
-
 	public function getResults(): array {
 		if (!isset($this->_results)) {
 			$this->_results = [];
@@ -220,7 +191,7 @@ class PhpShell_Input extends PhpShell_Entity
 		};
 
 		$allVersions = iterator_to_array(PhpShell_Version::find()->getSimpleList(null));
-		usort($allVersions, fn($a, $b) => $a->order - $b->order);
+		usort($allVersions, fn($a, $b) => $a->id - $b->id);
 
 		$build = fn($v) => '<span title="released ' . htmlspecialchars($v->released) . '">' . htmlspecialchars($v->name) . '</span>';
 		$slots = [];
@@ -235,7 +206,7 @@ class PhpShell_Input extends PhpShell_Entity
 			if ($forRfc)
 				$versions = [$result->version];
 			else
-				$versions = array_filter($allVersions, fn($v) => $v->order >= $result->minVersion->order && $v->order <= $result->maxVersion->order);
+				$versions = array_filter($allVersions, fn($v) => $v->id >= $result->minVersion->id && $v->id <= $result->maxVersion->id);
 
 			$prevMajor = null;
 			$groupKey = null;
@@ -311,7 +282,7 @@ class PhpShell_Input extends PhpShell_Entity
 			INNER JOIN version ON version.id = version
 			WHERE input = ? AND version.id >= ?
 			GROUP BY version
-			ORDER BY MAX(version.order) DESC", [$this->id, self::RFC_VERSION_TRESHOLD]);
+			ORDER BY MAX(version.id) DESC", [$this->id, self::RFC_VERSION_TRESHOLD]);
 	}
 
 	public function getFunctionCalls(): Basic_EntitySet
@@ -328,11 +299,11 @@ class PhpShell_Input extends PhpShell_Entity
 	public function getResult(PhpShell_Version $version): PhpShell_Result
 	{
 		if ($version->transient)
-			return $this->getRelated(PhpShell_ResultTransient::class)->getSubset("version = ?", [$version])->getSingle();
+			return $this->getRelated(PhpShell_ResultTransient::class)->getSubset("version = ?", [$version->id])->getSingle();
 
 		/* @var PhpShell_Result $result */
 		foreach ($this->getResults() as $result)
-			if ($result->minVersion->order <= $version->order && $result->maxVersion->order >= $version->order)
+			if ($result->minVersion->id <= $version->id && $result->maxVersion->id >= $version->id)
 				return $result;
 
 		throw new Basic_EntitySet_NoSingleResultException('There are `%s` results', ['0'], 404);
